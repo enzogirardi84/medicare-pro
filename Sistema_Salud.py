@@ -14,6 +14,13 @@ URL_HOJA_CALCULO = "PEGA_AQUI_TU_URL_DE_GOOGLE_SHEETS"
 st.set_page_config(page_title="MediCare Pro Elite", page_icon="⚕️", layout="wide")
 st.markdown("<html lang='es' translate='no'>", unsafe_allow_html=True)
 
+# --- FECHAS PARA EL CALENDARIO ---
+hoy = datetime.today()
+hace_110_anios = datetime(hoy.year - 110, 1, 1)
+
+# --- LISTA DE DROGAS ---
+LISTA_DROGAS = ["Adrenalina", "Amiodarona", "Amoxicilina", "Ampicilina/Sulbactam", "Ceftriaxona", "Clonazepam", "Dexametasona", "Diazepam", "Diclofenac", "Dipirona (Metamizol)", "Enalapril", "Furosemida", "Haloperidol", "Hidrocortisona", "Ibuprofeno", "Ketorolaco", "Lorazepam", "Losartan", "Metoclopramida", "Morfina", "Omeprazol", "Ondansetron", "Paracetamol", "Salbutamol", "Tramadol"]
+
 # --- BÚSQUEDA IA ---
 def normalizar_texto(texto):
     if not texto: return ""
@@ -31,7 +38,7 @@ st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
     html, body, [class*="css"] { font-family: 'Inter', sans-serif !important; }
-    :root { --primary: #3b82f6; --success: #10b981; --danger: #ef4444; --bg-card: rgba(255,255,255,0.05); }
+    :root { --primary: #3b82f6; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --bg-card: rgba(255,255,255,0.05); }
     .hce-card { background: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
     .turno-caja { background: rgba(16,185,129,0.1); padding: 15px; border-radius: 10px; border-left: 5px solid var(--success); display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;}
     .btn-whatsapp { background: #25D366; color: white !important; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.8rem; }
@@ -109,7 +116,7 @@ with st.sidebar:
 st.title("MediCare: Gestión Clínica")
 tabs = st.tabs(["👤 Admisión", "📅 Agenda", "📊 Clínica", "📝 Evolución", "💊 Recetario", "💳 Caja", "🗄️ PDF", "🤖 IA", "⚙️ Ajustes"])
 
-# 1. ADMISIÓN
+# 1. ADMISIÓN (CON CALENDARIO ARREGLADO)
 with tabs[0]:
     with st.form("adm"):
         n = st.text_input("Nombre y Apellido")
@@ -117,7 +124,8 @@ with tabs[0]:
         t = st.text_input("WhatsApp")
         c1, c2, c3 = st.columns(3)
         dni = c1.text_input("DNI")
-        fnac = c2.date_input("Fecha Nacimiento")
+        # El calendario ahora tiene min_value y max_value
+        fnac = c2.date_input("Fecha Nacimiento", value=hoy, min_value=hace_110_anios, max_value=hoy)
         sexo = c3.selectbox("Sexo", ["Femenino", "Masculino", "Otro"])
         c4, c5 = st.columns(2)
         peso = c4.number_input("Peso (kg)", 0.0)
@@ -144,17 +152,37 @@ with tabs[1]:
         tel = st.session_state["directorio_pacientes_db"].get(cita['paciente'], "")
         st.markdown(f"<div class='turno-caja'><div><b>{cita['fecha']} {cita['hora']}</b><br>{cita['paciente']}</div><a href='https://wa.me/{tel}' class='btn-whatsapp'>Enviar WA</a></div>", unsafe_allow_html=True)
 
-# 3. CLÍNICA / TRIAGE
+# 3. CLÍNICA / TRIAGE (SISTEMA COMPLETO)
 with tabs[2]:
-    c1, c2 = st.columns([1, 2])
+    c1, c2 = st.columns([1, 1.5])
     with c1:
-        ta = st.text_input("Tensión Arterial", "120/80")
-        fc = st.number_input("Frec. Cardíaca", 40, 200, 75)
-        sa = st.number_input("Sat. Oxígeno %", 50, 100, 98)
-        temp = st.number_input("Temperatura (°C)", 34.0, 42.0, 36.5)
-        if st.button("Guardar Signos Vitales", type="primary"):
-            st.session_state["vitales_db"].append({"paciente": paciente_actual, "TA": ta, "FC": fc, "Sat": sa, "Temp": temp, "hora": datetime.now().strftime("%d/%m %H:%M")})
-            guardar_datos(); st.rerun()
+        with st.form("form_vitales"):
+            col_v1, col_v2 = st.columns(2)
+            ta = col_v1.text_input("Tensión Arterial", value="120/80")
+            temp = col_v2.number_input("Temp (°C)", value=36.5, step=0.1)
+            fc = col_v1.number_input("FC (lpm)", value=75)
+            fr = col_v2.number_input("FR (rpm)", value=16)
+            sa = col_v1.number_input("SatO2 (%)", value=98)
+            hgt = col_v2.number_input("HGT (mg/dl)", value=90)
+            
+            # Lógica de Triage
+            nivel_triage = "🟢 VERDE (Atención Estándar)"
+            color_triage = "var(--success)"
+            try:
+                sist = int(ta.split("/")[0]) if "/" in ta else 120
+                diast = int(ta.split("/")[1]) if "/" in ta else 80
+            except: sist, diast = 120, 80
+
+            if sa < 90 or sist > 200 or fc > 130 or fc < 40 or temp >= 40.0:
+                nivel_triage = "🔴 ROJO (Emergencia)"; color_triage = "var(--danger)"
+            elif sa < 94 or sist > 180 or diast > 110 or temp >= 38.5 or fc > 110 or fr > 24:
+                nivel_triage = "🟠 AMARILLO (Urgencia)"; color_triage = "var(--warning)"
+                
+            st.markdown(f"<div style='background-color: {color_triage}; color: white; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 15px;'>{nivel_triage}</div>", unsafe_allow_html=True)
+            
+            if st.form_submit_button("Guardar Signos Vitales", type="primary", use_container_width=True):
+                st.session_state["vitales_db"].append({"paciente": paciente_actual, "TA": ta, "FC": fc, "FR": fr, "Sat": sa, "Temp": temp, "HGT": hgt, "Triage": nivel_triage, "hora": datetime.now().strftime("%d/%m %H:%M")})
+                guardar_datos(); st.rerun()
     with c2:
         v_data = [v for v in st.session_state["vitales_db"] if v["paciente"] == paciente_actual]
         if len(v_data) > 1:
@@ -170,16 +198,35 @@ with tabs[3]:
         firma_real = e.get('firma', e.get('profesional', e.get('autor', 'Desconocido')))
         st.info(f"**{e['fecha']}** | {e.get('nota','')} (Firma: {firma_real})")
 
-# 5. RECETAS
+# 5. RECETARIO (SISTEMA COMPLETO RESTAURADO)
 with tabs[4]:
-    c1, c2 = st.columns(2)
-    med = c1.text_input("Medicamento")
-    dosis = c2.text_input("Dosis / Frecuencia (ej: cada 8hs)")
-    if st.button("Generar Receta", type="primary"):
-        st.session_state["indicaciones_db"].append({"paciente": paciente_actual, "med": f"{med} - {dosis}", "fecha": datetime.now().strftime("%d/%m/%Y")})
-        guardar_datos(); st.rerun()
-    for rec in reversed([r for r in st.session_state["indicaciones_db"] if r["paciente"] == paciente_actual]):
-        st.markdown(f"<div class='hce-card'>💊 <b>{rec.get('fecha','')}</b>: {rec.get('med', '')}</div>", unsafe_allow_html=True)
+    st.markdown("<div class='hce-card'>", unsafe_allow_html=True)
+    opciones_droga = sorted(LISTA_DROGAS) + ["➕ Otro"]
+    col_r1, col_r2 = st.columns([2, 1])
+    droga_seleccionada = col_r1.selectbox("Medicamento", opciones_droga)
+    droga_final = col_r1.text_input("Manualmente:", key="droga_manual") if droga_seleccionada == "➕ Otro" else droga_seleccionada
+        
+    dosis_mg = col_r2.text_input("Concentración (ej: 40mg)")
+    col_d1, col_d2, col_d3 = st.columns([1, 1, 1.5])
+    cant = col_d1.number_input("Cantidad", min_value=0.1, value=1.0)
+    formato = col_d2.selectbox("Formato", ["ampolla(s)", "comprimido(s)", "gotas", "ml"])
+    v = col_d3.selectbox("A través de", ["Vía Oral", "Intravenosa (EV)", "Intramuscular (IM)", "Subcutánea"])
+    
+    col_f1, col_f2 = st.columns(2)
+    frec = col_f1.selectbox("Frecuencia", ["Cada 8 horas", "Cada 12 horas", "Cada 24 horas", "Dosis Única", "SOS"])
+    dias = col_f2.number_input("Duración (Días)", min_value=1, value=7) if frec not in ["Dosis Única", "SOS"] else 0
+    duracion_texto = f"durante {dias} día(s)" if dias > 0 else "(Aplicación Única)"
+        
+    if st.button("Emitir Indicación Médica", type="primary", use_container_width=True):
+        if droga_final.strip() and dosis_mg.strip(): 
+            prescripcion = f"{droga_final} {dosis_mg} - {cant} {formato} por {v}. Frecuencia: {frec} {duracion_texto}."
+            if dias > 0: prescripcion += f" [Vence: {(datetime.now() + timedelta(days=dias)).strftime('%d/%m/%Y')}]"
+            st.session_state["indicaciones_db"].append({"paciente": paciente_actual, "med": prescripcion, "fecha": datetime.now().strftime('%d/%m/%Y %H:%M'), "profesional": st.session_state.get("nombre", "Usuario")})
+            guardar_datos(); st.success("Procesado."); st.rerun()
+    st.divider()
+    for i in reversed([ind for ind in st.session_state["indicaciones_db"] if ind["paciente"] == paciente_actual]): 
+        st.markdown(f"<div class='turno-caja' style='border-left: 5px solid #3b82f6;'>💊 <b>{i.get('fecha','')}</b><br>{i.get('med', '')}<br><small>Por {i.get('profesional', '')}</small></div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # 6. CAJA
 with tabs[5]:
@@ -226,7 +273,7 @@ with tabs[6]:
             pdf.set_font("Arial", '', 10)
             if sv:
                 for v in sv[-5:]:
-                    pdf.cell(0, 6, txt(f"[{v.get('hora','')}] TA: {v.get('TA','-')} | FC: {v.get('FC','-')} | Sat: {v.get('Sat','-')}% | Temp: {v.get('Temp','-')}°C"), ln=True)
+                    pdf.cell(0, 6, txt(f"[{v.get('hora','')}] TA: {v.get('TA','-')} | FC: {v.get('FC','-')} | FR: {v.get('FR','-')} | Sat: {v.get('Sat','-')}% | Temp: {v.get('Temp','-')}°C | HGT: {v.get('HGT','-')}"), ln=True)
             else: pdf.cell(0, 6, txt("Sin registros."), ln=True)
             pdf.ln(5)
             
