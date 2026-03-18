@@ -72,7 +72,7 @@ if db_inicial:
 claves = ["usuarios_db", "pacientes_db", "directorio_pacientes_db", "detalles_pacientes_db", "problemas_db", "indicaciones_db", "vitales_db", "insumos_db", "visitas_db", "turnos_db", "evoluciones_db", "facturacion_db"]
 for c in claves:
     if c not in st.session_state:
-        if c == "usuarios_db": st.session_state[c] = {"admin": {"pass": "1234", "rol": "Administrador", "nombre": "Admin Maestro"}}
+        if c == "usuarios_db": st.session_state[c] = {"admin": {"pass": "1234", "rol": "Administrador", "nombre": "Admin Maestro", "matricula": "ADM-00"}}
         elif c in ["directorio_pacientes_db", "detalles_pacientes_db"]: st.session_state[c] = {}
         else: st.session_state[c] = []
 
@@ -94,8 +94,8 @@ if not st.session_state["logeado"]:
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.markdown(f"### 🩺 {st.session_state['nombre']}")
-    st.caption(f"Rol: {st.session_state['rol']}")
+    st.markdown(f"### 🩺 {st.session_state.get('nombre', 'Usuario')}")
+    st.caption(f"Rol: {st.session_state.get('rol', 'S/D')} | Mat: {st.session_state.get('matricula', 'S/D')}")
     st.divider()
     paciente_actual = st.selectbox("Seleccionar Paciente:", st.session_state["pacientes_db"]) if st.session_state["pacientes_db"] else None
     
@@ -164,7 +164,7 @@ with tabs[2]:
 with tabs[3]:
     txt = st.text_area("Evolución Médica / Notas de Enfermería:")
     if st.button("Firmar Nota", type="primary"):
-        st.session_state["evoluciones_db"].append({"paciente": paciente_actual, "nota": txt, "fecha": datetime.now().strftime("%d/%m/%Y %H:%M"), "firma": st.session_state["nombre"]})
+        st.session_state["evoluciones_db"].append({"paciente": paciente_actual, "nota": txt, "fecha": datetime.now().strftime("%d/%m/%Y %H:%M"), "firma": st.session_state.get("nombre", "Usuario")})
         guardar_datos(); st.success("Nota guardada"); st.rerun()
     for e in reversed([e for e in st.session_state["evoluciones_db"] if e["paciente"] == paciente_actual]):
         firma_real = e.get('firma', e.get('profesional', e.get('autor', 'Desconocido')))
@@ -268,10 +268,21 @@ with tabs[8]:
     st.subheader("Control de Usuarios")
     with st.form("nuevo_u"):
         c1, c2 = st.columns(2)
-        un = c1.text_input("Nuevo Usuario")
+        un = c1.text_input("Nuevo Usuario (Login)")
         up = c2.text_input("Nueva Clave", type="password")
-        unom = st.text_input("Nombre Completo")
-        urol = st.selectbox("Rol", ["Médico", "Enfermero", "Administrativo"])
-        if st.form_submit_button("Crear Usuario"):
-            st.session_state["usuarios_db"][un] = {"pass": up, "nombre": unom, "rol": urol}
-            guardar_datos(); st.success("Usuario Creado")
+        c3, c4 = st.columns(2)
+        unom = c3.text_input("Nombre Completo")
+        umat = c4.text_input("Matrícula (MP/MN)")
+        urol = st.selectbox("Rol", ["Médico", "Enfermero", "Kinesiólogo", "Administrativo"])
+        
+        if st.form_submit_button("Crear / Actualizar Usuario"):
+            if un and up and unom:
+                st.session_state["usuarios_db"][un] = {"pass": up, "nombre": unom, "rol": urol, "matricula": umat}
+                guardar_datos(); st.success("Usuario Creado exitosamente"); st.rerun()
+            else:
+                st.error("⚠️ Usuario, Clave y Nombre son obligatorios.")
+                
+    st.divider()
+    st.write("**Personal Activo en el Sistema:**")
+    for usr, data in st.session_state["usuarios_db"].items():
+        st.write(f"👤 **{data.get('nombre', usr)}** - {data.get('rol', 'S/D')} (Mat: {data.get('matricula', 'S/D')})")
