@@ -20,33 +20,28 @@ URL_HOJA_CALCULO = "https://docs.google.com/spreadsheets/d/1zZG491mwbUgWrG_Yta7u
 st.set_page_config(page_title="MediCare Enterprise PRO", page_icon="⚕️", layout="wide")
 st.markdown("<html lang='es' translate='no'>", unsafe_allow_html=True)
 
-# --- 🎨 DISEÑO VISUAL Y COLORES TENUES (CSS) ---
-# Este bloque inyecta un fondo degradado suave y mejora el aspecto de los formularios
+# --- 🎨 DISEÑO VISUAL ADAPTATIVO (CSS CORREGIDO) ---
+# Ahora respeta tu Modo Oscuro/Claro y le da un aspecto de "Tarjetas" a los formularios
 page_bg_css = """
 <style>
-/* Fondo principal con degradado tenue (azul muy clarito a blanco) */
+/* Fondo principal con un sutil resplandor en la parte superior */
 .stApp {
-    background: linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%);
+    background-color: var(--background-color);
+    background-image: radial-gradient(circle at top, var(--secondary-background-color) 0%, transparent 80%);
 }
 
-/* Fondo de la barra lateral (Sidebar) un poco más definido */
-[data-testid="stSidebar"] {
-    background-color: #f8fafc;
-    border-right: 1px solid #e2e8f0;
-}
-
-/* Estilo tipo tarjeta para los formularios para que resalten sobre el fondo tenue */
+/* Tarjetas de los formularios elegantes */
 div[data-testid="stForm"] {
-    background-color: rgba(255, 255, 255, 0.65);
-    border: 1px solid #e2e8f0;
+    background-color: var(--secondary-background-color);
+    border: 1px solid rgba(150, 150, 150, 0.2);
     border-radius: 12px;
     padding: 20px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* Color de los textos principales para asegurar que se lean bien */
-h1, h2, h3, h4, h5, h6, p, label {
-    color: #1e293b !important;
+/* Redondear un poco los botones para un look más moderno */
+div[data-testid="stButton"] button {
+    border-radius: 8px;
 }
 </style>
 """
@@ -129,7 +124,7 @@ if "logeado" not in st.session_state: st.session_state["logeado"] = False
 if not st.session_state["logeado"]:
     _, col, _ = st.columns([1,1.5,1])
     with col:
-        st.markdown("<br><h2 style='text-align:center; color:#2563eb;'>MediCare Enterprise PRO</h2>", unsafe_allow_html=True)
+        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO</h2>", unsafe_allow_html=True)
         with st.form("login"):
             u = st.text_input("Usuario")
             p = st.text_input("Contraseña", type="password")
@@ -211,7 +206,6 @@ with tabs[0]:
         o = col_b.text_input("Obra Social")
         f_nac = col_b.date_input("Nacimiento", value=date(1990, 1, 1))
         
-        # Corrección: El campo ahora está vacío para el Admin, obligando a rellenarlo
         if rol == "SuperAdmin":
             empresa_destino = st.text_input("🏢 Asignar a Clínica / Empresa", placeholder="Ej: Clínica San Lucas", help="Escribe a qué empresa pertenece este paciente. (No dejar en blanco)")
         else:
@@ -221,7 +215,7 @@ with tabs[0]:
         ant = st.text_area("Antecedentes Médicos")
         
         if st.form_submit_button("Habilitar Paciente", width="stretch"):
-            if n and d and empresa_destino: # Se valida que la empresa no esté vacía
+            if n and d and empresa_destino: 
                 id_p = f"{n} ({o}) - {empresa_destino.strip()}"
                 st.session_state["pacientes_db"].append(id_p)
                 st.session_state["detalles_pacientes_db"][id_p] = {
@@ -352,7 +346,6 @@ if "⚙️ Mi Equipo" in menu:
             u_mt = col_u3.text_input("Matrícula")
             u_ti = col_u4.selectbox("Título", ["Médico/a", "Lic. en Enfermería", "Enfermero/a", "Administrativo/a"])
             
-            # Corrección: El campo ahora está vacío para el Admin, obligando a rellenarlo
             if rol == "SuperAdmin":
                 op_rol = ["Operativo", "Coordinador", "SuperAdmin"]
                 u_emp = st.text_input("🏢 Asignar a Clínica / Empresa", placeholder="Ej: Clínica San Lucas", help="Escribe el nombre de la empresa a la que pertenece. (No dejar en blanco)")
@@ -364,7 +357,7 @@ if "⚙️ Mi Equipo" in menu:
             u_rl = st.selectbox("Poder / Rol", op_rol)
             
             if st.form_submit_button("Habilitar Acceso", width="stretch"):
-                if u_id and u_pw and u_emp: # Se valida que la empresa no esté vacía
+                if u_id and u_pw and u_emp: 
                     id_limpio = u_id.strip().lower()
                     pw_limpia = u_pw.strip()
                     empresa_limpia = u_emp.strip()
