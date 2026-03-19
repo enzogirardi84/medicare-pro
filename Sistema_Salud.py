@@ -14,13 +14,13 @@ try:
 except ImportError:
     FPDF_DISPONIBLE = False
 
-# ✅ URL DE TU EXCEL (ID: 1zZG491mwbUgWrG_Yta7uq1vVqR0jdNhnArPSgjsQNXs)
+# ✅ URL DE TU EXCEL
 URL_HOJA_CALCULO = "https://docs.google.com/spreadsheets/d/1zZG491mwbUgWrG_Yta7uq1vVqR0jdNhnArPSgjsQNXs/edit?gid=0#gid=0"
 
 st.set_page_config(page_title="MediCare Enterprise PRO", page_icon="⚕️", layout="wide")
 st.markdown("<html lang='es' translate='no'>", unsafe_allow_html=True)
 
-# --- 🎁 LOGO EXCLUSIVO E.G. (SVG) ---
+# --- 🎁 LOGO EXCLUSIVO E.G. ---
 def render_logo_eg(size=100):
     svg_code = f"""
     <svg width="{size}" height="{size}" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
@@ -45,7 +45,7 @@ def render_logo_eg(size=100):
     """
     st.sidebar.markdown(f'<div style="display: flex; justify-content: center; align-items: center; padding: 10px;">{svg_code}</div>', unsafe_allow_html=True)
 
-# --- MOTOR DE PERSISTENCIA INTELIGENTE ---
+# --- MOTOR DE PERSISTENCIA (INTELIGENTE) ---
 DB_FILE = "medicare_saas_final_db.json"
 
 def cargar_datos():
@@ -81,9 +81,7 @@ if "db_inicializada" not in st.session_state:
     if db:
         for k, v in db.items(): st.session_state[k] = v
     else:
-        claves_iniciales = ["usuarios_db", "pacientes_db", "detalles_pacientes_db", "vitales_db", 
-                            "indicaciones_db", "turnos_db", "evoluciones_db", "facturacion_db", "logs_db"]
-        for c in claves_iniciales:
+        for c in ["usuarios_db", "pacientes_db", "detalles_pacientes_db", "vitales_db", "indicaciones_db", "turnos_db", "evoluciones_db", "facturacion_db", "logs_db"]:
             if c not in st.session_state:
                 if c == "usuarios_db": 
                     st.session_state[c] = {"admin": {"pass": "37108100", "rol": "SuperAdmin", "nombre": "Enzo Girardi", "empresa": "SISTEMAS E.G.", "dni": "3584302024", "matricula": "M.P 21947", "titulo": "Director de Sistemas"}}
@@ -97,8 +95,7 @@ if "logeado" not in st.session_state: st.session_state["logeado"] = False
 if not st.session_state["logeado"]:
     _, col, _ = st.columns([1,1.5,1])
     with col:
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("<h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise</h2>", unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True); st.markdown("<h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise</h2>", unsafe_allow_html=True)
         with st.form("login"):
             u = st.text_input("Usuario")
             p = st.text_input("Contraseña", type="password")
@@ -114,7 +111,7 @@ if not st.session_state["logeado"]:
                 else: st.error("Acceso denegado")
     st.stop()
 
-# --- CONTEXTO Y SEGURIDAD ---
+# --- CONTEXTO ---
 user = st.session_state["u_actual"]
 mi_empresa = user["empresa"]
 rol = user["rol"]
@@ -130,12 +127,10 @@ with st.sidebar:
     pacientes_visibles = st.session_state["pacientes_db"] if rol == "SuperAdmin" else [p for p in st.session_state["pacientes_db"] if st.session_state["detalles_pacientes_db"].get(p,{}).get("empresa") == mi_empresa]
     p_f = [p for p in pacientes_visibles if buscar.lower() in p.lower()]
     paciente_sel = st.selectbox("Seleccionar:", p_f) if p_f else None
-    st.divider()
     if st.button("Cerrar Sesión", use_container_width=True):
         st.session_state["logeado"] = False; st.rerun()
 
-# --- INTERFAZ DINÁMICA ---
-st.title("Panel Clínico Integrado")
+# --- MENU POR ROLES ---
 menu = ["👤 Admisión", "📊 Clínica", "📝 Evolución", "💊 Recetario PRO", "💳 Caja", "🗄️ PDF"]
 if rol in ["SuperAdmin", "Coordinador"]: menu.append("⚙️ Mi Equipo")
 if rol == "SuperAdmin": menu.append("🕵️ Auditoría")
@@ -151,19 +146,24 @@ with tabs[0]:
             n = col_a.text_input("Nombre y Apellido")
             d = col_a.text_input("DNI")
             o = col_b.text_input("Obra Social")
-            f_nac = col_b.date_input("Fecha de Nacimiento", value=date(1990, 1, 1))
-            ant = st.text_area("Antecedentes Médicos (Alergias, etc.)")
+            f_nac = col_b.date_input("Nacimiento", value=date(1990, 1, 1))
+            ant = st.text_area("Antecedentes")
             if st.form_submit_button("Habilitar Paciente"):
-                if n and d:
-                    id_p = f"{n} ({o}) - {mi_empresa}"
-                    st.session_state["pacientes_db"].append(id_p)
-                    st.session_state["detalles_pacientes_db"][id_p] = {"dni": d, "fnac": f_nac.strftime("%d/%m/%Y"), "antecedentes": ant, "empresa": mi_empresa}
-                    guardar_datos(); st.success("Paciente registrado"); st.rerun()
+                id_p = f"{n} ({o}) - {mi_empresa}"
+                st.session_state["pacientes_db"].append(id_p)
+                st.session_state["detalles_pacientes_db"][id_p] = {"dni": d, "fnac": f_nac.strftime("%d/%m/%Y"), "antecedentes": ant, "empresa": mi_empresa}
+                guardar_datos(); st.success("Registrado"); st.rerun()
+    with c2:
+        if paciente_sel:
+            st.subheader("Eliminar")
+            if st.button("🔴 Borrar Registro"):
+                st.session_state["pacientes_db"].remove(paciente_sel)
+                guardar_datos(); st.rerun()
 
-# 2. CLÍNICA (TRIAGE SEMÁFORO)
+# 2. CLÍNICA (TRIAGE SEMÁFORO COMPLETO)
 with tabs[1]:
     if paciente_sel:
-        st.write(f"### Signos Vitales: {paciente_sel}")
+        st.subheader(f"Signos Vitales: {paciente_sel}")
         with st.form("vitales_f"):
             c1, c2, c3 = st.columns(3)
             ta = c1.text_input("TA", "120/80"); fc = c2.number_input("FC", 30, 200, 75); sat = c3.number_input("SatO2%", 50, 100, 98)
@@ -172,39 +172,42 @@ with tabs[1]:
             elif sat < 94: st.warning("⚠️ PRIORIDAD: URGENCIA")
             if st.form_submit_button("Guardar Signos"):
                 st.session_state["vitales_db"].append({"paciente": paciente_sel, "TA": ta, "FC": fc, "Sat": sat, "FR": fr, "Temp": temp, "HGT": hgt, "hora": datetime.now().strftime("%d/%m %H:%M")})
-                guardar_datos(); st.success("Guardado"); st.rerun()
+                guardar_datos(); st.success("Signos guardados")
+    else: st.info("Seleccione un paciente")
 
 # 3. EVOLUCIÓN
 with tabs[2]:
     if paciente_sel:
-        nota = st.text_area("Nota clínica (Se firmará automáticamente):")
+        nota = st.text_area("Nota clínica:")
         if st.button("Firmar Nota"):
-            st.session_state["evoluciones_db"].append({"paciente": paciente_sel, "nota": nota, "fecha": datetime.now().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"], "mat": user["matricula"], "titulo": user.get("titulo", "")})
+            st.session_state["evoluciones_db"].append({"paciente": paciente_sel, "nota": nota, "fecha": datetime.now().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"], "mat": user["matricula"]})
             guardar_datos(); st.rerun()
         for e in reversed([x for x in st.session_state["evoluciones_db"] if x["paciente"] == paciente_sel]):
-            st.info(f"**{e['fecha']}** | {e['nota']}\n\n*Por: {e.get('titulo','')} {e['firma']}*")
+            st.info(f"**{e['fecha']}** | {e['nota']}\n\n*Por: {e['firma']}*")
 
-# 4. RECETARIO PRO
+# 4. RECETARIO PRO (COMPLETO)
 with tabs[3]:
     if paciente_sel:
-        with st.form("recet_pro"):
-            col1, col2 = st.columns([2, 1])
-            drog = col1.text_input("Medicamento"); dos = col2.text_input("Dosis")
+        st.subheader("💊 Plan Terapéutico")
+        with st.form("recet"):
+            c1, c2 = st.columns([2, 1])
+            drog = c1.text_input("Medicamento"); dos = c2.text_input("Dosis")
             via = st.selectbox("Vía", ["Oral", "Endovenosa", "Intramuscular", "Subcutánea"])
-            frec = st.selectbox("Horario", ["Cada 8 hs", "Cada 12 hs", "Cada 24 hs", "Dosis Única"])
+            frec = st.selectbox("Frecuencia", ["Cada 8 hs", "Cada 12 hs", "Dosis Única", "S.O.S"])
             dias = st.number_input("Días", 1, 30, 7)
-            if st.form_submit_button("Cargar Indicación"):
+            if st.form_submit_button("Cargar Receta"):
                 t_r = f"{drog} {dos} vía {via} - {frec} por {dias} días."
                 st.session_state["indicaciones_db"].append({"paciente": paciente_sel, "med": t_r, "fecha": datetime.now().strftime("%d/%m/%Y"), "firma": user["nombre"]})
-                guardar_datos(); st.success("Guardado"); st.rerun()
+                guardar_datos(); st.success("Receta guardada")
 
 # 5. CAJA
 with tabs[4]:
     if paciente_sel:
-        serv = st.text_input("Práctica Médica"); mont = st.number_input("Monto", 0)
-        if st.button("Registrar Cobro"):
+        st.subheader("💳 Registro de Cobros")
+        serv = st.text_input("Servicio / Práctica"); mont = st.number_input("Monto", 0)
+        if st.button("Registrar Pago"):
             st.session_state["facturacion_db"].append({"paciente": paciente_sel, "serv": serv, "monto": mont, "fecha": datetime.now().strftime("%d/%m/%Y")})
-            guardar_datos(); st.success("Cobro registrado")
+            guardar_datos(); st.success("Registrado")
 
 # 6. PDF
 with tabs[5]:
@@ -217,28 +220,26 @@ with tabs[5]:
             for ev in [e for e in st.session_state["evoluciones_db"] if e["paciente"] == p]:
                 pdf.multi_cell(0, 6, t(f"[{ev['fecha']}] {ev['nota']} (Firma: {ev['firma']})"))
             return pdf.output(dest='S').encode('latin-1')
-        if st.button("📥 Descargar Reporte Completo"):
-            st.download_button("Bajar PDF", crear_pdf(paciente_sel), f"HC_{paciente_sel}.pdf", "application/pdf")
+        st.download_button("📥 Descargar PDF", crear_pdf(paciente_sel), f"HC_{paciente_sel}.pdf", "application/pdf")
 
-# 7. EQUIPO (COORDINACIÓN)
+# 7. EQUIPO (DINÁMICO)
 if "⚙️ Mi Equipo" in menu:
     with tabs[menu.index("⚙️ Mi Equipo")]:
         st.subheader(f"Gestión de Personal - {mi_empresa}")
         with st.form("new_staff"):
-            c1, c2 = st.columns(2)
-            u_id = c1.text_input("Usuario (Login)"); u_pw = c2.text_input("Clave")
-            u_nm = c1.text_input("Nombre"); u_dn = c2.text_input("DNI")
-            u_mt = c1.text_input("Matrícula"); u_ti = c2.selectbox("Título", ["Médico/a", "Lic. en Enfermería", "Enfermero/a", "Administrativo/a"])
+            u_id = st.text_input("Usuario (Login)"); u_pw = st.text_input("Clave")
+            u_nm = st.text_input("Nombre"); u_mt = st.text_input("Matrícula")
+            u_ti = st.selectbox("Título", ["Médico/a", "Lic. en Enfermería", "Enfermero/a", "Administrativo/a"])
             op_rol = ["Operativo", "Coordinador"] if rol == "Coordinador" else ["Operativo", "Coordinador", "SuperAdmin"]
-            u_rl = st.selectbox("Rol / Poder", op_rol)
-            if st.form_submit_button("Habilitar Profesional"):
-                st.session_state["usuarios_db"][u_id] = {"pass": u_pw, "nombre": u_nm, "dni": u_dn, "matricula": u_mt, "rol": u_rl, "titulo": u_ti, "empresa": mi_empresa}
-                guardar_datos(); st.success(f"¡{u_nm} habilitado!"); st.rerun()
+            u_rl = st.selectbox("Poder / Rol", op_rol)
+            if st.form_submit_button("Habilitar"):
+                st.session_state["usuarios_db"][u_id] = {"pass": u_pw, "nombre": u_nm, "rol": u_rl, "titulo": u_ti, "empresa": mi_empresa, "matricula": u_mt}
+                guardar_datos(); st.success(f"¡{u_nm} creado!"); st.rerun()
 
 # 8. AUDITORÍA (SOLO VOS)
 if "🕵️ Auditoría" in menu:
     with tabs[menu.index("🕵️ Auditoría")]:
-        st.subheader("Auditoría Global de Movimientos")
+        st.subheader("Auditoría de Movimientos")
         if st.session_state["logs_db"]:
             st.dataframe(pd.DataFrame(st.session_state["logs_db"]), use_container_width=True)
        
