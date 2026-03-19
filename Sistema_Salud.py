@@ -16,8 +16,41 @@ except ImportError:
 # ✅ URL DE TU EXCEL
 URL_HOJA_CALCULO = "https://docs.google.com/spreadsheets/d/1zZG491mwbUgWrG_Yta7uq1vVqR0jdNhnArPSgjsQNXs/edit?gid=0#gid=0"
 
+# --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="MediCare Enterprise PRO", page_icon="⚕️", layout="wide")
 st.markdown("<html lang='es' translate='no'>", unsafe_allow_html=True)
+
+# --- 🎨 DISEÑO VISUAL Y COLORES TENUES (CSS) ---
+# Este bloque inyecta un fondo degradado suave y mejora el aspecto de los formularios
+page_bg_css = """
+<style>
+/* Fondo principal con degradado tenue (azul muy clarito a blanco) */
+.stApp {
+    background: linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%);
+}
+
+/* Fondo de la barra lateral (Sidebar) un poco más definido */
+[data-testid="stSidebar"] {
+    background-color: #f8fafc;
+    border-right: 1px solid #e2e8f0;
+}
+
+/* Estilo tipo tarjeta para los formularios para que resalten sobre el fondo tenue */
+div[data-testid="stForm"] {
+    background-color: rgba(255, 255, 255, 0.65);
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+/* Color de los textos principales para asegurar que se lean bien */
+h1, h2, h3, h4, h5, h6, p, label {
+    color: #1e293b !important;
+}
+</style>
+"""
+st.markdown(page_bg_css, unsafe_allow_html=True)
 
 # --- 🎁 LOGO EXCLUSIVO E.G. ---
 def render_logo_eg(size=100):
@@ -96,7 +129,7 @@ if "logeado" not in st.session_state: st.session_state["logeado"] = False
 if not st.session_state["logeado"]:
     _, col, _ = st.columns([1,1.5,1])
     with col:
-        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise</h2>", unsafe_allow_html=True)
+        st.markdown("<br><h2 style='text-align:center; color:#2563eb;'>MediCare Enterprise PRO</h2>", unsafe_allow_html=True)
         with st.form("login"):
             u = st.text_input("Usuario")
             p = st.text_input("Contraseña", type="password")
@@ -168,7 +201,7 @@ if rol in ["SuperAdmin", "Coordinador"]: menu.append("⚙️ Mi Equipo")
 if rol == "SuperAdmin": menu.append("🕵️ Auditoría")
 tabs = st.tabs(menu)
 
-# 1. ADMISIÓN (ASIGNACIÓN DE EMPRESA)
+# 1. ADMISIÓN (ASIGNACIÓN DE EMPRESA CORREGIDA)
 with tabs[0]:
     st.subheader("Registrar Paciente")
     with st.form("adm_form", clear_on_submit=True):
@@ -178,8 +211,9 @@ with tabs[0]:
         o = col_b.text_input("Obra Social")
         f_nac = col_b.date_input("Nacimiento", value=date(1990, 1, 1))
         
+        # Corrección: El campo ahora está vacío para el Admin, obligando a rellenarlo
         if rol == "SuperAdmin":
-            empresa_destino = st.text_input("🏢 Asignar a Clínica / Empresa", value=mi_empresa, help="Escribe a qué empresa pertenece este paciente.")
+            empresa_destino = st.text_input("🏢 Asignar a Clínica / Empresa", placeholder="Ej: Clínica San Lucas", help="Escribe a qué empresa pertenece este paciente. (No dejar en blanco)")
         else:
             empresa_destino = mi_empresa
             st.info(f"🏢 Institución asignada: **{empresa_destino}**")
@@ -187,7 +221,7 @@ with tabs[0]:
         ant = st.text_area("Antecedentes Médicos")
         
         if st.form_submit_button("Habilitar Paciente", width="stretch"):
-            if n and d:
+            if n and d and empresa_destino: # Se valida que la empresa no esté vacía
                 id_p = f"{n} ({o}) - {empresa_destino.strip()}"
                 st.session_state["pacientes_db"].append(id_p)
                 st.session_state["detalles_pacientes_db"][id_p] = {
@@ -200,7 +234,7 @@ with tabs[0]:
                 st.success(f"Registrado exitosamente en {empresa_destino.strip()}")
                 st.rerun()
             else:
-                st.error("El Nombre y DNI son obligatorios")
+                st.error("⚠️ El Nombre, DNI y Empresa son obligatorios.")
 
 # 2. CLÍNICA
 with tabs[1]:
@@ -274,7 +308,6 @@ with tabs[5]:
             pdf.set_draw_color(255, 255, 255); pdf.set_line_width(1.2)
             pdf.line(21, 14, 21, 28); pdf.line(14, 21, 28, 21)
             
-            # Usamos la empresa del paciente para el encabezado, no la tuya (si eres superadmin)
             emp_paciente = st.session_state["detalles_pacientes_db"].get(p, {}).get("empresa", mi_empresa)
             pdf.set_font("Arial", 'B', 16); pdf.set_xy(38, 14); pdf.cell(0, 10, t(emp_paciente), ln=True)
             pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("MediCare Enterprise PRO - Reporte Medico"), ln=True)
@@ -305,7 +338,7 @@ with tabs[5]:
 
         st.download_button("📥 Generar Historia Clínica en PDF", crear_pdf_pro(paciente_sel), f"HC_{paciente_sel}.pdf", "application/pdf")
 
-# 7. EQUIPO (ASIGNACIÓN DE EMPRESA)
+# 7. EQUIPO (ASIGNACIÓN DE EMPRESA CORREGIDA)
 if "⚙️ Mi Equipo" in menu:
     with tabs[menu.index("⚙️ Mi Equipo")]:
         st.subheader(f"Gestión de Personal")
@@ -319,9 +352,10 @@ if "⚙️ Mi Equipo" in menu:
             u_mt = col_u3.text_input("Matrícula")
             u_ti = col_u4.selectbox("Título", ["Médico/a", "Lic. en Enfermería", "Enfermero/a", "Administrativo/a"])
             
+            # Corrección: El campo ahora está vacío para el Admin, obligando a rellenarlo
             if rol == "SuperAdmin":
                 op_rol = ["Operativo", "Coordinador", "SuperAdmin"]
-                u_emp = st.text_input("🏢 Asignar a Clínica / Empresa", value=mi_empresa, help="Escribe el nombre de la empresa a la que pertenece.")
+                u_emp = st.text_input("🏢 Asignar a Clínica / Empresa", placeholder="Ej: Clínica San Lucas", help="Escribe el nombre de la empresa a la que pertenece. (No dejar en blanco)")
             else:
                 op_rol = ["Operativo", "Coordinador"]
                 u_emp = mi_empresa
@@ -330,7 +364,7 @@ if "⚙️ Mi Equipo" in menu:
             u_rl = st.selectbox("Poder / Rol", op_rol)
             
             if st.form_submit_button("Habilitar Acceso", width="stretch"):
-                if u_id and u_pw:
+                if u_id and u_pw and u_emp: # Se valida que la empresa no esté vacía
                     id_limpio = u_id.strip().lower()
                     pw_limpia = u_pw.strip()
                     empresa_limpia = u_emp.strip()
@@ -347,7 +381,7 @@ if "⚙️ Mi Equipo" in menu:
                     st.success(f"¡{u_nm} habilitado/a correctamente para {empresa_limpia}!")
                     st.rerun()
                 else:
-                    st.error("El Usuario y la Clave son obligatorios.")
+                    st.error("⚠️ El Usuario, Clave y Empresa son obligatorios.")
 
 # 8. AUDITORÍA
 if "🕵️ Auditoría" in menu:
