@@ -1,5 +1,3 @@
 streamlit
+supabase
 pandas
-plotly
-fpdf
-st-gsheets-connection
