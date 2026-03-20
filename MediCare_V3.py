@@ -83,22 +83,40 @@ def guardar_datos():
     
     try:
         supabase.table('medicare_db').upsert({"id": 1, "datos": data}).execute()
-        st.toast("✅ Base de datos sincronizada", icon="☁️")
+        st.toast("✅ Base de datos sincronizada y protegida", icon="☁️")
     except Exception as e:
         st.error(f"⚠️ Error al subir a la nube: {e}")
 
-# --- INICIALIZACIÓN ---
+# --- INICIALIZACIÓN BLINDADA (ANTIPÉRDIDA DE DATOS) ---
 if "db_inicializada" not in st.session_state:
     db = cargar_datos()
+    
+    # Plantilla base por si el sistema está vacío o agregamos módulos nuevos
+    claves_base = {
+        "usuarios_db": {"admin": {"pass": "37108100", "rol": "SuperAdmin", "nombre": "Enzo Girardi", "empresa": "SISTEMAS E.G.", "matricula": "M.P 21947", "titulo": "Director de Sistemas"}},
+        "pacientes_db": [],
+        "detalles_pacientes_db": {},
+        "vitales_db": [],
+        "indicaciones_db": [],
+        "turnos_db": [],
+        "evoluciones_db": [],
+        "facturacion_db": [],
+        "logs_db": []
+    }
+    
     if db:
-        for k, v in db.items(): st.session_state[k] = v
+        # 1. Cargamos lo que hay en la nube (Tus pacientes y médicos a salvo)
+        for k, v in db.items(): 
+            st.session_state[k] = v
+        # 2. Revisamos si agregaste funciones nuevas al código y las inicializamos sin pisar lo viejo
+        for k, v in claves_base.items():
+            if k not in st.session_state:
+                st.session_state[k] = v
     else:
-        for c in ["usuarios_db", "pacientes_db", "detalles_pacientes_db", "vitales_db", "indicaciones_db", "turnos_db", "evoluciones_db", "facturacion_db", "logs_db"]:
-            if c not in st.session_state:
-                if c == "usuarios_db": 
-                    st.session_state[c] = {"admin": {"pass": "37108100", "rol": "SuperAdmin", "nombre": "Enzo Girardi", "empresa": "SISTEMAS E.G.", "matricula": "M.P 21947", "titulo": "Director de Sistemas"}}
-                elif c == "detalles_pacientes_db": st.session_state[c] = {}
-                else: st.session_state[c] = []
+        # Si es la primera vez que arranca en la historia
+        for k, v in claves_base.items():
+            st.session_state[k] = v
+            
     st.session_state["db_inicializada"] = True
 
 # --- LOGIN ---
@@ -161,7 +179,7 @@ with st.sidebar:
     if paciente_sel:
         det = st.session_state["detalles_pacientes_db"].get(paciente_sel, {})
         st.caption(f"**DNI:** {det.get('dni','S/D')}")
-        if st.button("🔴 DAR DE ALTA / ELIMINAR", width="stretch"):
+        if st.button("🔴 DAR DE ALTA / ELIMINAR PACIENTE", width="stretch"):
             st.session_state["pacientes_db"].remove(paciente_sel)
             if paciente_sel in st.session_state["detalles_pacientes_db"]: del st.session_state["detalles_pacientes_db"][paciente_sel]
             guardar_datos()
@@ -198,7 +216,8 @@ with tabs[0]:
         if st.form_submit_button("Habilitar Paciente", width="stretch"):
             if n and d and empresa_destino: 
                 id_p = f"{n} ({o}) - {empresa_destino.strip()}"
-                st.session_state["pacientes_db"].append(id_p)
+                if id_p not in st.session_state["pacientes_db"]:
+                    st.session_state["pacientes_db"].append(id_p)
                 st.session_state["detalles_pacientes_db"][id_p] = {
                     "dni": d, 
                     "fnac": f_nac.strftime("%d/%m/%Y"), 
@@ -394,9 +413,10 @@ if "⚙️ Mi Equipo" in menu:
         else:
             usuarios_visibles = {k: v for k, v in st.session_state["usuarios_db"].items() if v["empresa"] == mi_empresa}
 
-        for u_key, u_data in usuarios_visibles.items():
+        # Utilizamos list() para poder borrar sin que se rompa el ciclo
+        for u_key, u_data in list(usuarios_visibles.items()):
             if u_key == "admin": 
-                continue # El SuperAdmin no se puede borrar a sí mismo
+                continue # El SuperAdmin no se puede borrar a sí mismo (Seguridad total)
             
             col_info, col_btn = st.columns([4, 1])
             with col_info:
