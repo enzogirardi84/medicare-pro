@@ -83,7 +83,7 @@ def guardar_datos():
     
     try:
         supabase.table('medicare_db').upsert({"id": 1, "datos": data}).execute()
-        st.toast("✅ Datos guardados en Supabase", icon="☁️")
+        st.toast("✅ Base de datos sincronizada", icon="☁️")
     except Exception as e:
         st.error(f"⚠️ Error al subir a la nube: {e}")
 
@@ -150,7 +150,6 @@ with st.sidebar:
     
     buscar = st.text_input("🔍 Buscar Paciente:")
     
-    # EL NÚCLEO DE LA PRIVACIDAD
     if rol == "SuperAdmin":
         pacientes_visibles = st.session_state["pacientes_db"]
     else:
@@ -173,7 +172,7 @@ with st.sidebar:
         st.session_state["logeado"] = False; st.rerun()
 
 # --- MENU DINÁMICO ---
-menu = ["👤 Admisión", "📊 Clínica", "📝 Evolución", "💊 Recetario PRO", "💳 Caja", "🗄️ PDF"]
+menu = ["👤 Admisión", "📊 Clínica", "📝 Evolución", "💊 Recetas", "📚 Historial", "💳 Caja", "🗄️ PDF"]
 if rol in ["SuperAdmin", "Coordinador"]: menu.append("⚙️ Mi Equipo")
 if rol == "SuperAdmin": menu.append("🕵️ Auditoría")
 tabs = st.tabs(menu)
@@ -189,7 +188,7 @@ with tabs[0]:
         f_nac = col_b.date_input("Nacimiento", value=date(1990, 1, 1))
         
         if rol == "SuperAdmin":
-            empresa_destino = st.text_input("🏢 Asignar a Clínica / Empresa", placeholder="Ej: Clínica San Lucas", help="Escribe a qué empresa pertenece este paciente. (No dejar en blanco)")
+            empresa_destino = st.text_input("🏢 Asignar a Clínica / Empresa", placeholder="Ej: Clínica San Lucas")
         else:
             empresa_destino = mi_empresa
             st.info(f"🏢 Institución asignada: **{empresa_destino}**")
@@ -238,14 +237,16 @@ with tabs[1]:
 # 3. EVOLUCIÓN
 with tabs[2]:
     if paciente_sel:
+        st.subheader("Cargar Evolución Diaria")
         nota = st.text_area("Nota clínica:")
         if st.button("Firmar Nota", width="stretch"):
-            st.session_state["evoluciones_db"].append({"paciente": paciente_sel, "nota": nota, "fecha": datetime.now().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"], "mat": user.get("matricula", "N/A")})
-            guardar_datos(); st.rerun()
-        for e in reversed([x for x in st.session_state["evoluciones_db"] if x["paciente"] == paciente_sel]):
-            st.info(f"**{e['fecha']}** | {e['nota']}\n\n*Por: {e['firma']}*")
+            if nota:
+                st.session_state["evoluciones_db"].append({"paciente": paciente_sel, "nota": nota, "fecha": datetime.now().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"], "mat": user.get("matricula", "N/A")})
+                guardar_datos(); st.success("Evolución guardada"); st.rerun()
+            else:
+                st.error("Escriba una nota antes de firmar.")
 
-# 4. RECETARIO PRO
+# 4. RECETARIO
 with tabs[3]:
     if paciente_sel:
         st.subheader("💊 Plan Terapéutico")
@@ -257,13 +258,42 @@ with tabs[3]:
             dias = st.number_input("Días", 1, 30, 7)
             if st.form_submit_button("Cargar Receta", width="stretch"):
                 t_r = f"{drog} {dos} vía {via} - {frec} por {dias} días."
-                st.session_state["indicaciones_db"].append({"paciente": paciente_sel, "med": t_r, "fecha": datetime.now().strftime("%d/%m/%Y"), "firma": user["nombre"]})
+                st.session_state["indicaciones_db"].append({"paciente": paciente_sel, "med": t_r, "fecha": datetime.now().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
                 guardar_datos(); st.success("Receta guardada"); st.rerun()
-        for r in reversed([x for x in st.session_state["indicaciones_db"] if x["paciente"] == paciente_sel]):
-            st.success(f"📌 {r['fecha']} | {r['med']}")
 
-# 5. CAJA
+# 5. HISTORIAL COMPLETO EN PANTALLA
 with tabs[4]:
+    if paciente_sel:
+        st.subheader(f"📚 Historia Clínica Digital")
+        
+        with st.expander("📝 Todas las Evoluciones", expanded=True):
+            evs = [x for x in st.session_state["evoluciones_db"] if x["paciente"] == paciente_sel]
+            if evs:
+                for e in reversed(evs):
+                    st.info(f"📅 **{e['fecha']}** | 👨‍⚕️ **Dr/a. {e['firma']}**\n\n{e['nota']}")
+            else:
+                st.write("No hay evoluciones registradas.")
+                
+        with st.expander("💊 Todas las Recetas e Indicaciones"):
+            recs = [x for x in st.session_state["indicaciones_db"] if x["paciente"] == paciente_sel]
+            if recs:
+                for r in reversed(recs):
+                    st.success(f"📌 **{r['fecha']}** | 👨‍⚕️ **{r['firma']}**\n\n{r['med']}")
+            else:
+                st.write("No hay indicaciones registradas.")
+                
+        with st.expander("📊 Resumen de Signos Vitales"):
+            vits = [x for x in st.session_state["vitales_db"] if x["paciente"] == paciente_sel]
+            if vits:
+                df_vitales = pd.DataFrame(vits).drop(columns=["paciente"])
+                st.dataframe(df_vitales, use_container_width=True)
+            else:
+                st.write("No hay signos vitales registrados.")
+    else:
+        st.info("Seleccione un paciente en el menú izquierdo para ver su historial.")
+
+# 6. CAJA
+with tabs[5]:
     if paciente_sel:
         st.subheader("💳 Registro de Cobros")
         serv = st.text_input("Servicio / Práctica"); mont = st.number_input("Monto", 0)
@@ -271,8 +301,8 @@ with tabs[4]:
             st.session_state["facturacion_db"].append({"paciente": paciente_sel, "serv": serv, "monto": mont, "fecha": datetime.now().strftime("%d/%m/%Y")})
             guardar_datos(); st.success("Registrado"); st.rerun()
 
-# 6. PDF
-with tabs[5]:
+# 7. PDF
+with tabs[6]:
     if paciente_sel and FPDF_DISPONIBLE:
         def crear_pdf_pro(p):
             pdf = FPDF()
@@ -314,7 +344,7 @@ with tabs[5]:
 
         st.download_button("📥 Generar Historia Clínica en PDF", crear_pdf_pro(paciente_sel), f"HC_{paciente_sel}.pdf", "application/pdf")
 
-# 7. EQUIPO
+# 8. EQUIPO
 if "⚙️ Mi Equipo" in menu:
     with tabs[menu.index("⚙️ Mi Equipo")]:
         st.subheader(f"Gestión de Personal")
@@ -330,7 +360,7 @@ if "⚙️ Mi Equipo" in menu:
             
             if rol == "SuperAdmin":
                 op_rol = ["Operativo", "Coordinador", "SuperAdmin"]
-                u_emp = st.text_input("🏢 Asignar a Clínica / Empresa", placeholder="Ej: Clínica San Lucas", help="Escribe el nombre de la empresa a la que pertenece.")
+                u_emp = st.text_input("🏢 Asignar a Clínica / Empresa", placeholder="Ej: Clínica San Lucas")
             else:
                 op_rol = ["Operativo", "Coordinador"]
                 u_emp = mi_empresa
@@ -354,8 +384,31 @@ if "⚙️ Mi Equipo" in menu:
                     st.rerun()
                 else:
                     st.error("⚠️ El Usuario, Clave y Empresa son obligatorios.")
+        
+        # --- SECCIÓN NUEVA: ELIMINAR USUARIOS ---
+        st.divider()
+        st.subheader("👥 Personal Activo (Bajas)")
+        
+        if rol == "SuperAdmin":
+            usuarios_visibles = st.session_state["usuarios_db"]
+        else:
+            usuarios_visibles = {k: v for k, v in st.session_state["usuarios_db"].items() if v["empresa"] == mi_empresa}
 
-# 8. AUDITORÍA
+        for u_key, u_data in usuarios_visibles.items():
+            if u_key == "admin": 
+                continue # El SuperAdmin no se puede borrar a sí mismo
+            
+            col_info, col_btn = st.columns([4, 1])
+            with col_info:
+                st.write(f"🏢 **{u_data['empresa']}** | 👤 **{u_data['nombre']}** ({u_data['rol']}) | Login: `{u_key}`")
+            with col_btn:
+                if st.button("❌ Dar de baja", key=f"del_{u_key}"):
+                    del st.session_state["usuarios_db"][u_key]
+                    st.session_state["logs_db"].append({"F": datetime.now().strftime("%d/%m/%Y"), "H": datetime.now().strftime("%H:%M"), "U": user["nombre"], "E": mi_empresa, "A": f"Eliminó al usuario: {u_key}"})
+                    guardar_datos()
+                    st.rerun()
+
+# 9. AUDITORÍA
 if "🕵️ Auditoría" in menu:
     with tabs[menu.index("🕵️ Auditoría")]:
         st.subheader("Auditoría de Movimientos")
