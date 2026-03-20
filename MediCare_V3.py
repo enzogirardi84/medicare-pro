@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, date
 import json
+import pytz
 from supabase import create_client, Client
 
 # --- 1. CONFIGURACIÓN DE LIBRERÍAS (PDF) ---
@@ -15,6 +16,11 @@ except ImportError:
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="MediCare Enterprise PRO V3", page_icon="⚕️", layout="wide")
 st.markdown("<html lang='es' translate='no'>", unsafe_allow_html=True)
+
+# --- ZONA HORARIA ARGENTINA ---
+ARG_TZ = pytz.timezone('America/Argentina/Buenos_Aires')
+def ahora():
+    return datetime.now(ARG_TZ)
 
 # --- CONEXIÓN A SUPABASE ---
 @st.cache_resource
@@ -87,11 +93,10 @@ def guardar_datos():
     except Exception as e:
         st.error(f"⚠️ Error al subir a la nube: {e}")
 
-# --- INICIALIZACIÓN BLINDADA (ANTIPÉRDIDA DE DATOS) ---
+# --- INICIALIZACIÓN BLINDADA ---
 if "db_inicializada" not in st.session_state:
     db = cargar_datos()
     
-    # Plantilla base por si el sistema está vacío o agregamos módulos nuevos
     claves_base = {
         "usuarios_db": {"admin": {"pass": "37108100", "rol": "SuperAdmin", "nombre": "Enzo Girardi", "empresa": "SISTEMAS E.G.", "matricula": "M.P 21947", "titulo": "Director de Sistemas"}},
         "pacientes_db": [],
@@ -105,17 +110,11 @@ if "db_inicializada" not in st.session_state:
     }
     
     if db:
-        # 1. Cargamos lo que hay en la nube (Tus pacientes y médicos a salvo)
-        for k, v in db.items(): 
-            st.session_state[k] = v
-        # 2. Revisamos si agregaste funciones nuevas al código y las inicializamos sin pisar lo viejo
+        for k, v in db.items(): st.session_state[k] = v
         for k, v in claves_base.items():
-            if k not in st.session_state:
-                st.session_state[k] = v
+            if k not in st.session_state: st.session_state[k] = v
     else:
-        # Si es la primera vez que arranca en la historia
-        for k, v in claves_base.items():
-            st.session_state[k] = v
+        for k, v in claves_base.items(): st.session_state[k] = v
             
     st.session_state["db_inicializada"] = True
 
@@ -146,7 +145,7 @@ if not st.session_state["logeado"]:
                 if usuario_encontrado and str(st.session_state["usuarios_db"][usuario_encontrado]["pass"]).strip() == p_limpio:
                     st.session_state["u_actual"] = st.session_state["usuarios_db"][usuario_encontrado]
                     st.session_state["logeado"] = True
-                    st.session_state["logs_db"].append({"F": datetime.now().strftime("%d/%m/%Y"), "H": datetime.now().strftime("%H:%M"), "U": st.session_state["u_actual"]["nombre"], "E": st.session_state["u_actual"]["empresa"], "A": "Login"})
+                    st.session_state["logs_db"].append({"F": ahora().strftime("%d/%m/%Y"), "H": ahora().strftime("%H:%M"), "U": st.session_state["u_actual"]["nombre"], "E": st.session_state["u_actual"]["empresa"], "A": "Login"})
                     guardar_datos()
                     st.rerun()
                 else: 
@@ -158,7 +157,7 @@ user = st.session_state["u_actual"]
 mi_empresa = user["empresa"]
 rol = user["rol"]
 
-# --- SIDEBAR (CON PRIVACIDAD MULTI-TENANT) ---
+# --- SIDEBAR ---
 with st.sidebar:
     render_logo_eg(110)
     st.header(f"🏢 {mi_empresa}")
@@ -182,6 +181,7 @@ with st.sidebar:
         if st.button("🔴 DAR DE ALTA / ELIMINAR PACIENTE", width="stretch"):
             st.session_state["pacientes_db"].remove(paciente_sel)
             if paciente_sel in st.session_state["detalles_pacientes_db"]: del st.session_state["detalles_pacientes_db"][paciente_sel]
+            st.session_state["logs_db"].append({"F": ahora().strftime("%d/%m/%Y"), "H": ahora().strftime("%H:%M"), "U": user["nombre"], "E": mi_empresa, "A": f"Baja Paciente: {paciente_sel}"})
             guardar_datos()
             st.rerun()
 
@@ -249,7 +249,7 @@ with tabs[1]:
             elif sat < 94: st.warning("⚠️ PRIORIDAD: URGENCIA")
             
             if st.form_submit_button("Guardar Signos", width="stretch"):
-                st.session_state["vitales_db"].append({"paciente": paciente_sel, "TA": ta, "FC": fc, "Sat": sat, "FR": fr, "Temp": temp, "HGT": hgt, "fecha": datetime.now().strftime("%d/%m/%Y %H:%M")})
+                st.session_state["vitales_db"].append({"paciente": paciente_sel, "TA": ta, "FC": fc, "Sat": sat, "FR": fr, "Temp": temp, "HGT": hgt, "fecha": ahora().strftime("%d/%m/%Y %H:%M")})
                 guardar_datos(); st.success("Signos guardados"); st.rerun()
     else: st.info("Seleccione un paciente para cargar sus signos vitales.")
 
@@ -260,7 +260,7 @@ with tabs[2]:
         nota = st.text_area("Nota clínica:")
         if st.button("Firmar Nota", width="stretch"):
             if nota:
-                st.session_state["evoluciones_db"].append({"paciente": paciente_sel, "nota": nota, "fecha": datetime.now().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"], "mat": user.get("matricula", "N/A")})
+                st.session_state["evoluciones_db"].append({"paciente": paciente_sel, "nota": nota, "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"], "mat": user.get("matricula", "N/A")})
                 guardar_datos(); st.success("Evolución guardada"); st.rerun()
             else:
                 st.error("Escriba una nota antes de firmar.")
@@ -277,7 +277,7 @@ with tabs[3]:
             dias = st.number_input("Días", 1, 30, 7)
             if st.form_submit_button("Cargar Receta", width="stretch"):
                 t_r = f"{drog} {dos} vía {via} - {frec} por {dias} días."
-                st.session_state["indicaciones_db"].append({"paciente": paciente_sel, "med": t_r, "fecha": datetime.now().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
+                st.session_state["indicaciones_db"].append({"paciente": paciente_sel, "med": t_r, "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
                 guardar_datos(); st.success("Receta guardada"); st.rerun()
 
 # 5. HISTORIAL COMPLETO EN PANTALLA
@@ -317,7 +317,7 @@ with tabs[5]:
         st.subheader("💳 Registro de Cobros")
         serv = st.text_input("Servicio / Práctica"); mont = st.number_input("Monto", 0)
         if st.button("Registrar Pago", width="stretch"):
-            st.session_state["facturacion_db"].append({"paciente": paciente_sel, "serv": serv, "monto": mont, "fecha": datetime.now().strftime("%d/%m/%Y")})
+            st.session_state["facturacion_db"].append({"paciente": paciente_sel, "serv": serv, "monto": mont, "fecha": ahora().strftime("%d/%m/%Y")})
             guardar_datos(); st.success("Registrado"); st.rerun()
 
 # 7. PDF
@@ -404,7 +404,6 @@ if "⚙️ Mi Equipo" in menu:
                 else:
                     st.error("⚠️ El Usuario, Clave y Empresa son obligatorios.")
         
-        # --- SECCIÓN NUEVA: ELIMINAR USUARIOS ---
         st.divider()
         st.subheader("👥 Personal Activo (Bajas)")
         
@@ -413,10 +412,9 @@ if "⚙️ Mi Equipo" in menu:
         else:
             usuarios_visibles = {k: v for k, v in st.session_state["usuarios_db"].items() if v["empresa"] == mi_empresa}
 
-        # Utilizamos list() para poder borrar sin que se rompa el ciclo
         for u_key, u_data in list(usuarios_visibles.items()):
             if u_key == "admin": 
-                continue # El SuperAdmin no se puede borrar a sí mismo (Seguridad total)
+                continue 
             
             col_info, col_btn = st.columns([4, 1])
             with col_info:
@@ -424,7 +422,7 @@ if "⚙️ Mi Equipo" in menu:
             with col_btn:
                 if st.button("❌ Dar de baja", key=f"del_{u_key}"):
                     del st.session_state["usuarios_db"][u_key]
-                    st.session_state["logs_db"].append({"F": datetime.now().strftime("%d/%m/%Y"), "H": datetime.now().strftime("%H:%M"), "U": user["nombre"], "E": mi_empresa, "A": f"Eliminó al usuario: {u_key}"})
+                    st.session_state["logs_db"].append({"F": ahora().strftime("%d/%m/%Y"), "H": ahora().strftime("%H:%M"), "U": user["nombre"], "E": mi_empresa, "A": f"Eliminó al usuario: {u_key}"})
                     guardar_datos()
                     st.rerun()
 
