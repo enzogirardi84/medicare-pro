@@ -46,7 +46,6 @@ div[data-testid="stForm"] {
     padding: 20px;
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
 }
-/* Ocultar flechas de number_input para look clínico profesional */
 input[type=number]::-webkit-inner-spin-button, 
 input[type=number]::-webkit-outer-spin-button { 
     -webkit-appearance: none; 
@@ -55,8 +54,6 @@ input[type=number]::-webkit-outer-spin-button {
 input[type=number] {
     -moz-appearance: textfield;
 }
-
-/* Botón WhatsApp */
 .wa-btn {
     display: block; width: 100%; text-align: center; background-color: #25D366; 
     color: white !important; padding: 10px; border-radius: 8px; font-weight: bold; text-decoration: none;
@@ -99,7 +96,7 @@ def cargar_datos():
 
 def guardar_datos():
     claves = ["usuarios_db", "pacientes_db", "detalles_pacientes_db", "vitales_db", 
-              "indicaciones_db", "turnos_db", "evoluciones_db", "facturacion_db", "logs_db", "balance_db"]
+              "indicaciones_db", "turnos_db", "evoluciones_db", "facturacion_db", "logs_db", "balance_db", "pediatria_db"]
     data = {k: st.session_state[k] for k in claves if k in st.session_state}
     
     try:
@@ -114,7 +111,8 @@ if "db_inicializada" not in st.session_state:
     
     claves_base = {
         "usuarios_db": {"admin": {"pass": "37108100", "rol": "SuperAdmin", "nombre": "Enzo Girardi", "empresa": "SISTEMAS E.G.", "matricula": "M.P 21947", "titulo": "Director de Sistemas"}},
-        "pacientes_db": [], "detalles_pacientes_db": {}, "vitales_db": [], "indicaciones_db": [], "turnos_db": [], "evoluciones_db": [], "facturacion_db": [], "logs_db": [], "balance_db": []
+        "pacientes_db": [], "detalles_pacientes_db": {}, "vitales_db": [], "indicaciones_db": [], "turnos_db": [], 
+        "evoluciones_db": [], "facturacion_db": [], "logs_db": [], "balance_db": [], "pediatria_db": []
     }
     
     if db:
@@ -197,8 +195,8 @@ with st.sidebar:
     if st.button("Cerrar Sesión", width="stretch"):
         st.session_state["logeado"] = False; st.rerun()
 
-# --- MENU DINÁMICO ---
-menu = ["👤 Admisión", "📊 Clínica", "📝 Evolución", "💊 Recetas", "⚖️ Balance", "📍 Visitas", "📚 Historial", "💳 Caja", "🗄️ PDF"]
+# --- MENU DINÁMICO ACTUALIZADO ---
+menu = ["👤 Admisión", "📊 Clínica", "👶 Pediatría", "📝 Evolución", "💊 Recetas", "⚖️ Balance", "📍 Visitas", "📚 Historial", "💳 Caja", "🗄️ PDF"]
 if rol in ["SuperAdmin", "Coordinador"]: menu.append("⚙️ Mi Equipo")
 if rol == "SuperAdmin": menu.append("🕵️ Auditoría")
 tabs = st.tabs(menu)
@@ -261,8 +259,59 @@ with tabs[1]:
                 st.session_state["vitales_db"].append({"paciente": paciente_sel, "TA": ta, "FC": fc, "Sat": sat, "FR": fr, "Temp": temp, "HGT": hgt, "fecha": ahora().strftime("%d/%m/%Y %H:%M")})
                 guardar_datos(); st.success("Signos guardados"); st.rerun()
 
-# 3. EVOLUCIÓN
+# 3. PEDIATRÍA (NUEVO MÓDULO)
 with tabs[2]:
+    if paciente_sel:
+        st.markdown("<h3 style='color: #10b981;'>👶 Control de Crecimiento y Percentiles</h3>", unsafe_allow_html=True)
+        st.info("Monitoreo de percentiles (P3 - P97). Lo importante es mantener una curva constante.")
+        
+        with st.form("pediatria_form", border=True):
+            c1, c2, c3 = st.columns(3)
+            edad = c1.text_input("Edad (Ej: 6 meses, 2 años)")
+            peso = c2.number_input("Peso (kg)", min_value=0.0, format="%.2f")
+            talla = c3.number_input("Talla / Longitud (cm)", min_value=0.0, format="%.2f")
+            
+            c4, c5, c6 = st.columns(3)
+            pc = c4.number_input("Perímetro Cefálico (cm)", min_value=0.0, format="%.2f", help="Principalmente hasta los 2 años")
+            perc_peso = c5.text_input("Percentil Peso (Opcional, ej: P50)")
+            perc_talla = c6.text_input("Percentil Talla (Opcional, ej: P75)")
+            
+            if st.form_submit_button("Registrar Medidas Pediátricas", width="stretch"):
+                imc = round(peso / ((talla/100)**2), 2) if talla > 0 else 0.0
+                st.session_state["pediatria_db"].append({
+                    "paciente": paciente_sel, "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "edad": edad, 
+                    "peso": peso, "talla": talla, "pc": pc, "imc": imc, 
+                    "perc_peso": perc_peso, "perc_talla": perc_talla, "firma": user["nombre"]
+                })
+                guardar_datos(); st.rerun()
+
+        # Visualización de Curvas
+        ped_data = [x for x in st.session_state["pediatria_db"] if x["paciente"] == paciente_sel]
+        if ped_data:
+            df_ped = pd.DataFrame(ped_data)
+            st.markdown("### 📉 Curva de Crecimiento del Paciente")
+            # Preparar datos para gráficos
+            df_graf = df_ped[["fecha", "peso", "talla"]].copy()
+            df_graf["fecha_corta"] = df_graf["fecha"].apply(lambda x: x.split(" ")[0])
+            df_graf = df_graf.set_index("fecha_corta")
+            
+            g1, g2 = st.columns(2)
+            with g1:
+                st.caption("Evolución del Peso (kg)")
+                st.line_chart(df_graf["peso"], color="#3b82f6")
+            with g2:
+                st.caption("Evolución de la Talla (cm)")
+                st.line_chart(df_graf["talla"], color="#10b981")
+            
+            # Formatear la tabla visual para que se vea linda
+            df_mostrar = df_ped.drop(columns=["paciente"]).copy()
+            df_mostrar["peso"] = df_mostrar["peso"].astype(str) + " kg"
+            df_mostrar["talla"] = df_mostrar["talla"].astype(str) + " cm"
+            df_mostrar["pc"] = df_mostrar["pc"].astype(str) + " cm"
+            st.dataframe(df_mostrar, use_container_width=True)
+
+# 4. EVOLUCIÓN
+with tabs[3]:
     if paciente_sel:
         st.subheader("Cargar Procedimiento o Evolución")
         nota = st.text_area("Describa el procedimiento realizado:")
@@ -271,8 +320,8 @@ with tabs[2]:
                 st.session_state["evoluciones_db"].append({"paciente": paciente_sel, "nota": nota, "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"], "mat": user.get("matricula", "N/A")})
                 guardar_datos(); st.success("Evolución guardada permanentemente."); st.rerun()
 
-# 4. RECETARIO
-with tabs[3]:
+# 5. RECETARIO
+with tabs[4]:
     if paciente_sel:
         st.subheader("💊 Plan Terapéutico")
         with st.form("recet"):
@@ -286,8 +335,8 @@ with tabs[3]:
                 st.session_state["indicaciones_db"].append({"paciente": paciente_sel, "med": t_r, "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
                 guardar_datos(); st.success("Receta guardada"); st.rerun()
 
-# 5. BALANCE HÍDRICO PRO
-with tabs[4]:
+# 6. BALANCE HÍDRICO PRO
+with tabs[5]:
     if paciente_sel:
         st.markdown("<h3 style='color: #3b82f6;'>⚖️ Control de Balance Hídrico (Estricto)</h3>", unsafe_allow_html=True)
         with st.form("balance_form", border=True):
@@ -317,8 +366,8 @@ with tabs[4]:
                 guardar_datos()
                 st.rerun()
 
-# 6. VISITAS Y GOOGLE MAPS
-with tabs[5]:
+# 7. VISITAS Y GOOGLE MAPS
+with tabs[6]:
     if paciente_sel:
         st.subheader("📍 Logística de Visita Domiciliaria")
         det = st.session_state["detalles_pacientes_db"].get(paciente_sel, {})
@@ -340,8 +389,8 @@ with tabs[5]:
             wa_url = f"https://wa.me/{telefono.replace('+', '').replace(' ', '')}?text={msg}"
             st.markdown(f'<a href="{wa_url}" target="_blank" class="wa-btn">📲 AVISAR POR WHATSAPP (Ir en camino)</a>', unsafe_allow_html=True)
 
-# 7. HISTORIAL COMPLETO (CON UNIDADES EN ML)
-with tabs[6]:
+# 8. HISTORIAL COMPLETO
+with tabs[7]:
     if paciente_sel:
         st.subheader(f"📚 Historia Clínica Digital Integral")
         
@@ -353,6 +402,14 @@ with tabs[6]:
             else:
                 st.write("No hay procedimientos registrados.")
                 
+        with st.expander("👶 Registros Pediátricos (Crecimiento)"):
+            peds = [x for x in st.session_state["pediatria_db"] if x["paciente"] == paciente_sel]
+            if peds:
+                df_peds = pd.DataFrame(peds).drop(columns=["paciente"])
+                st.dataframe(df_peds, use_container_width=True)
+            else:
+                st.write("No hay registros pediátricos.")
+
         with st.expander("📊 Registros de Signos Vitales"):
             vits = [x for x in st.session_state["vitales_db"] if x["paciente"] == paciente_sel]
             if vits:
@@ -364,7 +421,6 @@ with tabs[6]:
         with st.expander("⚖️ Registros de Balance Hídrico"):
             bals = [x for x in st.session_state["balance_db"] if x["paciente"] == paciente_sel]
             if bals:
-                # Modificamos el DataFrame para que muestre "ml" en la tabla visualmente
                 df_bals = pd.DataFrame(bals).drop(columns=["paciente"])
                 df_bals["ingresos"] = df_bals["ingresos"].astype(str) + " ml"
                 df_bals["egresos"] = df_bals["egresos"].astype(str) + " ml"
@@ -381,8 +437,8 @@ with tabs[6]:
             else:
                 st.write("No hay indicaciones registradas.")
 
-# 8. CAJA
-with tabs[7]:
+# 9. CAJA
+with tabs[8]:
     if paciente_sel:
         st.subheader("💳 Registro de Cobros")
         serv = st.text_input("Servicio / Práctica"); mont = st.number_input("Monto", 0)
@@ -390,15 +446,15 @@ with tabs[7]:
             st.session_state["facturacion_db"].append({"paciente": paciente_sel, "serv": serv, "monto": mont, "fecha": ahora().strftime("%d/%m/%Y")})
             guardar_datos(); st.success("Registrado"); st.rerun()
 
-# 9. PDF (CON BALANCE HÍDRICO EN ML)
-with tabs[8]:
+# 10. PDF
+with tabs[9]:
     if paciente_sel and FPDF_DISPONIBLE:
         def crear_pdf_pro(p):
             pdf = FPDF()
             pdf.add_page()
             def t(txt): return str(txt).encode('latin-1', 'replace').decode('latin-1')
             
-            # --- ENCABEZADO Y LOGO ---
+            # ENCABEZADO Y LOGO
             pdf.set_fill_color(59, 130, 246)
             pdf.ellipse(10, 10, 22, 22, 'F') 
             pdf.set_draw_color(255, 255, 255); pdf.set_line_width(1.2)
@@ -409,13 +465,13 @@ with tabs[8]:
             pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("MediCare Enterprise PRO - Reporte Medico"), ln=True)
             pdf.ln(18)
             
-            # --- DATOS DEL PACIENTE ---
+            # DATOS DEL PACIENTE
             det = st.session_state["detalles_pacientes_db"].get(p, {})
             pdf.set_fill_color(240, 240, 240); pdf.set_font("Arial", 'B', 12)
             pdf.cell(0, 10, t(f" HISTORIA CLINICA: {p}"), 1, 1, 'L', True)
             pdf.set_font("Arial", '', 10); pdf.cell(0, 8, t(f" DNI: {det.get('dni')} | Empresa: {emp_paciente}"), ln=True); pdf.ln(5)
 
-            # --- SIGNOS VITALES ---
+            # SIGNOS VITALES
             pdf.set_font("Arial", 'B', 11); pdf.cell(0, 10, t("SIGNOS VITALES:"), ln=True)
             pdf.set_font("Arial", 'B', 8); pdf.set_fill_color(230, 230, 230)
             pdf.cell(35, 7, "FECHA", 1, 0, 'C', True); pdf.cell(22, 7, "TA", 1, 0, 'C', True); pdf.cell(22, 7, "SAT%", 1, 0, 'C', True); pdf.cell(22, 7, "FC", 1, 0, 'C', True); pdf.cell(22, 7, "TEMP", 1, 0, 'C', True); pdf.cell(22, 7, "HGT", 1, 1, 'C', True)
@@ -424,34 +480,42 @@ with tabs[8]:
                 pdf.cell(35, 7, t(v['fecha']), 1); pdf.cell(22, 7, t(v['TA']), 1); pdf.cell(22, 7, t(v['Sat']), 1); pdf.cell(22, 7, t(v['FC']), 1); pdf.cell(22, 7, t(v['Temp']), 1); pdf.cell(22, 7, t(v['HGT']), 1, 1)
             pdf.ln(10)
 
-            # --- BALANCE HÍDRICO ---
+            # CONTROL PEDIÁTRICO
+            peds = [x for x in st.session_state["pediatria_db"] if x["paciente"] == p]
+            if peds:
+                pdf.set_font("Arial", 'B', 11); pdf.cell(0, 10, t("CRECIMIENTO PEDIATRICO:"), ln=True)
+                pdf.set_font("Arial", 'B', 8); pdf.set_fill_color(230, 230, 230)
+                pdf.cell(30, 7, "FECHA", 1, 0, 'C', True); pdf.cell(20, 7, "EDAD", 1, 0, 'C', True); pdf.cell(25, 7, "PESO(kg)", 1, 0, 'C', True); pdf.cell(25, 7, "TALLA(cm)", 1, 0, 'C', True); pdf.cell(25, 7, "PERIM.CEF.", 1, 0, 'C', True); pdf.cell(30, 7, "IMC", 1, 1, 'C', True)
+                pdf.set_font("Arial", '', 8)
+                for c in peds:
+                    pdf.cell(30, 7, t(c['fecha'].split(' ')[0]), 1, 0, 'C')
+                    pdf.cell(20, 7, t(c['edad']), 1, 0, 'C')
+                    pdf.cell(25, 7, f"{c['peso']} kg", 1, 0, 'C')
+                    pdf.cell(25, 7, f"{c['talla']} cm", 1, 0, 'C')
+                    pdf.cell(25, 7, f"{c['pc']} cm", 1, 0, 'C')
+                    pdf.cell(30, 7, str(c['imc']), 1, 1, 'C')
+                pdf.ln(10)
+
+            # BALANCE HÍDRICO
             pdf.set_font("Arial", 'B', 11); pdf.cell(0, 10, t("BALANCE HIDRICO HISTORICO:"), ln=True)
             bals = [x for x in st.session_state["balance_db"] if x["paciente"] == p]
             if bals:
                 pdf.set_font("Arial", 'B', 8); pdf.set_fill_color(230, 230, 230)
-                pdf.cell(45, 7, "FECHA / HORA", 1, 0, 'C', True)
-                pdf.cell(45, 7, "INGRESOS TOTALES", 1, 0, 'C', True)
-                pdf.cell(45, 7, "EGRESOS TOTALES", 1, 0, 'C', True)
-                pdf.cell(45, 7, "BALANCE NETO", 1, 1, 'C', True)
-                
+                pdf.cell(45, 7, "FECHA / HORA", 1, 0, 'C', True); pdf.cell(45, 7, "INGRESOS TOTALES", 1, 0, 'C', True); pdf.cell(45, 7, "EGRESOS TOTALES", 1, 0, 'C', True); pdf.cell(45, 7, "BALANCE NETO", 1, 1, 'C', True)
                 pdf.set_font("Arial", '', 8)
                 for b in bals:
-                    pdf.cell(45, 7, t(b['fecha']), 1, 0, 'C')
-                    pdf.cell(45, 7, f"+ {b['ingresos']} ml", 1, 0, 'C')
-                    pdf.cell(45, 7, f"- {b['egresos']} ml", 1, 0, 'C')
-                    pdf.cell(45, 7, f"{b['balance']} ml", 1, 1, 'C')
+                    pdf.cell(45, 7, t(b['fecha']), 1, 0, 'C'); pdf.cell(45, 7, f"+ {b['ingresos']} ml", 1, 0, 'C'); pdf.cell(45, 7, f"- {b['egresos']} ml", 1, 0, 'C'); pdf.cell(45, 7, f"{b['balance']} ml", 1, 1, 'C')
             else:
-                pdf.set_font("Arial", 'I', 9)
-                pdf.cell(0, 6, t("No se registraron balances hídricos para este paciente."), ln=True)
+                pdf.set_font("Arial", 'I', 9); pdf.cell(0, 6, t("No se registraron balances hídricos."), ln=True)
             pdf.ln(10)
 
-            # --- EVOLUCIONES CLINICAS ---
+            # EVOLUCIONES CLINICAS
             pdf.set_font("Arial", 'B', 11); pdf.cell(0, 10, t("EVOLUCIONES CLINICAS:"), ln=True)
             for ev in [x for x in st.session_state["evoluciones_db"] if x["paciente"] == p]:
                 pdf.set_font("Arial", 'B', 8); pdf.cell(0, 6, t(f"[{ev['fecha']}] - Firma: {ev['firma']}"), ln=True)
                 pdf.set_font("Arial", '', 9); pdf.multi_cell(0, 5, t(ev['nota']), 'L'); pdf.ln(2)
             
-            # --- FIRMA DEL PROFESIONAL AL FINAL ---
+            # FIRMA FINAL
             pdf.ln(15); pdf.line(10, pdf.get_y(), 80, pdf.get_y())
             pdf.set_font("Arial", 'B', 10); pdf.cell(0, 6, t(f"Firma: {user['nombre']}"), ln=True)
             pdf.cell(0, 6, t(f"Matricula: {user.get('matricula', 'S/D')}"), ln=True)
@@ -460,72 +524,38 @@ with tabs[8]:
 
         st.download_button("📥 Generar Historia Clínica en PDF", crear_pdf_pro(paciente_sel), f"HC_{paciente_sel}.pdf", "application/pdf")
 
-# 10. EQUIPO
+# 11. EQUIPO Y AUDITORÍA
 if "⚙️ Mi Equipo" in menu:
     with tabs[menu.index("⚙️ Mi Equipo")]:
         st.subheader(f"Gestión de Personal")
         with st.form("new_staff"):
             col_u1, col_u2 = st.columns(2)
-            u_id = col_u1.text_input("Usuario (Login)")
-            u_pw = col_u2.text_input("Clave")
+            u_id = col_u1.text_input("Usuario (Login)"); u_pw = col_u2.text_input("Clave")
             u_nm = st.text_input("Nombre Completo")
-            
             col_u3, col_u4 = st.columns(2)
-            u_mt = col_u3.text_input("Matrícula")
-            u_ti = col_u4.selectbox("Título", ["Médico/a", "Lic. en Enfermería", "Enfermero/a", "Administrativo/a"])
+            u_mt = col_u3.text_input("Matrícula"); u_ti = col_u4.selectbox("Título", ["Médico/a", "Lic. en Enfermería", "Enfermero/a", "Administrativo/a"])
             
-            if rol == "SuperAdmin":
-                op_rol = ["Operativo", "Coordinador", "SuperAdmin"]
-                u_emp = st.text_input("🏢 Asignar a Clínica / Empresa", placeholder="Ej: Clínica San Lucas")
-            else:
-                op_rol = ["Operativo", "Coordinador"]
-                u_emp = mi_empresa
-                st.info(f"🏢 Agregando personal a tu empresa: **{u_emp}**")
-                
-            u_rl = st.selectbox("Poder / Rol", op_rol)
+            if rol == "SuperAdmin": u_emp = st.text_input("🏢 Asignar a Clínica / Empresa")
+            else: u_emp = mi_empresa; st.info(f"🏢 Agregando personal a tu empresa: **{u_emp}**")
+            u_rl = st.selectbox("Poder / Rol", ["Operativo", "Coordinador", "SuperAdmin"] if rol == "SuperAdmin" else ["Operativo", "Coordinador"])
             
             if st.form_submit_button("Habilitar Acceso", width="stretch"):
                 if u_id and u_pw and u_emp: 
-                    id_limpio = u_id.strip().lower()
-                    st.session_state["usuarios_db"][id_limpio] = {
-                        "pass": u_pw.strip(), 
-                        "nombre": u_nm.strip(), 
-                        "rol": u_rl, 
-                        "titulo": u_ti, 
-                        "empresa": u_emp.strip(), 
-                        "matricula": u_mt.strip()
-                    }
-                    guardar_datos()
-                    st.success(f"¡{u_nm} habilitado/a correctamente para {u_emp.strip()}!")
-                    st.rerun()
-                else:
-                    st.error("⚠️ El Usuario, Clave y Empresa son obligatorios.")
-        
-        st.divider()
-        st.subheader("👥 Personal Activo (Bajas)")
-        
-        if rol == "SuperAdmin":
-            usuarios_visibles = st.session_state["usuarios_db"]
-        else:
-            usuarios_visibles = {k: v for k, v in st.session_state["usuarios_db"].items() if v["empresa"] == mi_empresa}
+                    st.session_state["usuarios_db"][u_id.strip().lower()] = {"pass": u_pw.strip(), "nombre": u_nm.strip(), "rol": u_rl, "titulo": u_ti, "empresa": u_emp.strip(), "matricula": u_mt.strip()}
+                    guardar_datos(); st.success(f"¡{u_nm} habilitado/a!"); st.rerun()
 
+        st.divider(); st.subheader("👥 Personal Activo")
+        usuarios_visibles = st.session_state["usuarios_db"] if rol == "SuperAdmin" else {k: v for k, v in st.session_state["usuarios_db"].items() if v["empresa"] == mi_empresa}
         for u_key, u_data in list(usuarios_visibles.items()):
-            if u_key == "admin": 
-                continue 
-            
+            if u_key == "admin": continue 
             col_info, col_btn = st.columns([4, 1])
-            with col_info:
-                st.write(f"🏢 **{u_data['empresa']}** | 👤 **{u_data['nombre']}** ({u_data['rol']}) | Login: `{u_key}`")
+            with col_info: st.write(f"🏢 **{u_data['empresa']}** | 👤 **{u_data['nombre']}** ({u_data['rol']}) | Login: `{u_key}`")
             with col_btn:
-                if st.button("❌ Dar de baja", key=f"del_{u_key}"):
+                if st.button("❌ Bajar", key=f"del_{u_key}"):
                     del st.session_state["usuarios_db"][u_key]
-                    st.session_state["logs_db"].append({"F": ahora().strftime("%d/%m/%Y"), "H": ahora().strftime("%H:%M"), "U": user["nombre"], "E": mi_empresa, "A": f"Eliminó al usuario: {u_key}"})
-                    guardar_datos()
-                    st.rerun()
+                    guardar_datos(); st.rerun()
 
-# 11. AUDITORÍA
 if "🕵️ Auditoría" in menu:
     with tabs[menu.index("🕵️ Auditoría")]:
         st.subheader("Auditoría de Movimientos")
-        if st.session_state["logs_db"]:
-            st.dataframe(pd.DataFrame(st.session_state["logs_db"]))
+        if st.session_state["logs_db"]: st.dataframe(pd.DataFrame(st.session_state["logs_db"]))
