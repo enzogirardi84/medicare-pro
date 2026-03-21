@@ -340,7 +340,7 @@ with tabs[5]:
             wa_url = f"https://wa.me/{telefono.replace('+', '').replace(' ', '')}?text={msg}"
             st.markdown(f'<a href="{wa_url}" target="_blank" class="wa-btn">📲 AVISAR POR WHATSAPP (Ir en camino)</a>', unsafe_allow_html=True)
 
-# 7. HISTORIAL COMPLETO
+# 7. HISTORIAL COMPLETO (CON UNIDADES EN ML)
 with tabs[6]:
     if paciente_sel:
         st.subheader(f"📚 Historia Clínica Digital Integral")
@@ -364,7 +364,11 @@ with tabs[6]:
         with st.expander("⚖️ Registros de Balance Hídrico"):
             bals = [x for x in st.session_state["balance_db"] if x["paciente"] == paciente_sel]
             if bals:
+                # Modificamos el DataFrame para que muestre "ml" en la tabla visualmente
                 df_bals = pd.DataFrame(bals).drop(columns=["paciente"])
+                df_bals["ingresos"] = df_bals["ingresos"].astype(str) + " ml"
+                df_bals["egresos"] = df_bals["egresos"].astype(str) + " ml"
+                df_bals["balance"] = df_bals["balance"].astype(str) + " ml"
                 st.dataframe(df_bals, use_container_width=True)
             else:
                 st.write("No hay balances hídricos registrados.")
@@ -420,7 +424,7 @@ with tabs[8]:
                 pdf.cell(35, 7, t(v['fecha']), 1); pdf.cell(22, 7, t(v['TA']), 1); pdf.cell(22, 7, t(v['Sat']), 1); pdf.cell(22, 7, t(v['FC']), 1); pdf.cell(22, 7, t(v['Temp']), 1); pdf.cell(22, 7, t(v['HGT']), 1, 1)
             pdf.ln(10)
 
-            # --- BALANCE HÍDRICO (NUEVA SECCIÓN EN PDF) ---
+            # --- BALANCE HÍDRICO ---
             pdf.set_font("Arial", 'B', 11); pdf.cell(0, 10, t("BALANCE HIDRICO HISTORICO:"), ln=True)
             bals = [x for x in st.session_state["balance_db"] if x["paciente"] == p]
             if bals:
