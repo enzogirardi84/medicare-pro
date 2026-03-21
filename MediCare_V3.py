@@ -234,12 +234,14 @@ with tabs[0]:
             df_fact_g = df_fact.groupby("fecha_c")["monto"].sum().reset_index()
             st.area_chart(df_fact_g.set_index("fecha_c")["monto"], color="#10b981")
 
-        # 👨‍⚕️ 3. Gráfico Barras: Visitas por Enfermero (Última Semana)
+       # 👨‍⚕️ 3. Gráfico Barras: Visitas por Enfermero (Última Semana)
         st.markdown("#### Visitas por Profesional (Última Semana)")
         df_evs = pd.DataFrame(st.session_state["evoluciones_db"])
         if not df_evs.empty:
             df_evs["fecha_c"] = pd.to_datetime(df_evs["fecha"], format="%d/%m/%Y %H:%M")
-            hace_una_semana = ahora() - timedelta(days=7)
+            
+            # --- LA SOLUCIÓN ESTÁ EN ESTA LÍNEA (Le sacamos el tzinfo) ---
+            hace_una_semana = (ahora() - timedelta(days=7)).replace(tzinfo=None)
             
             if rol == "Coordinador":
                 pacs_mi_empresa = [p for p in st.session_state["detalles_pacientes_db"] if st.session_state["detalles_pacientes_db"][p]['empresa'] == mi_empresa]
