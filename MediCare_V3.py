@@ -32,7 +32,7 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# --- 🎨 DISEÑO VISUAL ADAPTATIVO ---
+# --- 🎨 DISEÑO VISUAL ADAPTATIVO (CON CSS PARA BALANCE) ---
 page_bg_css = """
 <style>
 .stApp {
@@ -49,7 +49,17 @@ div[data-testid="stForm"] {
 div[data-testid="stButton"] button {
     border-radius: 8px;
 }
-/* Botón especial para WhatsApp */
+/* Ocultar flechas de number_input para look clínico profesional */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+    -webkit-appearance: none; 
+    margin: 0; 
+}
+input[type=number] {
+    -moz-appearance: textfield;
+}
+
+/* Botón WhatsApp */
 .wa-btn {
     display: block; width: 100%; text-align: center; background-color: #25D366; 
     color: white !important; padding: 10px; border-radius: 8px; font-weight: bold; text-decoration: none;
@@ -91,7 +101,6 @@ def cargar_datos():
     return None
 
 def guardar_datos():
-    # AGREGAMOS balance_db A LA LISTA DE GUARDADO
     claves = ["usuarios_db", "pacientes_db", "detalles_pacientes_db", "vitales_db", 
               "indicaciones_db", "turnos_db", "evoluciones_db", "facturacion_db", "logs_db", "balance_db"]
     data = {k: st.session_state[k] for k in claves if k in st.session_state}
@@ -116,7 +125,7 @@ if "db_inicializada" not in st.session_state:
         "evoluciones_db": [],
         "facturacion_db": [],
         "logs_db": [],
-        "balance_db": [] # NUEVA TABLA PARA BALANCE
+        "balance_db": []
     }
     
     if db:
@@ -199,13 +208,13 @@ with st.sidebar:
     if st.button("Cerrar Sesión", width="stretch"):
         st.session_state["logeado"] = False; st.rerun()
 
-# --- MENU DINÁMICO NUEVO ---
-menu = ["👤 Admisión", "📊 Clínica", "📝 Evolución", "💊 Recetas", "💧 Balance", "📍 Visitas", "📚 Historial", "💳 Caja", "🗄️ PDF"]
+# --- MENU DINÁMICO ---
+menu = ["👤 Admisión", "📊 Clínica", "📝 Evolución", "💊 Recetas", "⚖️ Balance", "📍 Visitas", "📚 Historial", "💳 Caja", "🗄️ PDF"]
 if rol in ["SuperAdmin", "Coordinador"]: menu.append("⚙️ Mi Equipo")
 if rol == "SuperAdmin": menu.append("🕵️ Auditoría")
 tabs = st.tabs(menu)
 
-# 1. ADMISIÓN (AHORA PIDE TELÉFONO Y DIRECCIÓN)
+# 1. ADMISIÓN 
 with tabs[0]:
     st.subheader("Registrar Paciente")
     with st.form("adm_form", clear_on_submit=True):
@@ -232,12 +241,8 @@ with tabs[0]:
                 if id_p not in st.session_state["pacientes_db"]:
                     st.session_state["pacientes_db"].append(id_p)
                 st.session_state["detalles_pacientes_db"][id_p] = {
-                    "dni": d, 
-                    "fnac": f_nac.strftime("%d/%m/%Y"), 
-                    "telefono": tel,
-                    "direccion": dir_pac,
-                    "antecedentes": ant, 
-                    "empresa": empresa_destino.strip()
+                    "dni": d, "fnac": f_nac.strftime("%d/%m/%Y"), "telefono": tel, "direccion": dir_pac,
+                    "antecedentes": ant, "empresa": empresa_destino.strip()
                 }
                 guardar_datos()
                 st.success(f"Registrado exitosamente en {empresa_destino.strip()}")
@@ -292,29 +297,33 @@ with tabs[3]:
                 st.session_state["indicaciones_db"].append({"paciente": paciente_sel, "med": t_r, "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
                 guardar_datos(); st.success("Receta guardada"); st.rerun()
 
-# 5. BALANCE HÍDRICO (NUEVO)
+# 5. BALANCE HÍDRICO PRO
 with tabs[4]:
     if paciente_sel:
-        st.subheader("💧 Balance Hídrico")
-        with st.form("balance_form"):
+        st.markdown("<h3 style='color: #3b82f6;'>⚖️ Control de Balance Hídrico (Estricto)</h3>", unsafe_allow_html=True)
+        st.info("Registre las cantidades en mililitros (ml) correspondientes al turno actual.")
+        
+        with st.form("balance_form", border=True):
             col_in, col_eg = st.columns(2)
             
             with col_in:
-                st.markdown("### 📥 Ingresos (ml)")
-                i_oral = st.number_input("Vía Oral (Agua, alimentos)", 0, step=50)
-                i_par = st.number_input("Vía Parenteral (Sueros, Meds)", 0, step=50)
-                i_son = st.number_input("Sondas (SNG, Gastrostomía)", 0, step=50)
+                st.markdown("#### 📥 INGRESOS")
+                i_oral = st.number_input("🥤 Vía Oral (Agua, alimentos)", min_value=0, value=0)
+                i_par = st.number_input("💉 Vía Parenteral (Sueros, Meds)", min_value=0, value=0)
+                i_son = st.number_input("🧪 Sondas (SNG, K108)", min_value=0, value=0)
                 
             with col_eg:
-                st.markdown("### 📤 Egresos (ml)")
-                e_ori = st.number_input("Orina (Diuresis / Foley)", 0, step=50)
-                e_dep = st.number_input("Deposiciones / Ostomías", 0, step=50)
-                e_vom = st.number_input("Vómitos / Asp. Gástrica", 0, step=50)
-                e_dre = st.number_input("Drenajes / Sangrados", 0, step=50)
+                st.markdown("#### 📤 EGRESOS")
+                e_ori = st.number_input("🚽 Orina (Diuresis / Foley)", min_value=0, value=0)
+                e_dep = st.number_input("💩 Deposiciones / Ostomías", min_value=0, value=0)
+                e_vom = st.number_input("🤮 Vómitos / Asp. Gástrica", min_value=0, value=0)
+                e_dre = st.number_input("🩸 Drenajes / Sangrados", min_value=0, value=0)
+                e_ins = st.number_input("💨 Pérdidas Insensibles", min_value=0, value=0, help="Cálculo: Peso x factor x Horas")
                 
-            if st.form_submit_button("Calcular y Guardar Balance", width="stretch"):
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.form_submit_button("Calculadora y Registro de Balance", width="stretch"):
                 t_ingresos = i_oral + i_par + i_son
-                t_egresos = e_ori + e_dep + e_vom + e_dre
+                t_egresos = e_ori + e_dep + e_vom + e_dre + e_ins
                 balance_total = t_ingresos - t_egresos
                 
                 st.session_state["balance_db"].append({
@@ -322,17 +331,23 @@ with tabs[4]:
                     "ingresos": t_ingresos, "egresos": t_egresos, "balance": balance_total, "firma": user["nombre"]
                 })
                 guardar_datos()
-                st.success(f"Guardado. Balance: {balance_total} ml")
                 st.rerun()
                 
-        # Mostrar últimos balances
+        # Tablero de control del último balance
         bal_pac = [b for b in st.session_state["balance_db"] if b["paciente"] == paciente_sel]
         if bal_pac:
-            st.markdown("#### Últimos Registros")
+            ultimo = bal_pac[-1]
+            st.markdown("### Último Registro de Turno")
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Ingresos Totales", f"+ {ultimo['ingresos']} ml")
+            m2.metric("Egresos Totales", f"- {ultimo['egresos']} ml")
+            m3.metric("BALANCE NETO", f"{ultimo['balance']} ml")
+            
+            st.divider()
             df_bal = pd.DataFrame(bal_pac).drop(columns=["paciente"])
             st.dataframe(df_bal, use_container_width=True)
 
-# 6. VISITAS Y GOOGLE MAPS (NUEVO)
+# 6. VISITAS Y GOOGLE MAPS
 with tabs[5]:
     if paciente_sel:
         st.subheader("📍 Logística de Visita Domiciliaria")
@@ -343,19 +358,16 @@ with tabs[5]:
         if direccion:
             st.info(f"🏠 **Dirección del paciente:** {direccion}")
             dir_url = urllib.parse.quote(direccion)
-            # Generar el Iframe de Google Maps
             mapa_html = f'<iframe width="100%" height="400" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="https://maps.google.com/maps?q={dir_url}&t=&z=15&ie=UTF8&iwloc=&output=embed"></iframe>'
             st.components.v1.html(mapa_html, height=400)
         else:
-            st.warning("⚠️ Este paciente no tiene una dirección registrada en su Admisión. Por favor, actualice sus datos.")
+            st.warning("⚠️ Este paciente no tiene una dirección registrada en su Admisión.")
             
         st.divider()
         if telefono:
             st.markdown("### 💬 Notificar al Paciente")
-            # Mensaje predeterminado para WhatsApp
             msg = urllib.parse.quote(f"Hola, soy {user['nombre']} de {mi_empresa}. Te aviso que estoy en camino al domicilio para la visita médica.")
             wa_url = f"https://wa.me/{telefono.replace('+', '').replace(' ', '')}?text={msg}"
-            
             st.markdown(f'<a href="{wa_url}" target="_blank" class="wa-btn">📲 AVISAR POR WHATSAPP (Ir en camino)</a>', unsafe_allow_html=True)
         else:
             st.warning("⚠️ Este paciente no tiene teléfono registrado.")
@@ -389,7 +401,7 @@ with tabs[6]:
             else:
                 st.write("No hay signos vitales registrados.")
                 
-        with st.expander("💧 Resumen de Balances Hídricos"):
+        with st.expander("⚖️ Resumen de Balances Hídricos"):
             bals = [x for x in st.session_state["balance_db"] if x["paciente"] == paciente_sel]
             if bals:
                 df_bals = pd.DataFrame(bals).drop(columns=["paciente"])
