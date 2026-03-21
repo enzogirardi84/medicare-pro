@@ -245,11 +245,13 @@ with tabs[1]:
         if vitales_p:
             u = vitales_p[-1]
             m1, m2, m3, m4 = st.columns(4)
-            m1.metric("T.A.", u["TA"]); m2.metric("SATO2", f"{u['Sat']}%"); m3.metric("F.C.", f"{u['FC']} lpm"); m4.metric("HGT", u["HGT"])
+            # Cambiamos T.A. por Tensión Arterial para evitar traducciones raras
+            m1.metric("Tensión Arterial", u["TA"]); m2.metric("SATO2", f"{u['Sat']}%"); m3.metric("F.C.", f"{u['FC']} lpm"); m4.metric("HGT", u["HGT"])
         
         with st.form("vitales_f"):
             c1, c2, c3 = st.columns(3)
-            ta = c1.text_input("T.A.", "120/80"); fc = c1.number_input("F.C.", 30, 200, 75)
+            # Cambiamos aquí también
+            ta = c1.text_input("Tensión Arterial (TA)", "120/80"); fc = c1.number_input("F.C.", 30, 200, 75)
             sat = c2.number_input("SatO2%", 50, 100, 98); fr = c2.number_input("F.R.", 10, 50, 16)
             temp = c3.number_input("Temp °C", 34.0, 42.0, 36.5); hgt = c3.text_input("HGT / Glucemia", "100")
             if sat < 90: st.error("🚨 PRIORIDAD: EMERGENCIA")
