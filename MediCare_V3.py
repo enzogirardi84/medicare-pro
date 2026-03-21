@@ -32,7 +32,7 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# --- 🎨 DISEÑO VISUAL ADAPTATIVO (CON CSS PARA BALANCE) ---
+# --- 🎨 DISEÑO VISUAL ADAPTATIVO ---
 page_bg_css = """
 <style>
 .stApp {
@@ -45,9 +45,6 @@ div[data-testid="stForm"] {
     border-radius: 12px;
     padding: 20px;
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
-}
-div[data-testid="stButton"] button {
-    border-radius: 8px;
 }
 /* Ocultar flechas de number_input para look clínico profesional */
 input[type=number]::-webkit-inner-spin-button, 
@@ -117,15 +114,7 @@ if "db_inicializada" not in st.session_state:
     
     claves_base = {
         "usuarios_db": {"admin": {"pass": "37108100", "rol": "SuperAdmin", "nombre": "Enzo Girardi", "empresa": "SISTEMAS E.G.", "matricula": "M.P 21947", "titulo": "Director de Sistemas"}},
-        "pacientes_db": [],
-        "detalles_pacientes_db": {},
-        "vitales_db": [],
-        "indicaciones_db": [],
-        "turnos_db": [],
-        "evoluciones_db": [],
-        "facturacion_db": [],
-        "logs_db": [],
-        "balance_db": []
+        "pacientes_db": [], "detalles_pacientes_db": {}, "vitales_db": [], "indicaciones_db": [], "turnos_db": [], "evoluciones_db": [], "facturacion_db": [], "logs_db": [], "balance_db": []
     }
     
     if db:
@@ -275,12 +264,12 @@ with tabs[1]:
 # 3. EVOLUCIÓN
 with tabs[2]:
     if paciente_sel:
-        st.subheader("Cargar Evolución Diaria")
-        nota = st.text_area("Nota clínica:")
-        if st.button("Firmar Nota", width="stretch"):
+        st.subheader("Cargar Procedimiento o Evolución")
+        nota = st.text_area("Describa el procedimiento realizado:")
+        if st.button("Firmar y Guardar Evolución", width="stretch"):
             if nota:
                 st.session_state["evoluciones_db"].append({"paciente": paciente_sel, "nota": nota, "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"], "mat": user.get("matricula", "N/A")})
-                guardar_datos(); st.success("Evolución guardada"); st.rerun()
+                guardar_datos(); st.success("Evolución guardada permanentemente."); st.rerun()
 
 # 4. RECETARIO
 with tabs[3]:
@@ -301,51 +290,32 @@ with tabs[3]:
 with tabs[4]:
     if paciente_sel:
         st.markdown("<h3 style='color: #3b82f6;'>⚖️ Control de Balance Hídrico (Estricto)</h3>", unsafe_allow_html=True)
-        st.info("Registre las cantidades en mililitros (ml) correspondientes al turno actual.")
-        
         with st.form("balance_form", border=True):
             col_in, col_eg = st.columns(2)
-            
             with col_in:
                 st.markdown("#### 📥 INGRESOS")
                 i_oral = st.number_input("🥤 Vía Oral (Agua, alimentos)", min_value=0, value=0)
                 i_par = st.number_input("💉 Vía Parenteral (Sueros, Meds)", min_value=0, value=0)
                 i_son = st.number_input("🧪 Sondas (SNG, K108)", min_value=0, value=0)
-                
             with col_eg:
                 st.markdown("#### 📤 EGRESOS")
                 e_ori = st.number_input("🚽 Orina (Diuresis / Foley)", min_value=0, value=0)
                 e_dep = st.number_input("💩 Deposiciones / Ostomías", min_value=0, value=0)
                 e_vom = st.number_input("🤮 Vómitos / Asp. Gástrica", min_value=0, value=0)
                 e_dre = st.number_input("🩸 Drenajes / Sangrados", min_value=0, value=0)
-                e_ins = st.number_input("💨 Pérdidas Insensibles", min_value=0, value=0, help="Cálculo: Peso x factor x Horas")
+                e_ins = st.number_input("💨 Pérdidas Insensibles", min_value=0, value=0)
                 
             st.markdown("<br>", unsafe_allow_html=True)
             if st.form_submit_button("Calculadora y Registro de Balance", width="stretch"):
                 t_ingresos = i_oral + i_par + i_son
                 t_egresos = e_ori + e_dep + e_vom + e_dre + e_ins
                 balance_total = t_ingresos - t_egresos
-                
                 st.session_state["balance_db"].append({
                     "paciente": paciente_sel, "fecha": ahora().strftime("%d/%m/%Y %H:%M"),
                     "ingresos": t_ingresos, "egresos": t_egresos, "balance": balance_total, "firma": user["nombre"]
                 })
                 guardar_datos()
                 st.rerun()
-                
-        # Tablero de control del último balance
-        bal_pac = [b for b in st.session_state["balance_db"] if b["paciente"] == paciente_sel]
-        if bal_pac:
-            ultimo = bal_pac[-1]
-            st.markdown("### Último Registro de Turno")
-            m1, m2, m3 = st.columns(3)
-            m1.metric("Ingresos Totales", f"+ {ultimo['ingresos']} ml")
-            m2.metric("Egresos Totales", f"- {ultimo['egresos']} ml")
-            m3.metric("BALANCE NETO", f"{ultimo['balance']} ml")
-            
-            st.divider()
-            df_bal = pd.DataFrame(bal_pac).drop(columns=["paciente"])
-            st.dataframe(df_bal, use_container_width=True)
 
 # 6. VISITAS Y GOOGLE MAPS
 with tabs[5]:
@@ -369,31 +339,21 @@ with tabs[5]:
             msg = urllib.parse.quote(f"Hola, soy {user['nombre']} de {mi_empresa}. Te aviso que estoy en camino al domicilio para la visita médica.")
             wa_url = f"https://wa.me/{telefono.replace('+', '').replace(' ', '')}?text={msg}"
             st.markdown(f'<a href="{wa_url}" target="_blank" class="wa-btn">📲 AVISAR POR WHATSAPP (Ir en camino)</a>', unsafe_allow_html=True)
-        else:
-            st.warning("⚠️ Este paciente no tiene teléfono registrado.")
 
-# 7. HISTORIAL COMPLETO
+# 7. HISTORIAL COMPLETO (EL CORAZÓN DEL SISTEMA)
 with tabs[6]:
     if paciente_sel:
-        st.subheader(f"📚 Historia Clínica Digital")
+        st.subheader(f"📚 Historia Clínica Digital Integral")
         
-        with st.expander("📝 Todas las Evoluciones", expanded=True):
+        with st.expander("📝 Procedimientos y Evoluciones", expanded=True):
             evs = [x for x in st.session_state["evoluciones_db"] if x["paciente"] == paciente_sel]
             if evs:
                 for e in reversed(evs):
                     st.info(f"📅 **{e['fecha']}** | 👨‍⚕️ **Dr/a. {e['firma']}**\n\n{e['nota']}")
             else:
-                st.write("No hay evoluciones registradas.")
+                st.write("No hay procedimientos registrados.")
                 
-        with st.expander("💊 Todas las Recetas e Indicaciones"):
-            recs = [x for x in st.session_state["indicaciones_db"] if x["paciente"] == paciente_sel]
-            if recs:
-                for r in reversed(recs):
-                    st.success(f"📌 **{r['fecha']}** | 👨‍⚕️ **{r['firma']}**\n\n{r['med']}")
-            else:
-                st.write("No hay indicaciones registradas.")
-                
-        with st.expander("📊 Resumen de Signos Vitales"):
+        with st.expander("📊 Registros de Signos Vitales"):
             vits = [x for x in st.session_state["vitales_db"] if x["paciente"] == paciente_sel]
             if vits:
                 df_vitales = pd.DataFrame(vits).drop(columns=["paciente"])
@@ -401,13 +361,21 @@ with tabs[6]:
             else:
                 st.write("No hay signos vitales registrados.")
                 
-        with st.expander("⚖️ Resumen de Balances Hídricos"):
+        with st.expander("⚖️ Registros de Balance Hídrico"):
             bals = [x for x in st.session_state["balance_db"] if x["paciente"] == paciente_sel]
             if bals:
                 df_bals = pd.DataFrame(bals).drop(columns=["paciente"])
                 st.dataframe(df_bals, use_container_width=True)
             else:
                 st.write("No hay balances hídricos registrados.")
+
+        with st.expander("💊 Plan Terapéutico (Recetas)"):
+            recs = [x for x in st.session_state["indicaciones_db"] if x["paciente"] == paciente_sel]
+            if recs:
+                for r in reversed(recs):
+                    st.success(f"📌 **{r['fecha']}** | Indicado por: **{r['firma']}**\n\n{r['med']}")
+            else:
+                st.write("No hay indicaciones registradas.")
 
 # 8. CAJA
 with tabs[7]:
