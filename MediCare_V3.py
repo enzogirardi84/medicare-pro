@@ -340,7 +340,7 @@ with tabs[5]:
             wa_url = f"https://wa.me/{telefono.replace('+', '').replace(' ', '')}?text={msg}"
             st.markdown(f'<a href="{wa_url}" target="_blank" class="wa-btn">📲 AVISAR POR WHATSAPP (Ir en camino)</a>', unsafe_allow_html=True)
 
-# 7. HISTORIAL COMPLETO (EL CORAZÓN DEL SISTEMA)
+# 7. HISTORIAL COMPLETO
 with tabs[6]:
     if paciente_sel:
         st.subheader(f"📚 Historia Clínica Digital Integral")
@@ -386,7 +386,7 @@ with tabs[7]:
             st.session_state["facturacion_db"].append({"paciente": paciente_sel, "serv": serv, "monto": mont, "fecha": ahora().strftime("%d/%m/%Y")})
             guardar_datos(); st.success("Registrado"); st.rerun()
 
-# 9. PDF
+# 9. PDF (CON BALANCE HÍDRICO EN ML)
 with tabs[8]:
     if paciente_sel and FPDF_DISPONIBLE:
         def crear_pdf_pro(p):
@@ -394,6 +394,7 @@ with tabs[8]:
             pdf.add_page()
             def t(txt): return str(txt).encode('latin-1', 'replace').decode('latin-1')
             
+            # --- ENCABEZADO Y LOGO ---
             pdf.set_fill_color(59, 130, 246)
             pdf.ellipse(10, 10, 22, 22, 'F') 
             pdf.set_draw_color(255, 255, 255); pdf.set_line_width(1.2)
@@ -404,11 +405,13 @@ with tabs[8]:
             pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("MediCare Enterprise PRO - Reporte Medico"), ln=True)
             pdf.ln(18)
             
+            # --- DATOS DEL PACIENTE ---
             det = st.session_state["detalles_pacientes_db"].get(p, {})
             pdf.set_fill_color(240, 240, 240); pdf.set_font("Arial", 'B', 12)
             pdf.cell(0, 10, t(f" HISTORIA CLINICA: {p}"), 1, 1, 'L', True)
             pdf.set_font("Arial", '', 10); pdf.cell(0, 8, t(f" DNI: {det.get('dni')} | Empresa: {emp_paciente}"), ln=True); pdf.ln(5)
 
+            # --- SIGNOS VITALES ---
             pdf.set_font("Arial", 'B', 11); pdf.cell(0, 10, t("SIGNOS VITALES:"), ln=True)
             pdf.set_font("Arial", 'B', 8); pdf.set_fill_color(230, 230, 230)
             pdf.cell(35, 7, "FECHA", 1, 0, 'C', True); pdf.cell(22, 7, "TA", 1, 0, 'C', True); pdf.cell(22, 7, "SAT%", 1, 0, 'C', True); pdf.cell(22, 7, "FC", 1, 0, 'C', True); pdf.cell(22, 7, "TEMP", 1, 0, 'C', True); pdf.cell(22, 7, "HGT", 1, 1, 'C', True)
@@ -417,14 +420,38 @@ with tabs[8]:
                 pdf.cell(35, 7, t(v['fecha']), 1); pdf.cell(22, 7, t(v['TA']), 1); pdf.cell(22, 7, t(v['Sat']), 1); pdf.cell(22, 7, t(v['FC']), 1); pdf.cell(22, 7, t(v['Temp']), 1); pdf.cell(22, 7, t(v['HGT']), 1, 1)
             pdf.ln(10)
 
+            # --- BALANCE HÍDRICO (NUEVA SECCIÓN EN PDF) ---
+            pdf.set_font("Arial", 'B', 11); pdf.cell(0, 10, t("BALANCE HIDRICO HISTORICO:"), ln=True)
+            bals = [x for x in st.session_state["balance_db"] if x["paciente"] == p]
+            if bals:
+                pdf.set_font("Arial", 'B', 8); pdf.set_fill_color(230, 230, 230)
+                pdf.cell(45, 7, "FECHA / HORA", 1, 0, 'C', True)
+                pdf.cell(45, 7, "INGRESOS TOTALES", 1, 0, 'C', True)
+                pdf.cell(45, 7, "EGRESOS TOTALES", 1, 0, 'C', True)
+                pdf.cell(45, 7, "BALANCE NETO", 1, 1, 'C', True)
+                
+                pdf.set_font("Arial", '', 8)
+                for b in bals:
+                    pdf.cell(45, 7, t(b['fecha']), 1, 0, 'C')
+                    pdf.cell(45, 7, f"+ {b['ingresos']} ml", 1, 0, 'C')
+                    pdf.cell(45, 7, f"- {b['egresos']} ml", 1, 0, 'C')
+                    pdf.cell(45, 7, f"{b['balance']} ml", 1, 1, 'C')
+            else:
+                pdf.set_font("Arial", 'I', 9)
+                pdf.cell(0, 6, t("No se registraron balances hídricos para este paciente."), ln=True)
+            pdf.ln(10)
+
+            # --- EVOLUCIONES CLINICAS ---
             pdf.set_font("Arial", 'B', 11); pdf.cell(0, 10, t("EVOLUCIONES CLINICAS:"), ln=True)
             for ev in [x for x in st.session_state["evoluciones_db"] if x["paciente"] == p]:
                 pdf.set_font("Arial", 'B', 8); pdf.cell(0, 6, t(f"[{ev['fecha']}] - Firma: {ev['firma']}"), ln=True)
                 pdf.set_font("Arial", '', 9); pdf.multi_cell(0, 5, t(ev['nota']), 'L'); pdf.ln(2)
             
-            pdf.ln(20); pdf.line(10, pdf.get_y(), 80, pdf.get_y())
+            # --- FIRMA DEL PROFESIONAL AL FINAL ---
+            pdf.ln(15); pdf.line(10, pdf.get_y(), 80, pdf.get_y())
             pdf.set_font("Arial", 'B', 10); pdf.cell(0, 6, t(f"Firma: {user['nombre']}"), ln=True)
             pdf.cell(0, 6, t(f"Matricula: {user.get('matricula', 'S/D')}"), ln=True)
+            
             return pdf.output(dest='S').encode('latin-1')
 
         st.download_button("📥 Generar Historia Clínica en PDF", crear_pdf_pro(paciente_sel), f"HC_{paciente_sel}.pdf", "application/pdf")
