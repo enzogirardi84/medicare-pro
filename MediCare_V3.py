@@ -8,7 +8,7 @@ from supabase import create_client, Client
 import io
 import base64
 
-# --- 1. CONFIGURACIÓN DE LIBRERÍAS (PDF, FOTOS Y CÁLCULO ESTADÍSTICO) ---
+# --- 1. CONFIGURACIÓN DE LIBRERÍAS (PDF Y FOTOS) ---
 FPDF_DISPONIBLE = False
 try:
     from fpdf import FPDF
@@ -48,7 +48,6 @@ div[data-testid="stForm"] {
     padding: 20px;
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
 }
-/* Ocultar flechas de number_input */
 input[type=number]::-webkit-inner-spin-button, 
 input[type=number]::-webkit-outer-spin-button { 
     -webkit-appearance: none; 
@@ -57,8 +56,6 @@ input[type=number]::-webkit-outer-spin-button {
 input[type=number] {
     -moz-appearance: textfield;
 }
-
-/* Botones especiales */
 .wa-btn {
     display: block; width: 100%; text-align: center; background-color: #25D366; 
     color: white !important; padding: 10px; border-radius: 8px; font-weight: bold; text-decoration: none;
@@ -191,7 +188,7 @@ with st.sidebar:
 
     st.divider()
     
-    # --- AGREGADO: CAMBIAR CONTRASEÑA ---
+    # CAMBIAR CONTRASEÑA
     with st.expander("🔒 Cambiar mi Contraseña"):
         with st.form("cambio_pass"):
             p_actual = st.text_input("Contraseña Actual", type="password")
@@ -199,7 +196,6 @@ with st.sidebar:
             p_rep = st.text_input("Repetir Nueva Contraseña", type="password")
             
             if st.form_submit_button("Actualizar Clave", width="stretch"):
-                # Buscar el usuario actual en la base de datos
                 u_key_actual = None
                 for k, v in st.session_state["usuarios_db"].items():
                     if v["nombre"] == user["nombre"] and v["empresa"] == user["empresa"]:
@@ -228,12 +224,10 @@ with tabs[0]:
     st.markdown(f"<h3 style='color: #3b82f6;'>📈 Panel de Gestión - {mi_empresa}</h3>", unsafe_allow_html=True)
     if not pacientes_visibles: st.warning("No hay pacientes cargados para generar estadísticas.")
     else:
-        # 👨‍⚕️ Gráfico Barras: Visitas por Enfermero (Última Semana)
         st.markdown("#### Visitas por Profesional (Última Semana)")
         df_evs = pd.DataFrame(st.session_state["evoluciones_db"])
         if not df_evs.empty:
             df_evs["fecha_c"] = pd.to_datetime(df_evs["fecha"], format="%d/%m/%Y %H:%M")
-            # Solución al error de zona horaria: sacamos tzinfo
             hace_una_semana = (ahora() - timedelta(days=7)).replace(tzinfo=None)
             
             if rol == "Coordinador":
@@ -248,7 +242,7 @@ with tabs[0]:
                 st.bar_chart(perf_enf.set_index("Profesional")["Visitas"], color="#3b82f6")
             else: st.caption("No hubo visitas registradas.")
 
-# 1. ADMISIÓN (Sigue igual + SEXO)
+# 1. ADMISIÓN 
 with tabs[1]:
     st.subheader("Registrar Paciente")
     with st.form("adm_form", clear_on_submit=True):
@@ -257,7 +251,6 @@ with tabs[1]:
         o = col_b.text_input("Obra Social"); f_nac = col_b.date_input("Nacimiento", value=date(2000, 1, 1))
         emp_d = st.text_input("Empresa", value=mi_empresa) if rol == "SuperAdmin" else mi_empresa
         
-        # --- AGREGADO: SEXO ---
         col_c, col_d = st.columns(2)
         se = col_c.selectbox("Sexo", ["F", "M"])
         dir_p = col_d.text_input("Dirección (Río Cuarto)")
@@ -269,7 +262,7 @@ with tabs[1]:
                 st.session_state["detalles_pacientes_db"][id_p] = {"dni": d, "fnac": f_nac.strftime("%d/%m/%Y"), "sexo": se, "direccion": dir_p, "empresa": emp_d.strip()}
                 guardar_datos(); st.rerun()
 
-# 2. CLÍNICA (Sigue igual + TA)
+# 2. CLÍNICA
 with tabs[2]:
     if paciente_sel:
         vits = [v for v in st.session_state["vitales_db"] if v["paciente"] == paciente_sel]
@@ -284,33 +277,31 @@ with tabs[2]:
                 st.session_state["vitales_db"].append({"paciente": paciente_sel, "TA": ta, "FC": fc, "Sat": sat, "Temp": temp, "HGT": hgt, "fecha": ahora().strftime("%d/%m/%Y %H:%M")})
                 guardar_datos(); st.rerun()
 
-# 3. PEDIATRÍA (AUTOMÁTICO: IMC SUGERIDO POR SEXO/EDAD)
+# 3. PEDIATRÍA 
 with tabs[3]:
     if paciente_sel:
-        st.markdown("<h3 style='color: #10b981;'>👶 Crecimiento y Control Automático (P3-P97)</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 style='color: #10b981;'>👶 Crecimiento y Control Automático</h3>", unsafe_allow_html=True)
         det = st.session_state["detalles_pacientes_db"].get(paciente_sel, {})
-        se = det.get("sexo", "F"); f_n_str = det.get("fnac", "01/01/2000")
+        se = det.get("sexo", "F")
+        f_n_str = det.get("fnac", "01/01/2000")
         f_n = pd.to_datetime(f_n_str, format="%d/%m/%Y")
         eda_meses = round((ahora().replace(tzinfo=None) - f_n).days / 30.4375, 1)
         
         with st.form("pedia"):
             col_a, col_b = st.columns(2)
-            pes = col_a.number_input(t("Peso Actual (kg)"), min_value=0.0, format="%.2f")
-            tal = col_b.number_input(t("Talla Actual (cm)"), min_value=0.0, format="%.2f")
-            pc = col_a.number_input(t("Périm. Cefálico (cm)"), min_value=0.0, format="%.2f")
-            desc = col_b.text_input(t("Descripción / Nota"))
+            pes = col_a.number_input("Peso Actual (kg)", min_value=0.0, format="%.2f")
+            tal = col_b.number_input("Talla Actual (cm)", min_value=0.0, format="%.2f")
+            pc = col_a.number_input("Périm. Cefálico (cm)", min_value=0.0, format="%.2f")
+            desc = col_b.text_input("Descripción / Nota")
             
-            if st.form_submit_button("Calcular y Guardar Control"):
+            if st.form_submit_button("Calcular y Guardar Control", width="stretch"):
                 imc = round(pes / ((tal/100)**2), 2) if tal > 0 else 0
                 
-                # --- AGREGADO: CÁLCULO DE PERCENTIL SUGERIDO (SIMPLIFICADO) ---
                 percentil_sug = ""
-                # Si es mujer
                 if se == "F":
                     if imc < 14: percentil_sug = "⚖️ P3 - Bajo Peso"
                     elif imc < 18: percentil_sug = "⚖️ P50 - Peso Normal"
                     else: percentil_sug = "⚠️ P97 - Sobrepeso"
-                # Si es hombre
                 else:
                     if imc < 14.5: percentil_sug = "⚖️ P3 - Bajo Peso"
                     elif imc < 18.5: percentil_sug = "⚖️ P50 - Peso Normal"
@@ -321,15 +312,15 @@ with tabs[3]:
                     "edad_meses": eda_meses, "peso": pes, "talla": tal, "pc": pc, 
                     "imc": imc, "percentil_sug": percentil_sug, "firma": user["nombre"]
                 })
-                guardar_datos(); st.rerun()
+                guardar_datos()
+                st.rerun()
         
-        # Mostrar último sugerido
         ped = [x for x in st.session_state["pediatria_db"] if x["paciente"] == paciente_sel]
         if ped:
             u_p = ped[-1]
             c1, c2, c3 = st.columns(3)
             c1.metric("IMC", u_p["imc"])
-            c2.metric("⚖️ Percentil Sugerido (P50)", u_p["percentil_sug"])
+            c2.metric("⚖️ Percentil Sugerido", u_p["percentil_sug"])
             c3.write(f"Edad al control: {u_p['edad_meses']} meses")
             
             df_g = pd.DataFrame(ped).set_index("fecha")
@@ -337,19 +328,16 @@ with tabs[3]:
             c1.caption("Curva de Peso (kg)"); c1.line_chart(df_g["peso"], color="#3b82f6")
             c2.caption("Curva de Talla (cm)"); c2.line_chart(df_g["talla"], color="#10b981")
 
-# 4. EVOLUCIÓN (NO INVASIVO: CÁMARA OCULTA EN EXPANDER)
+# 4. EVOLUCIÓN
 with tabs[4]:
     if paciente_sel:
         st.subheader("Cargar Evolución / Heridas")
         with st.form("evol"):
             nota = st.text_area("Nota clínica:")
+            desc_w = st.text_input("Descripción de la herida (Opcional)")
             
-            st.markdown("#### 📸 Registro de Heridas (Opcional)")
-            desc_w = st.text_input("Descripción de la herida")
-            
-            # --- AGREGADO: EXPANDER PARA LA CÁMARA ---
             with st.expander("📷 Tomar Foto de la Herida", expanded=False):
-                st.caption("Al apretar el botón inferior, se pedirá permiso para usar la cámara.")
+                st.caption("Se pedirá permiso para usar la cámara.")
                 foto_w = st.camera_input("Foto")
             
             if st.form_submit_button("Firmar y Guardar Nota"):
@@ -363,7 +351,7 @@ with tabs[4]:
                     
                     guardar_datos(); st.rerun()
 
-# 5. RECETAS (Sigue igual)
+# 5. RECETAS
 with tabs[5]:
     if paciente_sel:
         with st.form("recet"):
@@ -372,7 +360,7 @@ with tabs[5]:
                 st.session_state["indicaciones_db"].append({"paciente": paciente_sel, "med": f"{d} {p} por {f} días.", "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
                 guardar_datos(); st.rerun()
 
-# 6. BALANCE HÍDRICO (CON ML)
+# 6. BALANCE HÍDRICO
 with tabs[6]:
     if paciente_sel:
         st.markdown("<h3 style='color: #3b82f6;'>⚖️ Control Estricto (ml)</h3>", unsafe_allow_html=True)
@@ -422,7 +410,7 @@ with tabs[8]:
                 for c in ["ingresos", "egresos", "balance"]: dfb[c] = dfb[c].astype(str)+" ml"
                 st.dataframe(dfb, use_container_width=True)
 
-# 9. CAJA (Sigue igual)
+# 9. CAJA 
 with tabs[9]:
     if paciente_sel:
         serv = st.text_input("Servicio"); mon = st.number_input("Monto", 0)
@@ -441,15 +429,51 @@ with tabs[10]:
             return pdf.output(dest='S').encode('latin-1')
         st.download_button("📥 Generar Historia Clínica en PDF", crear_pdf(), f"HC_{paciente_sel}.pdf", "application/pdf")
 
-# 11. EQUIPO Y SUSCRIPCIONES (Sigue igual)
+# 11. EQUIPO Y SUSCRIPCIONES
 if "⚙️ Mi Equipo" in menu:
     with tabs[menu.index("⚙️ Mi Equipo")]:
         st.subheader(f"Gestión de Personal - {mi_empresa}")
         with st.form("equipo"):
             c1, c2 = st.columns(2)
             u_id = c1.text_input("Usuario (Login)"); u_pw = c2.text_input("Clave")
-            u_rl = st.selectbox("Rol", ["Operativo", "Coordinador"])
-            if st.form_submit_button("Habilitar Acceso"):
+            u_nm = st.text_input("Nombre Completo")
+            c3, c4 = st.columns(2)
+            u_mt = c3.text_input("Matrícula"); u_ti = c4.selectbox("Título", ["Enfermero/a", "Médico/a"])
+            
+            if rol == "SuperAdmin": u_emp = st.text_input("🏢 Asignar a Clínica / Empresa")
+            else: u_emp = mi_empresa; st.info(f"🏢 Agregando personal a tu empresa: **{u_emp}**")
+            
+            u_rl = st.selectbox("Rol", ["Operativo", "Coordinador", "SuperAdmin"] if rol == "SuperAdmin" else ["Operativo", "Coordinador"])
+            
+            if st.form_submit_button("Habilitar Acceso", width="stretch"):
                 if u_id and u_pw:
-                    st.session_state["usuarios_db"][u_id.strip().lower()] = {"pass": u_pw.strip(), "rol": u_rl, "empresa": mi_empresa, "estado": "Activo"}
+                    st.session_state["usuarios_db"][u_id.strip().lower()] = {"pass": u_pw.strip(), "nombre": u_nm.strip(), "rol": u_rl, "titulo": u_ti, "empresa": u_emp.strip(), "matricula": u_mt.strip(), "estado": "Activo"}
                     guardar_datos(); st.rerun()
+        
+        st.divider(); st.subheader("👥 Control de Accesos (Suscripciones)")
+        usuarios_visibles = st.session_state["usuarios_db"] if rol == "SuperAdmin" else {k: v for k, v in st.session_state["usuarios_db"].items() if v["empresa"] == mi_empresa}
+        
+        for u, d in list(usuarios_visibles.items()):
+            if u == "admin": continue
+            c1, c2, c3 = st.columns([3, 1, 1])
+            estado = d.get("estado", "Activo")
+            c1.write(f"🏢 {d['empresa']} | 👤 {d['nombre']} | Login: `{u}` | Estado: **{estado}**")
+            
+            if rol == "SuperAdmin":
+                if estado == "Activo":
+                    if c2.button("⏸️ Suspender", key=f"susp_{u}"):
+                        st.session_state["usuarios_db"][u]["estado"] = "Bloqueado"
+                        guardar_datos(); st.rerun()
+                else:
+                    if c2.button("▶️ Reactivar", key=f"reac_{u}"):
+                        st.session_state["usuarios_db"][u]["estado"] = "Activo"
+                        guardar_datos(); st.rerun()
+            
+            if c3.button("❌ Bajar", key=f"del_{u}"): del st.session_state["usuarios_db"][u]; guardar_datos(); st.rerun()
+
+# 12. AUDITORÍA
+if "🕵️ Auditoría" in menu:
+    with tabs[menu.index("🕵️ Auditoría")]:
+        st.subheader("Auditoría de Movimientos")
+        df_logs = pd.DataFrame(st.session_state["logs_db"])
+        st.dataframe(df_logs)
