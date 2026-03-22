@@ -17,7 +17,7 @@ except ImportError:
     FPDF_DISPONIBLE = False
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="MediCare Enterprise PRO V5.0", page_icon="⚕️", layout="wide")
+st.set_page_config(page_title="MediCare Enterprise PRO", page_icon="⚕️", layout="wide")
 st.markdown("<html lang='es' translate='no'>", unsafe_allow_html=True)
 
 # --- ZONA HORARIA ARGENTINA ---
@@ -109,7 +109,7 @@ def guardar_datos():
 if "db_inicializada" not in st.session_state:
     db = cargar_datos()
     claves_base = {
-        "usuarios_db": {"admin": {"pass": "37108100", "rol": "SuperAdmin", "nombre": "Enzo Girardi", "empresa": "SISTEMAS E.G.", "matricula": "M.P 21947", "titulo": "Director de Sistemas", "estado": "Activo"}},
+        "usuarios_db": {"admin": {"pass": "37108100", "rol": "SuperAdmin", "nombre": "Enzo Girardi", "empresa": "SISTEMAS E.G.", "matricula": "M.P 21947", "titulo": "Director de Sistemas", "estado": "Activo", "pin": "1234"}},
         "pacientes_db": [], "detalles_pacientes_db": {}, "vitales_db": [], "indicaciones_db": [], "turnos_db": [], 
         "evoluciones_db": [], "facturacion_db": [], "logs_db": [], "balance_db": [], "pediatria_db": [], "fotos_heridas_db": []
     }
@@ -126,7 +126,7 @@ if "logeado" not in st.session_state: st.session_state["logeado"] = False
 if not st.session_state["logeado"]:
     _, col, _ = st.columns([1,1.5,1])
     with col:
-        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V5.0</h2>", unsafe_allow_html=True)
+        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO</h2>", unsafe_allow_html=True)
         
         tab_login, tab_recuperar = st.tabs(["🔑 Iniciar Sesión", "🆘 Olvidé mi Contraseña"])
         
@@ -162,9 +162,10 @@ if not st.session_state["logeado"]:
         
         with tab_recuperar:
             with st.form("recover"):
-                st.info("Para crear una nueva contraseña, validá tu identidad:")
+                st.info("Para crear una nueva contraseña, ingresá tu PIN de Seguridad de 4 dígitos:")
                 rec_u = st.text_input("Usuario (Login)")
                 rec_emp = st.text_input("Empresa / Clínica asignada")
+                rec_pin = st.text_input("PIN de Seguridad", type="password", max_chars=4)
                 rec_pass = st.text_input("Nueva Contraseña", type="password")
                 
                 if st.form_submit_button("Cambiar Contraseña", width="stretch"):
@@ -177,12 +178,16 @@ if not st.session_state["logeado"]:
                     if u_limpio in st.session_state["usuarios_db"]:
                         user_data = st.session_state["usuarios_db"][u_limpio]
                         if user_data["empresa"].strip().lower() == rec_emp.strip().lower():
-                            if len(rec_pass) >= 4:
-                                st.session_state["usuarios_db"][u_limpio]["pass"] = rec_pass
-                                guardar_datos()
-                                st.success("✅ Contraseña actualizada correctamente. ¡Ya podés iniciar sesión!")
+                            pin_guardado = str(user_data.get("pin", ""))
+                            if pin_guardado == str(rec_pin).strip() and pin_guardado != "":
+                                if len(rec_pass) >= 4:
+                                    st.session_state["usuarios_db"][u_limpio]["pass"] = rec_pass
+                                    guardar_datos()
+                                    st.success("✅ Contraseña actualizada correctamente. ¡Ya podés iniciar sesión!")
+                                else:
+                                    st.error("⚠️ La nueva contraseña debe tener al menos 4 caracteres.")
                             else:
-                                st.error("⚠️ La contraseña debe tener al menos 4 caracteres.")
+                                st.error("❌ PIN de Seguridad incorrecto.")
                         else:
                             st.error("❌ La empresa no coincide con nuestros registros.")
                     else:
@@ -570,18 +575,30 @@ if "⚙️ Mi Equipo" in menu:
     with tabs[menu.index("⚙️ Mi Equipo")]:
         st.subheader(f"Gestión de Personal - {mi_empresa}")
         with st.form("equipo"):
-            c1, c2 = st.columns(2)
-            u_id = c1.text_input("Usuario (Login)"); u_pw = c2.text_input("Clave")
+            col_id, col_pw, col_pin = st.columns([2, 2, 1])
+            u_id = col_id.text_input("Usuario (Login)")
+            u_pw = col_pw.text_input("Clave")
+            u_pin = col_pin.text_input("PIN (4 Nros)", max_chars=4)
+            
             u_nm = st.text_input("Nombre Completo")
             c3, c4 = st.columns(2)
             u_mt = c3.text_input("Matrícula"); u_ti = c4.selectbox("Título", ["Enfermero/a", "Médico/a"])
+            
             if rol == "SuperAdmin": u_emp = st.text_input("🏢 Asignar a Clínica / Empresa")
             else: u_emp = mi_empresa; st.info(f"🏢 Agregando personal a tu empresa: **{u_emp}**")
+            
             u_rl = st.selectbox("Rol", ["Operativo", "Coordinador", "SuperAdmin"] if rol == "SuperAdmin" else ["Operativo", "Coordinador"])
+            
             if st.form_submit_button("Habilitar Acceso", width="stretch"):
-                if u_id and u_pw:
-                    st.session_state["usuarios_db"][u_id.strip().lower()] = {"pass": u_pw.strip(), "nombre": u_nm.strip(), "rol": u_rl, "titulo": u_ti, "empresa": u_emp.strip(), "matricula": u_mt.strip(), "estado": "Activo"}
+                if u_id and u_pw and u_pin:
+                    st.session_state["usuarios_db"][u_id.strip().lower()] = {
+                        "pass": u_pw.strip(), "nombre": u_nm.strip(), "rol": u_rl, 
+                        "titulo": u_ti, "empresa": u_emp.strip(), "matricula": u_mt.strip(), 
+                        "estado": "Activo", "pin": u_pin.strip()
+                    }
                     guardar_datos(); st.rerun()
+                else:
+                    st.error("⚠️ Por favor, completá todos los campos (incluyendo el PIN de 4 dígitos).")
         
         st.divider(); st.subheader("👥 Control de Accesos (Suscripciones)")
         usuarios_visibles = st.session_state["usuarios_db"] if rol == "SuperAdmin" else {k: v for k, v in st.session_state["usuarios_db"].items() if v["empresa"] == mi_empresa}
@@ -589,7 +606,7 @@ if "⚙️ Mi Equipo" in menu:
             if u == "admin": continue
             c1, c2, c3 = st.columns([3, 1, 1])
             estado = d.get("estado", "Activo")
-            c1.write(f"🏢 {d['empresa']} | 👤 {d['nombre']} | Login: `{u}` | Estado: **{estado}**")
+            c1.write(f"🏢 {d['empresa']} | 👤 {d['nombre']} | Login: `{u}` | PIN: `{d.get('pin', 'S/D')}` | Estado: **{estado}**")
             if rol == "SuperAdmin":
                 if estado == "Activo":
                     if c2.button("⏸️ Suspender", key=f"susp_{u}"): st.session_state["usuarios_db"][u]["estado"] = "Bloqueado"; guardar_datos(); st.rerun()
