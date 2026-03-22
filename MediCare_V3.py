@@ -62,12 +62,6 @@ input[type=number] {
     margin-top: 10px; margin-bottom: 10px;
 }
 .wa-btn:hover { background-color: #128C7E; }
-.xl-btn {
-    display: block; width: 100%; text-align: center; background-color: #1D6F42; 
-    color: white !important; padding: 10px; border-radius: 8px; font-weight: bold; text-decoration: none;
-    margin-top: 10px; margin-bottom: 10px;
-}
-.xl-btn:hover { background-color: #155734; }
 </style>
 """
 st.markdown(page_bg_css, unsafe_allow_html=True)
@@ -277,7 +271,7 @@ with tabs[2]:
                 st.session_state["vitales_db"].append({"paciente": paciente_sel, "TA": ta, "FC": fc, "Sat": sat, "Temp": temp, "HGT": hgt, "fecha": ahora().strftime("%d/%m/%Y %H:%M")})
                 guardar_datos(); st.rerun()
 
-# 3. PEDIATRÍA 
+# 3. PEDIATRÍA (CORREGIDO)
 with tabs[3]:
     if paciente_sel:
         st.markdown("<h3 style='color: #10b981;'>👶 Crecimiento y Control Automático</h3>", unsafe_allow_html=True)
@@ -319,14 +313,21 @@ with tabs[3]:
         if ped:
             u_p = ped[-1]
             c1, c2, c3 = st.columns(3)
-            c1.metric("IMC", u_p["imc"])
-            c2.metric("⚖️ Percentil Sugerido", u_p["percentil_sug"])
-            c3.write(f"Edad al control: {u_p['edad_meses']} meses")
+            
+            imc_val = u_p.get("imc", "S/D")
+            perc_val = u_p.get("percentil_sug", "S/D (Antiguo)")
+            edad_val = u_p.get("edad_meses", u_p.get("edad", "S/D"))
+            
+            c1.metric("IMC", imc_val)
+            c2.metric("⚖️ Percentil Sugerido", perc_val)
+            c3.write(f"Edad al control: {edad_val} meses" if str(edad_val) != "S/D" else "Edad: S/D")
             
             df_g = pd.DataFrame(ped).set_index("fecha")
             c1, c2 = st.columns(2)
-            c1.caption("Curva de Peso (kg)"); c1.line_chart(df_g["peso"], color="#3b82f6")
-            c2.caption("Curva de Talla (cm)"); c2.line_chart(df_g["talla"], color="#10b981")
+            if "peso" in df_g.columns:
+                c1.caption("Curva de Peso (kg)"); c1.line_chart(df_g["peso"], color="#3b82f6")
+            if "talla" in df_g.columns:
+                c2.caption("Curva de Talla (cm)"); c2.line_chart(df_g["talla"], color="#10b981")
 
 # 4. EVOLUCIÓN
 with tabs[4]:
@@ -410,24 +411,70 @@ with tabs[8]:
                 for c in ["ingresos", "egresos", "balance"]: dfb[c] = dfb[c].astype(str)+" ml"
                 st.dataframe(dfb, use_container_width=True)
 
-# 9. CAJA 
+# 9. CAJA (CON EXCEL)
 with tabs[9]:
     if paciente_sel:
         serv = st.text_input("Servicio"); mon = st.number_input("Monto", 0)
         if st.button("Registrar Cobro"):
             st.session_state["facturacion_db"].append({"paciente": paciente_sel, "serv": serv, "monto": mon, "fecha": ahora().strftime("%d/%m/%Y")})
             guardar_datos(); st.rerun()
+        
+        st.divider()
+        if rol in ["SuperAdmin", "Coordinador"]:
+            df_caja_completo = pd.DataFrame(st.session_state["facturacion_db"])
+            if not df_caja_completo.empty:
+                if rol == "Coordinador":
+                    pacs_mi_empresa = [p for p in st.session_state["detalles_pacientes_db"] if st.session_state["detalles_pacientes_db"][p]['empresa'] == mi_empresa]
+                    df_caja_completo = df_caja_completo[df_caja_completo['paciente'].isin(pacs_mi_empresa)]
+                
+                output = io.BytesIO()
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    df_caja_completo.to_excel(writer, index=False, sheet_name='Caja_MediCare')
+                
+                st.download_button(label="📥 DESCARGAR CAJA A EXCEL", data=output.getvalue(), file_name=f"Reporte_Caja_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# 10. PDF
+# 10. PDF (COMPLETO CON DATOS MÉDICOS)
 with tabs[10]:
     if paciente_sel and FPDF_DISPONIBLE:
-        def crear_pdf():
+        def crear_pdf_pro(p):
             pdf = FPDF(); pdf.add_page()
-            def t(tx): return str(tx).encode('latin-1','replace').decode('latin-1')
-            pdf.set_font("Arial",'B',16); pdf.cell(0,10,t(mi_empresa), ln=1)
-            pdf.set_font("Arial",'',12); pdf.cell(0,8,t(f"Historia Clínica: {paciente_sel}"), ln=1)
+            def t(txt): return str(txt).encode('latin-1', 'replace').decode('latin-1')
+            
+            pdf.set_fill_color(59, 130, 246); pdf.ellipse(10, 10, 22, 22, 'F'); pdf.set_draw_color(255, 255, 255); pdf.set_line_width(1.2)
+            pdf.line(21, 14, 21, 28); pdf.line(14, 21, 28, 21)
+            emp_paciente = st.session_state["detalles_pacientes_db"].get(p, {}).get("empresa", mi_empresa)
+            pdf.set_font("Arial", 'B', 16); pdf.set_xy(38, 14); pdf.cell(0, 10, t(emp_paciente), ln=True)
+            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("MediCare Enterprise PRO - Reporte Medico"), ln=True); pdf.ln(18)
+            
+            det = st.session_state["detalles_pacientes_db"].get(p, {}); pdf.set_fill_color(240, 240, 240); pdf.set_font("Arial", 'B', 12)
+            pdf.cell(0, 10, t(f" HISTORIA CLINICA: {p}"), 1, 1, 'L', True)
+            pdf.set_font("Arial", '', 10); pdf.cell(0, 8, t(f" DNI: {det.get('dni')} | Empresa: {emp_paciente}"), ln=True); pdf.ln(5)
+
+            pdf.set_font("Arial", 'B', 11); pdf.cell(0, 10, t("SIGNOS VITALES:"), ln=True); pdf.set_font("Arial", 'B', 8); pdf.set_fill_color(230, 230, 230)
+            pdf.cell(35, 7, "FECHA", 1, 0, 'C', True); pdf.cell(22, 7, "TA", 1, 0, 'C', True); pdf.cell(22, 7, "SAT%", 1, 0, 'C', True); pdf.cell(22, 7, "FC", 1, 0, 'C', True); pdf.cell(22, 7, "TEMP", 1, 0, 'C', True); pdf.cell(22, 7, "HGT", 1, 1, 'C', True)
+            pdf.set_font("Arial", '', 8)
+            for v in [x for x in st.session_state["vitales_db"] if x["paciente"] == p]:
+                pdf.cell(35, 7, t(v['fecha']), 1); pdf.cell(22, 7, t(v['TA']), 1); pdf.cell(22, 7, t(v['Sat']), 1); pdf.cell(22, 7, t(v['FC']), 1); pdf.cell(22, 7, t(v['Temp']), 1); pdf.cell(22, 7, t(v['HGT']), 1, 1)
+            pdf.ln(10)
+
+            bals = [x for x in st.session_state["balance_db"] if x["paciente"] == p]
+            if bals:
+                pdf.set_font("Arial", 'B', 11); pdf.cell(0, 10, t("BALANCE HIDRICO HISTORICO:"), ln=True); pdf.set_font("Arial", 'B', 8); pdf.set_fill_color(230, 230, 230)
+                pdf.cell(45, 7, "FECHA / HORA", 1, 0, 'C', True); pdf.cell(45, 7, "INGRESOS TOTALES", 1, 0, 'C', True); pdf.cell(45, 7, "EGRESOS TOTALES", 1, 0, 'C', True); pdf.cell(45, 7, "BALANCE NETO", 1, 1, 'C', True)
+                pdf.set_font("Arial", '', 8)
+                for b in bals:
+                    pdf.cell(45, 7, t(b['fecha']), 1, 0, 'C'); pdf.cell(45, 7, f"+ {b['ingresos']} ml", 1, 0, 'C'); pdf.cell(45, 7, f"- {b['egresos']} ml", 1, 0, 'C'); pdf.cell(45, 7, f"{b['balance']} ml", 1, 1, 'C')
+                pdf.ln(10)
+
+            pdf.set_font("Arial", 'B', 11); pdf.cell(0, 10, t("EVOLUCIONES CLINICAS:"), ln=True)
+            for ev in [x for x in st.session_state["evoluciones_db"] if x["paciente"] == p]:
+                pdf.set_font("Arial", 'B', 8); pdf.cell(0, 6, t(f"[{ev['fecha']}] - Firma: {ev['firma']}"), ln=True)
+                pdf.set_font("Arial", '', 9); pdf.multi_cell(0, 5, t(ev['nota']), 'L'); pdf.ln(2)
+            
+            pdf.ln(15); pdf.line(10, pdf.get_y(), 80, pdf.get_y()); pdf.set_font("Arial", 'B', 10); pdf.cell(0, 6, t(f"Firma: {user['nombre']}"), ln=True); pdf.cell(0, 6, t(f"Matricula: {user.get('matricula', 'S/D')}"), ln=True)
             return pdf.output(dest='S').encode('latin-1')
-        st.download_button("📥 Generar Historia Clínica en PDF", crear_pdf(), f"HC_{paciente_sel}.pdf", "application/pdf")
+
+        st.download_button("📥 Generar Historia Clínica en PDF", crear_pdf_pro(paciente_sel), f"HC_{paciente_sel}.pdf", "application/pdf")
 
 # 11. EQUIPO Y SUSCRIPCIONES
 if "⚙️ Mi Equipo" in menu:
@@ -471,9 +518,15 @@ if "⚙️ Mi Equipo" in menu:
             
             if c3.button("❌ Bajar", key=f"del_{u}"): del st.session_state["usuarios_db"][u]; guardar_datos(); st.rerun()
 
-# 12. AUDITORÍA
+# 12. AUDITORÍA (CON EXCEL)
 if "🕵️ Auditoría" in menu:
     with tabs[menu.index("🕵️ Auditoría")]:
         st.subheader("Auditoría de Movimientos")
         df_logs = pd.DataFrame(st.session_state["logs_db"])
         st.dataframe(df_logs)
+        
+        if not df_logs.empty:
+            out_logs = io.BytesIO()
+            with pd.ExcelWriter(out_logs, engine='openpyxl') as writer:
+                df_logs.to_excel(writer, index=False, sheet_name='Logs_MediCare')
+            st.download_button(label="📥 DESCARGAR LOGS A EXCEL", data=out_logs.getvalue(), file_name=f"Reporte_Logs_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
