@@ -384,7 +384,7 @@ with tabs[5]:
             ]
             p = st.selectbox("Vía de Administración", lista_vias)
             f = st.number_input("Días de tratamiento", 1, 30, 7)
-            if st.form_submit_button("Cargar Terapéutica"):
+            if st.form_submit_button("Cargar Terapéutica", width="stretch"):
                 st.session_state["indicaciones_db"].append({"paciente": paciente_sel, "med": f"{d} vía {p} por {f} días.", "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
                 guardar_datos(); st.rerun()
 
@@ -582,7 +582,15 @@ if "⚙️ Mi Equipo" in menu:
             
             u_nm = st.text_input("Nombre Completo")
             c3, c4 = st.columns(2)
-            u_mt = c3.text_input("Matrícula"); u_ti = c4.selectbox("Título", ["Enfermero/a", "Médico/a"])
+            u_mt = c3.text_input("Matrícula")
+            
+            # LISTA COMPLETA DE PROFESIONALES
+            lista_titulos = [
+                "Médico/a", "Lic. en Enfermería", "Enfermero/a", "Kinesiólogo/a", 
+                "Fonoaudiólogo/a", "Nutricionista", "Psicólogo/a", "Acompañante Terapéutico", 
+                "Trabajador/a Social", "Administrativo/a", "Otro"
+            ]
+            u_ti = c4.selectbox("Título", lista_titulos)
             
             if rol == "SuperAdmin": u_emp = st.text_input("🏢 Asignar a Clínica / Empresa")
             else: u_emp = mi_empresa; st.info(f"🏢 Agregando personal a tu empresa: **{u_emp}**")
