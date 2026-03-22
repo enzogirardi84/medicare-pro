@@ -121,40 +121,72 @@ if "db_inicializada" not in st.session_state:
         for k, v in claves_base.items(): st.session_state[k] = v
     st.session_state["db_inicializada"] = True
 
-# --- LOGIN ---
+# --- LOGIN Y RECUPERACIÓN DE CONTRASEÑA ---
 if "logeado" not in st.session_state: st.session_state["logeado"] = False
 if not st.session_state["logeado"]:
     _, col, _ = st.columns([1,1.5,1])
     with col:
         st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V5.0</h2>", unsafe_allow_html=True)
-        with st.form("login"):
-            u = st.text_input("Usuario")
-            p = st.text_input("Contraseña", type="password")
-            
-            if st.form_submit_button("Ingresar al Sistema", width="stretch"):
-                db_f = cargar_datos()
-                if db_f:
-                    for k, v in db_f.items(): st.session_state[k] = v
+        
+        tab_login, tab_recuperar = st.tabs(["🔑 Iniciar Sesión", "🆘 Olvidé mi Contraseña"])
+        
+        with tab_login:
+            with st.form("login"):
+                u = st.text_input("Usuario")
+                p = st.text_input("Contraseña", type="password")
                 
-                u_limpio = u.strip().lower()
-                usuario_encontrado = None
-                for key_db in st.session_state["usuarios_db"].keys():
-                    if key_db.strip().lower() == u_limpio:
-                        usuario_encontrado = key_db
-                        break
-                
-                if usuario_encontrado:
-                    user_data = st.session_state["usuarios_db"][usuario_encontrado]
-                    if user_data.get("estado", "Activo") == "Bloqueado":
-                        st.error("🚫 Acceso suspendido por fin de prueba o falta de pago.")
-                    elif str(user_data["pass"]).strip() == p.strip():
-                        st.session_state["u_actual"] = user_data
-                        st.session_state["logeado"] = True
-                        st.session_state["logs_db"].append({"F": ahora().strftime("%d/%m/%Y"), "H": ahora().strftime("%H:%M"), "U": user_data["nombre"], "E": user_data["empresa"], "A": "Login"})
-                        guardar_datos()
-                        st.rerun()
+                if st.form_submit_button("Ingresar al Sistema", width="stretch"):
+                    db_f = cargar_datos()
+                    if db_f:
+                        for k, v in db_f.items(): st.session_state[k] = v
+                    
+                    u_limpio = u.strip().lower()
+                    usuario_encontrado = None
+                    for key_db in st.session_state["usuarios_db"].keys():
+                        if key_db.strip().lower() == u_limpio:
+                            usuario_encontrado = key_db
+                            break
+                    
+                    if usuario_encontrado:
+                        user_data = st.session_state["usuarios_db"][usuario_encontrado]
+                        if user_data.get("estado", "Activo") == "Bloqueado":
+                            st.error("🚫 Acceso suspendido por fin de prueba o falta de pago.")
+                        elif str(user_data["pass"]).strip() == p.strip():
+                            st.session_state["u_actual"] = user_data
+                            st.session_state["logeado"] = True
+                            st.session_state["logs_db"].append({"F": ahora().strftime("%d/%m/%Y"), "H": ahora().strftime("%H:%M"), "U": user_data["nombre"], "E": user_data["empresa"], "A": "Login"})
+                            guardar_datos()
+                            st.rerun()
+                        else: st.error("Acceso denegado: Usuario o contraseña incorrectos.")
                     else: st.error("Acceso denegado: Usuario o contraseña incorrectos.")
-                else: st.error("Acceso denegado: Usuario o contraseña incorrectos.")
+        
+        with tab_recuperar:
+            with st.form("recover"):
+                st.info("Para crear una nueva contraseña, validá tu identidad:")
+                rec_u = st.text_input("Usuario (Login)")
+                rec_emp = st.text_input("Empresa / Clínica asignada")
+                rec_pass = st.text_input("Nueva Contraseña", type="password")
+                
+                if st.form_submit_button("Cambiar Contraseña", width="stretch"):
+                    db_f = cargar_datos()
+                    if db_f:
+                        for k, v in db_f.items(): st.session_state[k] = v
+                    
+                    u_limpio = rec_u.strip().lower()
+                    
+                    if u_limpio in st.session_state["usuarios_db"]:
+                        user_data = st.session_state["usuarios_db"][u_limpio]
+                        if user_data["empresa"].strip().lower() == rec_emp.strip().lower():
+                            if len(rec_pass) >= 4:
+                                st.session_state["usuarios_db"][u_limpio]["pass"] = rec_pass
+                                guardar_datos()
+                                st.success("✅ Contraseña actualizada correctamente. ¡Ya podés iniciar sesión!")
+                            else:
+                                st.error("⚠️ La contraseña debe tener al menos 4 caracteres.")
+                        else:
+                            st.error("❌ La empresa no coincide con nuestros registros.")
+                    else:
+                        st.error("❌ El usuario no existe en el sistema.")
     st.stop()
 
 # --- CONTEXTO ---
@@ -182,7 +214,7 @@ with st.sidebar:
 
     st.divider()
     
-    with st.expander("🔒 Cambiar mi Contraseña"):
+    with st.expander("🔒 Cambiar mi Contraseña (Interno)"):
         with st.form("cambio_pass"):
             p_actual = st.text_input("Contraseña Actual", type="password")
             p_nueva = st.text_input("Nueva Contraseña", type="password")
@@ -228,7 +260,7 @@ with tabs[0]:
                 perf_enf = df_evs_s["firma"].value_counts().reset_index()
                 perf_enf.columns = ["Profesional", "Visitas"]
                 st.bar_chart(perf_enf.set_index("Profesional")["Visitas"], color="#3b82f6")
-            else: st.caption("No hubo visitas registradas en los últimos 7 días.")
+            else: st.caption("No hubo visitas registradas.")
 
 # 1. ADMISIÓN 
 with tabs[1]:
@@ -248,7 +280,7 @@ with tabs[1]:
                 st.session_state["detalles_pacientes_db"][id_p] = {"dni": d, "fnac": f_nac.strftime("%d/%m/%Y"), "sexo": se, "direccion": dir_p, "empresa": emp_d.strip()}
                 guardar_datos(); st.rerun()
 
-# 2. CLÍNICA (CORREGIDO: SE MUESTRAN LOS 6 VALORES)
+# 2. CLÍNICA 
 with tabs[2]:
     if paciente_sel:
         vits = [v for v in st.session_state["vitales_db"] if v["paciente"] == paciente_sel]
@@ -339,9 +371,16 @@ with tabs[4]:
 with tabs[5]:
     if paciente_sel:
         with st.form("recet"):
-            d = st.text_input("Medicamento"); p = st.selectbox("Vía", ["Oral", "Endovenosa"]); f = st.number_input("Días", 1, 30, 7)
+            d = st.text_input("Medicamento")
+            lista_vias = [
+                "Oral", "Endovenosa (EV)", "Intramuscular (IM)", "Subcutánea (SC)", 
+                "Sublingual", "Tópica", "Inhalatoria", "Oftálmica", "Ótica", 
+                "Nasal", "Rectal", "Vaginal"
+            ]
+            p = st.selectbox("Vía de Administración", lista_vias)
+            f = st.number_input("Días de tratamiento", 1, 30, 7)
             if st.form_submit_button("Cargar Terapéutica"):
-                st.session_state["indicaciones_db"].append({"paciente": paciente_sel, "med": f"{d} {p} por {f} días.", "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
+                st.session_state["indicaciones_db"].append({"paciente": paciente_sel, "med": f"{d} vía {p} por {f} días.", "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
                 guardar_datos(); st.rerun()
 
 # 6. BALANCE HÍDRICO
@@ -431,25 +470,21 @@ with tabs[9]:
                 with pd.ExcelWriter(output, engine='openpyxl') as writer: df_caja_completo.to_excel(writer, index=False, sheet_name='Caja_MediCare')
                 st.download_button("📥 DESCARGAR CAJA A EXCEL", data=output.getvalue(), file_name=f"Caja_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# 10. PDF (CORREGIDO Y LIMPIO DE EMOJIS)
+# 10. PDF
 with tabs[10]:
     if paciente_sel and FPDF_DISPONIBLE:
         def crear_pdf_pro(p):
             pdf = FPDF(); pdf.add_page()
-            
-            # FILTRO ANTI-EMOJIS PARA EL PDF
             def t(txt): 
                 txt = str(txt).replace('⚖️', '').replace('⚠️', '').replace('📌', '').replace('📅', '').replace('📸', '')
                 return txt.encode('latin-1', 'replace').decode('latin-1')
             
-            # Encabezado
             pdf.set_fill_color(59, 130, 246); pdf.ellipse(10, 10, 22, 22, 'F'); pdf.set_draw_color(255, 255, 255); pdf.set_line_width(1.2)
             pdf.line(21, 14, 21, 28); pdf.line(14, 21, 28, 21)
             emp_paciente = st.session_state["detalles_pacientes_db"].get(p, {}).get("empresa", mi_empresa)
             pdf.set_font("Arial", 'B', 16); pdf.set_xy(38, 14); pdf.cell(0, 10, t(emp_paciente), ln=True)
             pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral"), ln=True); pdf.ln(15)
             
-            # Datos Paciente
             det = st.session_state["detalles_pacientes_db"].get(p, {})
             pdf.set_fill_color(240, 240, 240); pdf.set_font("Arial", 'B', 11)
             pdf.cell(0, 8, t(f" PACIENTE: {p}"), 1, 1, 'L', True)
@@ -457,7 +492,6 @@ with tabs[10]:
             pdf.cell(0, 6, t(f" DNI: {det.get('dni','S/D')} | Nacimiento: {det.get('fnac','S/D')} | Sexo: {det.get('sexo','S/D')}"), ln=True)
             pdf.cell(0, 6, t(f" Domicilio: {det.get('direccion','S/D')}"), ln=True); pdf.ln(5)
 
-            # 1. Signos Vitales
             vits = [x for x in st.session_state["vitales_db"] if x["paciente"] == p]
             if vits:
                 pdf.set_font("Arial", 'B', 10); pdf.cell(0, 8, t("SIGNOS VITALES:"), ln=True)
@@ -474,7 +508,6 @@ with tabs[10]:
                     pdf.cell(20, 6, t(v.get('HGT','')), 1, 1, 'C')
                 pdf.ln(4)
 
-            # 2. Pediatría
             peds = [x for x in st.session_state["pediatria_db"] if x["paciente"] == p]
             if peds:
                 pdf.set_font("Arial", 'B', 10); pdf.cell(0, 8, t("CONTROL PEDIATRICO:"), ln=True)
@@ -490,7 +523,6 @@ with tabs[10]:
                     pdf.cell(60, 6, t(pe.get('percentil_sug','')), 1, 1, 'C')
                 pdf.ln(4)
 
-            # 3. Balance Hídrico
             bals = [x for x in st.session_state["balance_db"] if x["paciente"] == p]
             if bals:
                 pdf.set_font("Arial", 'B', 10); pdf.cell(0, 8, t("BALANCE HIDRICO (ml):"), ln=True)
@@ -504,7 +536,6 @@ with tabs[10]:
                     pdf.cell(40, 6, f"{b.get('balance','')} ml", 1, 1, 'C')
                 pdf.ln(4)
 
-            # 4. Recetas
             recs = [x for x in st.session_state["indicaciones_db"] if x["paciente"] == p]
             if recs:
                 pdf.set_font("Arial", 'B', 10); pdf.cell(0, 8, t("PLAN TERAPEUTICO:"), ln=True)
@@ -512,7 +543,6 @@ with tabs[10]:
                     pdf.set_font("Arial", 'B', 8); pdf.cell(0, 5, t(f"[{r.get('fecha','')}] - Firma: {r.get('firma','')}"), ln=True)
                     pdf.set_font("Arial", '', 9); pdf.multi_cell(0, 5, t(r.get('med','')), 'L'); pdf.ln(2)
 
-            # 5. Evoluciones y Heridas
             evs = [x for x in st.session_state["evoluciones_db"] if x["paciente"] == p]
             if evs:
                 pdf.set_font("Arial", 'B', 10); pdf.cell(0, 8, t("EVOLUCIONES CLINICAS:"), ln=True)
@@ -527,7 +557,6 @@ with tabs[10]:
                     pdf.set_font("Arial", 'B', 8); pdf.cell(0, 5, t(f"[{fh.get('fecha','')}] - Firma: {fh.get('firma','')}"), ln=True)
                     pdf.set_font("Arial", 'I', 9); pdf.multi_cell(0, 5, t(f"Descripcion: {fh.get('descripcion','')}. (Ver foto en el Historial Digital)."), 'L'); pdf.ln(2)
 
-            # 6. Firma Final
             pdf.ln(10); pdf.line(10, pdf.get_y(), 80, pdf.get_y()); pdf.set_font("Arial", 'B', 10)
             pdf.cell(0, 6, t(f"Firma Emitente: {user['nombre']}"), ln=True)
             pdf.cell(0, 6, t(f"Matricula: {user.get('matricula', 'S/D')}"), ln=True)
