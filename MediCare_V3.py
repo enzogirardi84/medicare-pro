@@ -101,7 +101,7 @@ def guardar_datos():
     data = {k: st.session_state[k] for k in claves if k in st.session_state}
     try:
         supabase.table('medicare_db').upsert({"id": 1, "datos": data}).execute()
-        st.toast("✅ Base de datos sincronizada en la nube", icon="☁️")
+        st.toast("✅ Guardado exitosamente en la nube", icon="☁️")
     except Exception as e:
         st.error(f"⚠️ Error al subir a la nube: {e}")
 
@@ -131,7 +131,7 @@ if not st.session_state["logeado"]:
         tab_login, tab_recuperar = st.tabs(["🔑 Iniciar Sesión", "🆘 Olvidé mi Contraseña"])
         
         with tab_login:
-            with st.form("login"):
+            with st.form("login", clear_on_submit=True):
                 u = st.text_input("Usuario")
                 p = st.text_input("Contraseña", type="password")
                 
@@ -161,7 +161,7 @@ if not st.session_state["logeado"]:
                     else: st.error("Acceso denegado: Usuario o contraseña incorrectos.")
         
         with tab_recuperar:
-            with st.form("recover"):
+            with st.form("recover", clear_on_submit=True):
                 st.info("Para crear una nueva contraseña, ingresá tu PIN de Seguridad de 4 dígitos:")
                 rec_u = st.text_input("Usuario (Login)")
                 rec_emp = st.text_input("Empresa / Clínica asignada")
@@ -220,7 +220,7 @@ with st.sidebar:
     st.divider()
     
     with st.expander("🔒 Cambiar mi Contraseña (Interno)"):
-        with st.form("cambio_pass"):
+        with st.form("cambio_pass", clear_on_submit=True):
             p_actual = st.text_input("Contraseña Actual", type="password")
             p_nueva = st.text_input("Nueva Contraseña", type="password")
             p_rep = st.text_input("Repetir Nueva Contraseña", type="password")
@@ -299,7 +299,7 @@ with tabs[2]:
             c5.metric("Temp", f"{u.get('Temp', '-')} °C")
             c6.metric("HGT", u.get("HGT", "-"))
             
-        with st.form("vitales_f"):
+        with st.form("vitales_f", clear_on_submit=True):
             ta = st.text_input("Tensión Arterial (TA)", "120/80")
             col_signos = st.columns(5)
             fc = col_signos[0].number_input("F.C.", 30, 200, 75)
@@ -320,7 +320,7 @@ with tabs[3]:
         f_n = pd.to_datetime(f_n_str, format="%d/%m/%Y")
         eda_meses = round((ahora().replace(tzinfo=None) - f_n).days / 30.4375, 1)
         
-        with st.form("pedia"):
+        with st.form("pedia", clear_on_submit=True):
             col_a, col_b = st.columns(2)
             pes = col_a.number_input("Peso Actual (kg)", min_value=0.0, format="%.2f")
             tal = col_b.number_input("Talla Actual (cm)", min_value=0.0, format="%.2f")
@@ -357,7 +357,7 @@ with tabs[3]:
 with tabs[4]:
     if paciente_sel:
         st.subheader("Cargar Evolución / Heridas")
-        with st.form("evol"):
+        with st.form("evol", clear_on_submit=True):
             nota = st.text_area("Nota clínica:")
             desc_w = st.text_input("Descripción de la herida (Opcional)")
             with st.expander("📷 Tomar Foto de la Herida", expanded=False):
@@ -375,7 +375,7 @@ with tabs[4]:
 # 5. RECETAS
 with tabs[5]:
     if paciente_sel:
-        with st.form("recet"):
+        with st.form("recet", clear_on_submit=True):
             d = st.text_input("Medicamento")
             lista_vias = [
                 "Oral", "Endovenosa (EV)", "Intramuscular (IM)", "Subcutánea (SC)", 
@@ -392,7 +392,7 @@ with tabs[5]:
 with tabs[6]:
     if paciente_sel:
         st.markdown("<h3 style='color: #3b82f6;'>⚖️ Control Estricto (ml)</h3>", unsafe_allow_html=True)
-        with st.form("bal"):
+        with st.form("bal", clear_on_submit=True):
             c1, c2 = st.columns(2)
             c1.markdown("#### Ingresos (ml)"); i1 = c1.number_input("Oral", 0, step=100); i2 = c1.number_input("Parenteral", 0, step=100)
             c2.markdown("#### Egresos (ml)"); e1 = c2.number_input("Orina", 0, step=100); e2 = c2.number_input("Drenajes", 0, step=100); e3 = c2.number_input("Pérdidas Insensibles", 0, step=100)
@@ -460,10 +460,11 @@ with tabs[8]:
 # 9. CAJA 
 with tabs[9]:
     if paciente_sel:
-        serv = st.text_input("Servicio"); mon = st.number_input("Monto", 0)
-        if st.button("Registrar Cobro"):
-            st.session_state["facturacion_db"].append({"paciente": paciente_sel, "serv": serv, "monto": mon, "fecha": ahora().strftime("%d/%m/%Y")})
-            guardar_datos(); st.rerun()
+        with st.form("caja_form", clear_on_submit=True):
+            serv = st.text_input("Servicio"); mon = st.number_input("Monto", 0)
+            if st.form_submit_button("Registrar Cobro", width="stretch"):
+                st.session_state["facturacion_db"].append({"paciente": paciente_sel, "serv": serv, "monto": mon, "fecha": ahora().strftime("%d/%m/%Y")})
+                guardar_datos(); st.rerun()
         st.divider()
         if rol in ["SuperAdmin", "Coordinador"]:
             df_caja_completo = pd.DataFrame(st.session_state["facturacion_db"])
@@ -574,7 +575,7 @@ with tabs[10]:
 if "⚙️ Mi Equipo" in menu:
     with tabs[menu.index("⚙️ Mi Equipo")]:
         st.subheader(f"Gestión de Personal - {mi_empresa}")
-        with st.form("equipo"):
+        with st.form("equipo", clear_on_submit=True):
             col_id, col_pw, col_pin = st.columns([2, 2, 1])
             u_id = col_id.text_input("Usuario (Login)")
             u_pw = col_pw.text_input("Clave")
@@ -584,7 +585,6 @@ if "⚙️ Mi Equipo" in menu:
             c3, c4 = st.columns(2)
             u_mt = c3.text_input("Matrícula")
             
-            # LISTA COMPLETA DE PROFESIONALES
             lista_titulos = [
                 "Médico/a", "Lic. en Enfermería", "Enfermero/a", "Kinesiólogo/a", 
                 "Fonoaudiólogo/a", "Nutricionista", "Psicólogo/a", "Acompañante Terapéutico", 
