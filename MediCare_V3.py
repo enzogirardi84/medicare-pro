@@ -272,17 +272,17 @@ with tabs[1]:
     st.subheader("Registrar Paciente")
     with st.form("adm_form", clear_on_submit=True):
         col_a, col_b = st.columns(2)
-        n = col_a.text_input("Nombre y Apellido"); d = col_a.text_input("DNI")
-        o = col_b.text_input("Obra Social"); f_nac = col_b.date_input("Nacimiento", value=date(2000, 1, 1))
+        n = col_a.text_input("Nombre y Apellido"); o = col_b.text_input("Obra Social")
+        d = col_a.text_input("DNI"); f_nac = col_b.date_input("Nacimiento", value=date(2000, 1, 1))
+        se = col_a.selectbox("Sexo", ["F", "M"]); tel = col_b.text_input("WhatsApp (Ej: 358430...)")
+        dir_p = st.text_input("Dirección (Río Cuarto)")
         emp_d = st.text_input("Empresa", value=mi_empresa) if rol == "SuperAdmin" else mi_empresa
-        col_c, col_d = st.columns(2)
-        se = col_c.selectbox("Sexo", ["F", "M"])
-        dir_p = col_d.text_input("Dirección (Río Cuarto)")
+        
         if st.form_submit_button("Habilitar Paciente", width="stretch"):
             if n and d and emp_d: 
                 id_p = f"{n} ({o}) - {emp_d.strip()}"
                 st.session_state["pacientes_db"].append(id_p)
-                st.session_state["detalles_pacientes_db"][id_p] = {"dni": d, "fnac": f_nac.strftime("%d/%m/%Y"), "sexo": se, "direccion": dir_p, "empresa": emp_d.strip()}
+                st.session_state["detalles_pacientes_db"][id_p] = {"dni": d, "fnac": f_nac.strftime("%d/%m/%Y"), "sexo": se, "telefono": tel, "direccion": dir_p, "empresa": emp_d.strip()}
                 guardar_datos(); st.rerun()
 
 # 2. CLÍNICA 
@@ -495,7 +495,7 @@ with tabs[10]:
             pdf.set_fill_color(240, 240, 240); pdf.set_font("Arial", 'B', 11)
             pdf.cell(0, 8, t(f" PACIENTE: {p}"), 1, 1, 'L', True)
             pdf.set_font("Arial", '', 9)
-            pdf.cell(0, 6, t(f" DNI: {det.get('dni','S/D')} | Nacimiento: {det.get('fnac','S/D')} | Sexo: {det.get('sexo','S/D')}"), ln=True)
+            pdf.cell(0, 6, t(f" DNI: {det.get('dni','S/D')} | Nacimiento: {det.get('fnac','S/D')} | Sexo: {det.get('sexo','S/D')} | Tel: {det.get('telefono','S/D')}"), ln=True)
             pdf.cell(0, 6, t(f" Domicilio: {det.get('direccion','S/D')}"), ln=True); pdf.ln(5)
 
             vits = [x for x in st.session_state["vitales_db"] if x["paciente"] == p]
