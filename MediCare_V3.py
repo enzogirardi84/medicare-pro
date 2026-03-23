@@ -267,16 +267,13 @@ with tabs[0]:
                 st.bar_chart(perf_enf.set_index("Profesional")["Visitas"], color="#3b82f6")
             else: st.caption("No hubo visitas registradas.")
 
-# 1. ADMISIÓN (AHORA CON WHATSAPP RESTAURADO)
+# 1. ADMISIÓN 
 with tabs[1]:
     st.subheader("Registrar Paciente")
     with st.form("adm_form", clear_on_submit=True):
         col_a, col_b = st.columns(2)
-        n = col_a.text_input("Nombre y Apellido")
-        o = col_b.text_input("Obra Social")
-        
-        d = col_a.text_input("DNI")
-        f_nac = col_b.date_input("Nacimiento", value=date(2000, 1, 1))
+        n = col_a.text_input("Nombre y Apellido"); o = col_b.text_input("Obra Social")
+        d = col_a.text_input("DNI"); f_nac = col_b.date_input("Nacimiento", value=date(2000, 1, 1))
         
         col_c, col_d = st.columns(2)
         se = col_c.selectbox("Sexo", ["F", "M"])
@@ -408,7 +405,7 @@ with tabs[6]:
                 st.session_state["balance_db"].append({"paciente": paciente_sel, "ingresos": ting, "egresos": tegr, "balance": bal, "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
                 guardar_datos(); st.rerun()
 
-# 7. VISITAS Y GOOGLE MAPS (CON FILTRO DE WHATSAPP)
+# 7. VISITAS Y GOOGLE MAPS (CON FILTRO INTELIGENTE DE WHATSAPP PARA ARGENTINA)
 with tabs[7]:
     if paciente_sel:
         det = st.session_state["detalles_pacientes_db"].get(paciente_sel, {})
@@ -418,12 +415,11 @@ with tabs[7]:
             mapa_html = f'<iframe width="100%" height="300" src="https://maps.google.com/maps?q={urllib.parse.quote(dire)}&z=15&output=embed"></iframe>'
             st.components.v1.html(mapa_html, height=300)
         if te:
-            # Filtro inteligente para que WhatsApp no crea que es de Finlandia
+            # Filtro inteligente para Whatsapp Argentina
             num_limpio = ''.join(filter(str.isdigit, str(te)))
-            if len(num_limpio) == 10:
-                num_limpio = "549" + num_limpio
-            elif len(num_limpio) == 12 and num_limpio.startswith("54"):
-                num_limpio = "549" + num_limpio[2:]
+            if len(num_limpio) >= 10:
+                # Nos quedamos con los últimos 10 dígitos (ignora el 0 o el 15 si los pusieron mal)
+                num_limpio = "549" + num_limpio[-10:]
                 
             msg = urllib.parse.quote(f"Hola, soy {user['nombre']} de {mi_empresa}. Estoy en camino al domicilio.")
             st.markdown(f'<a href="https://wa.me/{num_limpio}?text={msg}" target="_blank" class="wa-btn">📲 AVISAR WHATSAPP</a>', unsafe_allow_html=True)
@@ -490,7 +486,7 @@ with tabs[9]:
                 with pd.ExcelWriter(output, engine='openpyxl') as writer: df_caja_completo.to_excel(writer, index=False, sheet_name='Caja_MediCare')
                 st.download_button("📥 DESCARGAR CAJA A EXCEL", data=output.getvalue(), file_name=f"Caja_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# 10. PDF
+# 10. PDF (AHORA CON FIRMA LEGAL DEL PACIENTE)
 with tabs[10]:
     if paciente_sel and FPDF_DISPONIBLE:
         def crear_pdf_pro(p):
@@ -577,9 +573,24 @@ with tabs[10]:
                     pdf.set_font("Arial", 'B', 8); pdf.cell(0, 5, t(f"[{fh.get('fecha','')}] - Firma: {fh.get('firma','')}"), ln=True)
                     pdf.set_font("Arial", 'I', 9); pdf.multi_cell(0, 5, t(f"Descripcion: {fh.get('descripcion','')}. (Ver foto en el Historial Digital)."), 'L'); pdf.ln(2)
 
-            pdf.ln(10); pdf.line(10, pdf.get_y(), 80, pdf.get_y()); pdf.set_font("Arial", 'B', 10)
-            pdf.cell(0, 6, t(f"Firma Emitente: {user['nombre']}"), ln=True)
-            pdf.cell(0, 6, t(f"Matricula: {user.get('matricula', 'S/D')}"), ln=True)
+            # 6. FIRMAS LEGALES (PROFESIONAL Y PACIENTE)
+            pdf.ln(15)
+            y_firma = pdf.get_y()
+            
+            # Firma Profesional (Izquierda)
+            pdf.line(10, y_firma, 80, y_firma)
+            pdf.set_font("Arial", 'B', 9)
+            pdf.set_xy(10, y_firma + 2)
+            pdf.cell(70, 5, t(f"Firma Profesional: {user['nombre']}"), ln=2)
+            pdf.cell(70, 5, t(f"Matricula: {user.get('matricula', 'S/D')}"), ln=0)
+            
+            # Firma Paciente (Derecha)
+            nombre_paciente = p.split(" (")[0] # Extraemos solo el nombre del string
+            pdf.line(120, y_firma, 190, y_firma)
+            pdf.set_xy(120, y_firma + 2)
+            pdf.cell(70, 5, t("Conformidad Paciente / Familiar"), ln=2)
+            pdf.cell(70, 5, t(f"Aclaracion: {nombre_paciente}"), ln=2)
+            pdf.cell(70, 5, t(f"DNI: {det.get('dni', 'S/D')}"), ln=0)
             
             return pdf.output(dest='S').encode('latin-1')
 
