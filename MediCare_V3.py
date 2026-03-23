@@ -267,14 +267,21 @@ with tabs[0]:
                 st.bar_chart(perf_enf.set_index("Profesional")["Visitas"], color="#3b82f6")
             else: st.caption("No hubo visitas registradas.")
 
-# 1. ADMISIÓN 
+# 1. ADMISIÓN (AHORA CON WHATSAPP RESTAURADO)
 with tabs[1]:
     st.subheader("Registrar Paciente")
     with st.form("adm_form", clear_on_submit=True):
         col_a, col_b = st.columns(2)
-        n = col_a.text_input("Nombre y Apellido"); o = col_b.text_input("Obra Social")
-        d = col_a.text_input("DNI"); f_nac = col_b.date_input("Nacimiento", value=date(2000, 1, 1))
-        se = col_a.selectbox("Sexo", ["F", "M"]); tel = col_b.text_input("WhatsApp (Ej: 358430...)")
+        n = col_a.text_input("Nombre y Apellido")
+        o = col_b.text_input("Obra Social")
+        
+        d = col_a.text_input("DNI")
+        f_nac = col_b.date_input("Nacimiento", value=date(2000, 1, 1))
+        
+        col_c, col_d = st.columns(2)
+        se = col_c.selectbox("Sexo", ["F", "M"])
+        tel = col_d.text_input("WhatsApp (Ej: 3584302024)")
+        
         dir_p = st.text_input("Dirección (Río Cuarto)")
         emp_d = st.text_input("Empresa", value=mi_empresa) if rol == "SuperAdmin" else mi_empresa
         
@@ -401,7 +408,7 @@ with tabs[6]:
                 st.session_state["balance_db"].append({"paciente": paciente_sel, "ingresos": ting, "egresos": tegr, "balance": bal, "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
                 guardar_datos(); st.rerun()
 
-# 7. VISITAS Y GOOGLE MAPS
+# 7. VISITAS Y GOOGLE MAPS (CON FILTRO DE WHATSAPP)
 with tabs[7]:
     if paciente_sel:
         det = st.session_state["detalles_pacientes_db"].get(paciente_sel, {})
@@ -411,8 +418,15 @@ with tabs[7]:
             mapa_html = f'<iframe width="100%" height="300" src="https://maps.google.com/maps?q={urllib.parse.quote(dire)}&z=15&output=embed"></iframe>'
             st.components.v1.html(mapa_html, height=300)
         if te:
-            msg = urllib.parse.quote(f"Hola, soy {user['nombre']} de {mi_empresa}. Estoy en camino.")
-            st.markdown(f'<a href="https://wa.me/{te}?text={msg}" target="_blank" class="wa-btn">📲 AVISAR WHATSAPP</a>', unsafe_allow_html=True)
+            # Filtro inteligente para que WhatsApp no crea que es de Finlandia
+            num_limpio = ''.join(filter(str.isdigit, str(te)))
+            if len(num_limpio) == 10:
+                num_limpio = "549" + num_limpio
+            elif len(num_limpio) == 12 and num_limpio.startswith("54"):
+                num_limpio = "549" + num_limpio[2:]
+                
+            msg = urllib.parse.quote(f"Hola, soy {user['nombre']} de {mi_empresa}. Estoy en camino al domicilio.")
+            st.markdown(f'<a href="https://wa.me/{num_limpio}?text={msg}" target="_blank" class="wa-btn">📲 AVISAR WHATSAPP</a>', unsafe_allow_html=True)
 
 # 8. HISTORIAL COMPLETO
 with tabs[8]:
@@ -495,7 +509,7 @@ with tabs[10]:
             pdf.set_fill_color(240, 240, 240); pdf.set_font("Arial", 'B', 11)
             pdf.cell(0, 8, t(f" PACIENTE: {p}"), 1, 1, 'L', True)
             pdf.set_font("Arial", '', 9)
-            pdf.cell(0, 6, t(f" DNI: {det.get('dni','S/D')} | Nacimiento: {det.get('fnac','S/D')} | Sexo: {det.get('sexo','S/D')} | Tel: {det.get('telefono','S/D')}"), ln=True)
+            pdf.cell(0, 6, t(f" DNI: {det.get('dni','S/D')} | Nacimiento: {det.get('fnac','S/D')} | Sexo: {det.get('sexo','S/D')} | WhatsApp: {det.get('telefono','S/D')}"), ln=True)
             pdf.cell(0, 6, t(f" Domicilio: {det.get('direccion','S/D')}"), ln=True); pdf.ln(5)
 
             vits = [x for x in st.session_state["vitales_db"] if x["paciente"] == p]
