@@ -25,7 +25,7 @@ except ImportError:
     CANVAS_DISPONIBLE = False
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="MediCare Enterprise PRO V7.3", page_icon="⚕️", layout="wide")
+st.set_page_config(page_title="MediCare Enterprise PRO V7.4", page_icon="⚕️", layout="wide")
 st.markdown("<html lang='es' translate='no'>", unsafe_allow_html=True)
 
 # --- ZONA HORARIA ARGENTINA ---
@@ -134,7 +134,7 @@ if "logeado" not in st.session_state: st.session_state["logeado"] = False
 if not st.session_state["logeado"]:
     _, col, _ = st.columns([1,1.5,1])
     with col:
-        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V7.3</h2>", unsafe_allow_html=True)
+        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V7.4</h2>", unsafe_allow_html=True)
         tab_login, tab_recuperar = st.tabs(["🔑 Iniciar Sesión", "🆘 Olvidé mi Contraseña"])
         with tab_login:
             with st.form("login", clear_on_submit=True):
@@ -151,7 +151,7 @@ if not st.session_state["logeado"]:
                             usuario_encontrado = key_db; break
                     if usuario_encontrado:
                         user_data = st.session_state["usuarios_db"][usuario_encontrado]
-                        if user_data.get("estado", "Activo") == "Bloqueado": st.error("🚫 Acceso suspendido por falta de pago.")
+                        if user_data.get("estado", "Activo") == "Bloqueado": st.error("🚫 Acceso suspendido.")
                         elif str(user_data["pass"]).strip() == p.strip():
                             st.session_state["u_actual"] = user_data; st.session_state["logeado"] = True
                             st.session_state["logs_db"].append({"F": ahora().strftime("%d/%m/%Y"), "H": ahora().strftime("%H:%M"), "U": user_data["nombre"], "E": user_data["empresa"], "A": "Login"})
@@ -160,7 +160,7 @@ if not st.session_state["logeado"]:
                     else: st.error("Acceso denegado.")
         with tab_recuperar:
             with st.form("recover", clear_on_submit=True):
-                st.info("Para crear una nueva contraseña, ingresá tu PIN de Seguridad de 4 dígitos:")
+                st.info("Para crear una nueva contraseña, ingresá tu PIN de 4 dígitos:")
                 rec_u = st.text_input("Usuario (Login)"); rec_emp = st.text_input("Empresa / Clínica asignada")
                 rec_pin = st.text_input("PIN de Seguridad", type="password", max_chars=4)
                 rec_pass = st.text_input("Nueva Contraseña", type="password")
@@ -175,7 +175,7 @@ if not st.session_state["logeado"]:
                             if str(user_data.get("pin", "")) == str(rec_pin).strip() and str(rec_pin).strip() != "":
                                 if len(rec_pass) >= 4:
                                     st.session_state["usuarios_db"][u_limpio]["pass"] = rec_pass
-                                    guardar_datos(); st.success("✅ Contraseña actualizada. ¡Iniciá sesión!")
+                                    guardar_datos(); st.success("✅ Contraseña actualizada.")
                                 else: st.error("⚠️ Contraseña mínima de 4 caracteres.")
                             else: st.error("❌ PIN incorrecto.")
                         else: st.error("❌ Empresa incorrecta.")
@@ -199,33 +199,16 @@ with st.sidebar:
     p_f = [p for p in pacientes_visibles if buscar.lower() in p.lower()]
     paciente_sel = st.selectbox("Seleccionar Paciente:", p_f) if p_f else None
     
-    if paciente_sel and st.button("🔴 DAR DE ALTA / ELIMINAR PACIENTE", width="stretch"):
+    if paciente_sel and st.button("🔴 ELIMINAR PACIENTE", width="stretch"):
         st.session_state["pacientes_db"].remove(paciente_sel)
         del st.session_state["detalles_pacientes_db"][paciente_sel]
         st.session_state["logs_db"].append({"F": ahora().strftime("%d/%m/%Y"), "H": ahora().strftime("%H:%M"), "U": user["nombre"], "E": mi_empresa, "A": f"Baja Paciente: {paciente_sel}"})
         guardar_datos(); st.rerun()
 
     st.divider()
-    with st.expander("🔒 Cambiar mi Contraseña (Interno)"):
-        with st.form("cambio_pass", clear_on_submit=True):
-            p_actual = st.text_input("Contraseña Actual", type="password")
-            p_nueva = st.text_input("Nueva Contraseña", type="password")
-            p_rep = st.text_input("Repetir Nueva Contraseña", type="password")
-            if st.form_submit_button("Actualizar Clave", width="stretch"):
-                u_key_actual = None
-                for k, v in st.session_state["usuarios_db"].items():
-                    if v["nombre"] == user["nombre"] and v["empresa"] == user["empresa"]: u_key_actual = k; break
-                if u_key_actual:
-                    if p_actual == st.session_state["usuarios_db"][u_key_actual]["pass"]:
-                        if p_nueva == p_rep and len(p_nueva) >= 4:
-                            st.session_state["usuarios_db"][u_key_actual]["pass"] = p_nueva
-                            guardar_datos(); st.success("✅ ¡Contraseña actualizada!")
-                        else: st.error("⚠️ Claves no coinciden o son cortas.")
-                    else: st.error("❌ Contraseña actual incorrecta.")
-
     if st.button("Cerrar Sesión", width="stretch"): st.session_state["logeado"] = False; st.rerun()
 
-# --- MENU DINÁMICO 7.3 ---
+# --- MENU DINÁMICO ---
 menu = ["📍 Visitas", "📈 Dashboard", "👤 Admisión", "📅 Agenda", "📊 Clínica", "👶 Pediatría", "📝 Evolución", "💊 Recetas", "⚖️ Balance", "📦 Inventario", "📚 Historial", "💳 Caja", "🗄️ PDF"]
 if rol in ["SuperAdmin", "Coordinador"]: 
     menu.append("📋 Nomenclador")
@@ -234,36 +217,31 @@ if rol == "SuperAdmin":
     menu.append("🕵️ Auditoría")
 tabs = st.tabs(menu)
 
-# 1. VISITAS (GPS INTEGRADO)
+# 1. VISITAS
 with tabs[menu.index("📍 Visitas")]:
     if not paciente_sel:
         st.info("👈 Seleccioná un paciente en el menú lateral para registrar tu llegada.")
     else:
         st.subheader("⏱️ Fichada de Domicilio Legal (GPS)")
-        st.caption("Al registrar, el sistema geoposiciona la conexión de red como comprobante legal.")
         c_in, c_out = st.columns(2)
-        
         if c_in.button("🟢 Registrar LLEGADA", use_container_width=True):
-            with st.spinner("Capturando coordenadas GPS y geolocalización..."):
-                time.sleep(1.5) # Simulación de captura GPS
+            with st.spinner("Capturando coordenadas GPS..."):
+                time.sleep(1.5)
                 lat_mock = "-33.12" + str(int(time.time()))[-2:]
                 lon_mock = "-64.34" + str(int(time.time()))[-2:]
             st.session_state["checkin_db"].append({"paciente": paciente_sel, "profesional": user["nombre"], "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"), "tipo": f"ENTRADA (Lat: {lat_mock}, Lon: {lon_mock})", "empresa": mi_empresa})
-            guardar_datos(); st.success("Llegada y ubicación registradas exitosamente."); st.rerun()
-            
+            guardar_datos(); st.success("Llegada registrada."); st.rerun()
         if c_out.button("🔴 Registrar SALIDA", use_container_width=True):
             st.session_state["checkin_db"].append({"paciente": paciente_sel, "profesional": user["nombre"], "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"), "tipo": "SALIDA", "empresa": mi_empresa})
-            guardar_datos(); st.success("Salida registrada exitosamente."); st.rerun()
+            guardar_datos(); st.success("Salida registrada."); st.rerun()
             
         chk_pac = [c for c in st.session_state["checkin_db"] if c["paciente"] == paciente_sel]
-        if chk_pac:
-            st.dataframe(pd.DataFrame(chk_pac).drop(columns=["paciente", "empresa"]).tail(5), use_container_width=True)
+        if chk_pac: st.dataframe(pd.DataFrame(chk_pac).drop(columns=["paciente", "empresa"]).tail(5), use_container_width=True)
 
         st.divider()
         det = st.session_state["detalles_pacientes_db"].get(paciente_sel, {})
         dire = det.get("direccion", ""); te = det.get("telefono", "")
         if dire:
-            st.info(f"🏠 **Domicilio:** {dire}")
             mapa_html = f'<iframe width="100%" height="300" src="https://maps.google.com/maps?q={urllib.parse.quote(dire)}&z=15&output=embed"></iframe>'
             st.components.v1.html(mapa_html, height=300)
         if te:
@@ -277,7 +255,6 @@ with tabs[menu.index("📈 Dashboard")]:
     st.markdown(f"<h3 style='color: #3b82f6;'>📈 Panel de Gestión - {mi_empresa}</h3>", unsafe_allow_html=True)
     if not pacientes_visibles: st.warning("No hay pacientes cargados.")
     else:
-        st.markdown("#### Visitas por Profesional (Última Semana)")
         df_evs = pd.DataFrame(st.session_state["evoluciones_db"])
         if not df_evs.empty:
             df_evs["fecha_c"] = pd.to_datetime(df_evs["fecha"], format="%d/%m/%Y %H:%M")
@@ -290,22 +267,16 @@ with tabs[menu.index("📈 Dashboard")]:
                 perf_enf = df_evs_s["firma"].value_counts().reset_index()
                 perf_enf.columns = ["Profesional", "Visitas"]
                 st.bar_chart(perf_enf.set_index("Profesional")["Visitas"], color="#3b82f6")
-            else: st.caption("No hubo visitas registradas.")
 
 # 3. ADMISIÓN 
 with tabs[menu.index("👤 Admisión")]:
-    st.subheader("Registrar Paciente")
     with st.form("adm_form", clear_on_submit=True):
         col_a, col_b = st.columns(2)
-        n = col_a.text_input("Nombre y Apellido")
-        o = col_b.text_input("Obra Social")
-        d = col_a.text_input("DNI del Paciente")
-        f_nac = col_b.date_input("Nacimiento", value=date(2000, 1, 1))
+        n = col_a.text_input("Nombre y Apellido"); o = col_b.text_input("Obra Social")
+        d = col_a.text_input("DNI del Paciente"); f_nac = col_b.date_input("Nacimiento", value=date(2000, 1, 1))
         col_c, col_d = st.columns(2)
-        se = col_c.selectbox("Sexo", ["F", "M"])
-        tel = col_d.text_input("WhatsApp (Ej: 3584302024)")
-        dir_p = st.text_input("Dirección (Río Cuarto)")
-        emp_d = st.text_input("Empresa", value=mi_empresa) if rol == "SuperAdmin" else mi_empresa
+        se = col_c.selectbox("Sexo", ["F", "M"]); tel = col_d.text_input("WhatsApp (Ej: 3584302024)")
+        dir_p = st.text_input("Dirección (Río Cuarto)"); emp_d = st.text_input("Empresa", value=mi_empresa) if rol == "SuperAdmin" else mi_empresa
         if st.form_submit_button("Habilitar Paciente", width="stretch"):
             if n and d and emp_d: 
                 id_p = f"{n} ({o}) - {emp_d.strip()}"
@@ -315,30 +286,22 @@ with tabs[menu.index("👤 Admisión")]:
 
 # 4. AGENDA 
 with tabs[menu.index("📅 Agenda")]:
-    st.subheader("Planificador de Visitas")
     with st.form("agenda_form", clear_on_submit=True):
-        if not pacientes_visibles: st.warning("Cargá pacientes primero.")
-        else:
+        if pacientes_visibles:
             c1, c2 = st.columns(2)
             pac_ag = c1.selectbox("Paciente a visitar", pacientes_visibles)
             profesionales = [v['nombre'] for k, v in st.session_state["usuarios_db"].items() if v['empresa'] == mi_empresa or rol == "SuperAdmin"]
             prof_ag = c2.selectbox("Asignar Profesional", profesionales)
             c3, c4 = st.columns(2)
-            fecha_ag = c3.date_input("Fecha programada")
-            hora_ag = c4.time_input("Hora aproximada")
-            
+            fecha_ag = c3.date_input("Fecha programada"); hora_ag = c4.time_input("Hora aproximada")
             if st.form_submit_button("Agendar Visita"):
-                st.session_state["agenda_db"].append({
-                    "paciente": pac_ag, "profesional": prof_ag, "fecha": fecha_ag.strftime("%d/%m/%Y"),
-                    "hora": hora_ag.strftime("%H:%M"), "empresa": mi_empresa, "estado": "Pendiente"
-                })
+                st.session_state["agenda_db"].append({"paciente": pac_ag, "profesional": prof_ag, "fecha": fecha_ag.strftime("%d/%m/%Y"), "hora": hora_ag.strftime("%H:%M"), "empresa": mi_empresa, "estado": "Pendiente"})
                 guardar_datos(); st.success("✅ Turno agendado."); st.rerun()
-                
-    st.divider(); st.markdown("#### Próximas Visitas")
+    st.divider()
     agenda_mia = [a for a in st.session_state["agenda_db"] if a["empresa"] == mi_empresa]
     if agenda_mia: st.dataframe(pd.DataFrame(agenda_mia), use_container_width=True)
 
-# 5. CLÍNICA (ALERTAS ROJAS INTEGRADAS)
+# 5. CLÍNICA
 with tabs[menu.index("📊 Clínica")]:
     if paciente_sel:
         vits = [v for v in st.session_state["vitales_db"] if v["paciente"] == paciente_sel]
@@ -355,20 +318,16 @@ with tabs[menu.index("📊 Clínica")]:
             if st.form_submit_button("Guardar Signos"):
                 st.session_state["vitales_db"].append({"paciente": paciente_sel, "TA": ta, "FC": fc, "FR": fr, "Sat": sat, "Temp": temp, "HGT": hgt, "fecha": ahora().strftime("%d/%m/%Y %H:%M")})
                 guardar_datos()
-                
-                # Triage Automático de Alertas Rojas
                 alerta_disparada = False
-                if fc > 110: st.error(f"🚨 ALERTA ROJA: Taquicardia severa detectada (FC: {fc}). Sugerencia: Informar a coordinación médica."); alerta_disparada = True
+                if fc > 110: st.error(f"🚨 ALERTA ROJA: Taquicardia severa detectada (FC: {fc})."); alerta_disparada = True
                 elif fc < 50: st.error(f"🚨 ALERTA ROJA: Bradicardia detectada (FC: {fc})."); alerta_disparada = True
-                if sat < 90: st.error(f"🚨 ALERTA ROJA: Desaturación crítica (SatO2: {sat}%). Evaluar oxigenoterapia."); alerta_disparada = True
+                if sat < 90: st.error(f"🚨 ALERTA ROJA: Desaturación crítica (SatO2: {sat}%)."); alerta_disparada = True
                 if temp > 38.0: st.warning(f"⚠️ ALERTA AMARILLA: Paciente febril (Temp: {temp}°C)."); alerta_disparada = True
-                
                 if not alerta_disparada: st.rerun()
 
 # 6. PEDIATRÍA 
 with tabs[menu.index("👶 Pediatría")]:
     if paciente_sel:
-        st.markdown("<h3 style='color: #10b981;'>👶 Crecimiento y Control</h3>", unsafe_allow_html=True)
         det = st.session_state["detalles_pacientes_db"].get(paciente_sel, {})
         se = det.get("sexo", "F"); f_n_str = det.get("fnac", "01/01/2000")
         f_n = pd.to_datetime(f_n_str, format="%d/%m/%Y")
@@ -382,53 +341,36 @@ with tabs[menu.index("👶 Pediatría")]:
             if st.form_submit_button("Guardar Control", width="stretch"):
                 imc = round(pes / ((tal/100)**2), 2) if tal > 0 else 0
                 percentil_sug = ""
-                if se == "F":
-                    if imc < 14: percentil_sug = "⚖️ P3 - Bajo Peso"
-                    elif imc < 18: percentil_sug = "⚖️ P50 - Peso Normal"
-                    else: percentil_sug = "⚠️ P97 - Sobrepeso"
-                else:
-                    if imc < 14.5: percentil_sug = "⚖️ P3 - Bajo Peso"
-                    elif imc < 18.5: percentil_sug = "⚖️ P50 - Peso Normal"
-                    else: percentil_sug = "⚠️ P97 - Sobrepeso"
+                if se == "F": percentil_sug = "⚖️ P3 - Bajo Peso" if imc < 14 else "⚖️ P50 - Peso Normal" if imc < 18 else "⚠️ P97 - Sobrepeso"
+                else: percentil_sug = "⚖️ P3 - Bajo Peso" if imc < 14.5 else "⚖️ P50 - Peso Normal" if imc < 18.5 else "⚠️ P97 - Sobrepeso"
                 st.session_state["pediatria_db"].append({"paciente": paciente_sel, "fecha": ahora().strftime("%d/%m/%Y"), "edad_meses": eda_meses, "peso": pes, "talla": tal, "pc": pc, "imc": imc, "percentil_sug": percentil_sug, "firma": user["nombre"]})
                 guardar_datos(); st.rerun()
+        ped = [x for x in st.session_state["pediatria_db"] if x["paciente"] == paciente_sel]
+        if ped:
+            df_g = pd.DataFrame(ped).set_index("fecha")
+            c1, c2 = st.columns(2)
+            if "peso" in df_g.columns: c1.line_chart(df_g["peso"], color="#3b82f6")
+            if "talla" in df_g.columns: c2.line_chart(df_g["talla"], color="#10b981")
 
-# 7. EVOLUCIÓN (FIRMA TÁCTIL INTEGRADA)
+# 7. EVOLUCIÓN
 with tabs[menu.index("📝 Evolución")]:
     if paciente_sel:
-        st.subheader("Cargar Evolución Clínica")
-        
-        # FIRMA TACTIL SI LIBRERIA ESTA DISPONIBLE
         if CANVAS_DISPONIBLE:
             st.markdown("##### ✍️ Firma Digital del Paciente/Familiar en Pantalla")
-            st.caption("Dibuja tu firma en el recuadro blanco de abajo:")
             canvas_result = st_canvas(fill_color="rgba(255, 255, 255, 1)", stroke_width=2, stroke_color="#000000", background_color="#ffffff", height=150, width=400, drawing_mode="freedraw", key="canvas_firma")
             if st.button("Guardar Firma Digital"):
                 if canvas_result.image_data is not None:
-                    # En una versión real completa esto se guarda como imagen base64 para inyectar al PDF.
-                    # Aquí lo registramos simbólicamente en BD.
                     st.session_state["firmas_tactiles_db"].append({"paciente": paciente_sel, "fecha": ahora().strftime("%d/%m/%Y"), "firma_img": "Firma Guardada Exitosamente"})
                     guardar_datos(); st.success("✅ Firma táctil registrada en el legajo del paciente.")
-        else:
-            st.warning("⚠️ Librería de Firma Táctil no instalada. (Añadir 'streamlit-drawable-canvas' a requirements.txt para activarla).")
-
+        
         st.divider()
         with st.form("evol", clear_on_submit=True):
-            nota = st.text_area("Nota clínica:")
-            desc_w = st.text_input("Descripción de la herida (Opcional)")
-            
-            st.markdown("##### 📦 Insumos Utilizados (Descuenta de Farmacia)")
+            nota = st.text_area("Nota clínica:"); desc_w = st.text_input("Descripción de la herida (Opcional)")
             inv_mi_empresa = [i for i in st.session_state["inventario_db"] if i["empresa"] == mi_empresa]
             lista_insumos = ["Ninguno"] + [i["item"] for i in inv_mi_empresa]
-            
             c1, c2 = st.columns([3, 1])
-            insumo_sel = c1.selectbox("Seleccionar Insumo", lista_insumos)
-            cant_usada = c2.number_input("Cantidad", min_value=1, value=1)
-            
-            with st.expander("📷 Tomar Foto de la Herida", expanded=False):
-                st.caption("Se pedirá permiso para usar la cámara.")
-                foto_w = st.camera_input("Foto")
-                
+            insumo_sel = c1.selectbox("Seleccionar Insumo", lista_insumos); cant_usada = c2.number_input("Cantidad", min_value=1, value=1)
+            with st.expander("📷 Tomar Foto de la Herida", expanded=False): foto_w = st.camera_input("Foto")
             if st.form_submit_button("Firmar y Guardar Nota", width="stretch"):
                 if nota:
                     fecha_n = ahora().strftime("%d/%m/%Y %H:%M")
@@ -460,7 +402,6 @@ with tabs[menu.index("💊 Recetas")]:
 # 9. BALANCE HÍDRICO
 with tabs[menu.index("⚖️ Balance")]:
     if paciente_sel:
-        st.markdown("<h3 style='color: #3b82f6;'>⚖️ Control Estricto (ml)</h3>", unsafe_allow_html=True)
         with st.form("bal", clear_on_submit=True):
             c1, c2 = st.columns(2)
             c1.markdown("#### Ingresos (ml)"); i1 = c1.number_input("Oral", 0, step=100); i2 = c1.number_input("Parenteral", 0, step=100)
@@ -472,10 +413,9 @@ with tabs[menu.index("⚖️ Balance")]:
 
 # 10. INVENTARIO 
 with tabs[menu.index("📦 Inventario")]:
-    st.subheader("Control de Stock y Farmacia Central")
     with st.form("form_inv", clear_on_submit=True):
         c1, c2 = st.columns([3, 1])
-        nuevo_item = c1.text_input("Nombre del Insumo (Ej: Gasas 10x10, Solución Fisiológica)")
+        nuevo_item = c1.text_input("Nombre del Insumo (Ej: Gasas 10x10)")
         cantidad_ini = c2.number_input("Cantidad a agregar", min_value=1, value=10)
         if st.form_submit_button("Actualizar Stock", width="stretch"):
             if nuevo_item:
@@ -486,19 +426,17 @@ with tabs[menu.index("📦 Inventario")]:
                 if not encontrado:
                     st.session_state["inventario_db"].append({"item": nuevo_item.strip().title(), "stock": cantidad_ini, "empresa": mi_empresa})
                 guardar_datos(); st.rerun()
-                
     st.divider()
     inv_mio = [i for i in st.session_state["inventario_db"] if i["empresa"] == mi_empresa]
     if inv_mio: 
         st.dataframe(pd.DataFrame(inv_mio).drop(columns="empresa"), use_container_width=True)
-        st.markdown("##### 🗑️ Eliminar Insumo")
         col_del1, col_del2 = st.columns([3,1])
         del_item = col_del1.selectbox("Seleccionar insumo a eliminar", [i["item"] for i in inv_mio])
         if col_del2.button("Eliminar Insumo", use_container_width=True):
             st.session_state["inventario_db"] = [i for i in st.session_state["inventario_db"] if not (i["item"] == del_item and i["empresa"] == mi_empresa)]
             guardar_datos(); st.rerun()
 
-# 11. HISTORIAL COMPLETO
+# 11. HISTORIAL COMPLETO (AHORA SÍ, CON TODOS LOS MÓDULOS)
 with tabs[menu.index("📚 Historial")]:
     if paciente_sel:
         st.subheader(f"📚 Historia Clínica Digital: {paciente_sel}")
@@ -506,24 +444,43 @@ with tabs[menu.index("📚 Historial")]:
             chks = [x for x in st.session_state["checkin_db"] if x["paciente"] == paciente_sel]
             if chks: st.dataframe(pd.DataFrame(chks).drop(columns=["paciente", "empresa"]), use_container_width=True)
             else: st.write("No hay registros de asistencia.")
+            
         with st.expander("📝 Procedimientos y Evoluciones"):
             evs = [x for x in st.session_state["evoluciones_db"] if x["paciente"] == paciente_sel]
             if evs:
                 for e in reversed(evs): st.info(f"📅 **{e['fecha']}** | {e['firma']}\n\n{e['nota']}")
+            else: st.write("No hay procedimientos.")
+            
         with st.expander("📸 Registro de Heridas"):
             fot_her = [x for x in st.session_state["fotos_heridas_db"] if x["paciente"] == paciente_sel]
             if fot_her:
                 for fh in reversed(fot_her):
                     st.success(f"📅 **{fh['fecha']}** | {fh['firma']}\n\nDescripción: {fh['descripcion']}")
                     st.image(base64.b64decode(fh['base64_foto']), caption=f"Herida: {fh['descripcion']}")
+                    
         with st.expander("📊 Signos Vitales"):
             vits = [x for x in st.session_state["vitales_db"] if x["paciente"] == paciente_sel]
             if vits: st.dataframe(pd.DataFrame(vits).drop(columns="paciente"), use_container_width=True)
+            
+        with st.expander("👶 Control Pediátrico"):
+            peds = [x for x in st.session_state["pediatria_db"] if x["paciente"] == paciente_sel]
+            if peds: st.dataframe(pd.DataFrame(peds).drop(columns="paciente"), use_container_width=True)
+            
+        with st.expander("⚖️ Balance Hídrico"):
+            blp = [x for x in st.session_state["balance_db"] if x["paciente"] == paciente_sel]
+            if blp:
+                dfb = pd.DataFrame(blp).drop(columns="paciente")
+                for c in ["ingresos", "egresos", "balance"]: dfb[c] = dfb[c].astype(str)+" ml"
+                st.dataframe(dfb, use_container_width=True)
+                
+        with st.expander("💊 Plan Terapéutico (Recetas)"):
+            recs = [x for x in st.session_state["indicaciones_db"] if x["paciente"] == paciente_sel]
+            if recs:
+                for r in reversed(recs): st.success(f"📌 **{r['fecha']}** | Indicado por: **{r['firma']}**\n\n{r['med']}")
 
 # 12. CAJA
 with tabs[menu.index("💳 Caja")]:
     if paciente_sel:
-        st.subheader("Facturación Rápida")
         nom_empresa = [n for n in st.session_state["nomenclador_db"] if n["empresa"] == mi_empresa]
         with st.form("caja_form", clear_on_submit=True):
             if nom_empresa:
@@ -534,12 +491,10 @@ with tabs[menu.index("💳 Caja")]:
                 serv_desc = practica_sel.split(" - ")[1].split(" ($")[0]
             else:
                 serv_desc = st.text_input("Servicio / Práctica"); mon = st.number_input("Monto", 0.0)
-
             if st.form_submit_button("Registrar Cobro / Práctica", width="stretch"):
                 if serv_desc:
                     st.session_state["facturacion_db"].append({"paciente": paciente_sel, "serv": serv_desc, "monto": mon, "fecha": ahora().strftime("%d/%m/%Y"), "empresa": mi_empresa})
                     guardar_datos(); st.rerun()
-                    
         st.divider()
         if rol in ["SuperAdmin", "Coordinador"]:
             df_caja = pd.DataFrame([f for f in st.session_state["facturacion_db"] if f.get("empresa", "") == mi_empresa])
@@ -549,7 +504,7 @@ with tabs[menu.index("💳 Caja")]:
                 with pd.ExcelWriter(output, engine='openpyxl') as writer: df_caja.drop(columns="empresa").to_excel(writer, index=False, sheet_name='Caja_MediCare')
                 st.download_button("📥 DESCARGAR CAJA A EXCEL", data=output.getvalue(), file_name=f"Caja_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# 13. PDF Y CONSENTIMIENTOS LEGALES
+# 13. PDF (CON TODOS LOS MÓDULOS RESTAURADOS)
 with tabs[menu.index("🗄️ PDF")]:
     if paciente_sel and FPDF_DISPONIBLE:
         def t(txt): return str(txt).replace('⚖️', '').replace('⚠️', '').replace('📌', '').replace('📅', '').replace('📸', '').encode('latin-1', 'replace').decode('latin-1')
@@ -561,7 +516,8 @@ with tabs[menu.index("🗄️ PDF")]:
             pdf.line(21, 14, 21, 28); pdf.line(14, 21, 28, 21)
             emp_paciente = st.session_state["detalles_pacientes_db"].get(p, {}).get("empresa", mi_empresa)
             pdf.set_font("Arial", 'B', 16); pdf.set_xy(38, 14); pdf.cell(0, 10, t(emp_paciente), ln=True)
-            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V7)"), ln=True); pdf.ln(15)
+            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V7.4)"), ln=True); pdf.ln(15)
+            
             det = st.session_state["detalles_pacientes_db"].get(p, {})
             pdf.set_fill_color(240, 240, 240); pdf.set_font("Arial", 'B', 11)
             pdf.cell(0, 8, t(f" PACIENTE: {p}"), 1, 1, 'L', True)
@@ -569,6 +525,7 @@ with tabs[menu.index("🗄️ PDF")]:
             pdf.cell(0, 6, t(f" DNI: {det.get('dni','S/D')} | Nacimiento: {det.get('fnac','S/D')} | Sexo: {det.get('sexo','S/D')}"), ln=True)
             pdf.cell(0, 6, t(f" Domicilio: {det.get('direccion','S/D')}"), ln=True); pdf.ln(5)
 
+            # 1. Signos
             vits = [x for x in st.session_state["vitales_db"] if x["paciente"] == p]
             if vits:
                 pdf.set_font("Arial", 'B', 10); pdf.cell(0, 8, t("SIGNOS VITALES:"), ln=True); pdf.set_font("Arial", 'B', 8); pdf.set_fill_color(230, 230, 230)
@@ -579,6 +536,35 @@ with tabs[menu.index("🗄️ PDF")]:
                     pdf.cell(20, 6, str(v.get('FR','')), 1, 0, 'C'); pdf.cell(20, 6, str(v.get('Sat','')), 1, 0, 'C'); pdf.cell(20, 6, str(v.get('Temp','')), 1, 0, 'C'); pdf.cell(20, 6, t(v.get('HGT','')), 1, 1, 'C')
                 pdf.ln(4)
 
+            # 2. Pediátrico
+            peds = [x for x in st.session_state["pediatria_db"] if x["paciente"] == p]
+            if peds:
+                pdf.set_font("Arial", 'B', 10); pdf.cell(0, 8, t("CONTROL PEDIATRICO:"), ln=True); pdf.set_font("Arial", 'B', 8); pdf.set_fill_color(230, 230, 230)
+                pdf.cell(30, 6, "FECHA", 1, 0, 'C', True); pdf.cell(25, 6, "PESO", 1, 0, 'C', True); pdf.cell(25, 6, "TALLA", 1, 0, 'C', True); pdf.cell(25, 6, "PC", 1, 0, 'C', True); pdf.cell(25, 6, "IMC", 1, 0, 'C', True); pdf.cell(60, 6, "PERCENTIL", 1, 1, 'C', True)
+                pdf.set_font("Arial", '', 8)
+                for pe in peds:
+                    pdf.cell(30, 6, t(pe.get('fecha','')), 1, 0, 'C'); pdf.cell(25, 6, f"{pe.get('peso','')} kg", 1, 0, 'C'); pdf.cell(25, 6, f"{pe.get('talla','')} cm", 1, 0, 'C'); pdf.cell(25, 6, f"{pe.get('pc','')} cm", 1, 0, 'C'); pdf.cell(25, 6, str(pe.get('imc','')), 1, 0, 'C'); pdf.cell(60, 6, t(pe.get('percentil_sug','')), 1, 1, 'C')
+                pdf.ln(4)
+
+            # 3. Balance
+            bals = [x for x in st.session_state["balance_db"] if x["paciente"] == p]
+            if bals:
+                pdf.set_font("Arial", 'B', 10); pdf.cell(0, 8, t("BALANCE HIDRICO (ml):"), ln=True); pdf.set_font("Arial", 'B', 8); pdf.set_fill_color(230, 230, 230)
+                pdf.cell(40, 6, "FECHA / HORA", 1, 0, 'C', True); pdf.cell(40, 6, "INGRESOS", 1, 0, 'C', True); pdf.cell(40, 6, "EGRESOS", 1, 0, 'C', True); pdf.cell(40, 6, "BALANCE NETO", 1, 1, 'C', True)
+                pdf.set_font("Arial", '', 8)
+                for b in bals:
+                    pdf.cell(40, 6, t(b.get('fecha','')), 1, 0, 'C'); pdf.cell(40, 6, f"+ {b.get('ingresos','')} ml", 1, 0, 'C'); pdf.cell(40, 6, f"- {b.get('egresos','')} ml", 1, 0, 'C'); pdf.cell(40, 6, f"{b.get('balance','')} ml", 1, 1, 'C')
+                pdf.ln(4)
+
+            # 4. Terapéutica
+            recs = [x for x in st.session_state["indicaciones_db"] if x["paciente"] == p]
+            if recs:
+                pdf.set_font("Arial", 'B', 10); pdf.cell(0, 8, t("PLAN TERAPEUTICO:"), ln=True)
+                for r in recs:
+                    pdf.set_font("Arial", 'B', 8); pdf.cell(0, 5, t(f"[{r.get('fecha','')}] - Firma: {r.get('firma','')}"), ln=True)
+                    pdf.set_font("Arial", '', 9); pdf.multi_cell(0, 5, t(r.get('med','')), 'L'); pdf.ln(2)
+
+            # 5. Evoluciones
             evs = [x for x in st.session_state["evoluciones_db"] if x["paciente"] == p]
             if evs:
                 pdf.set_font("Arial", 'B', 10); pdf.cell(0, 8, t("EVOLUCIONES CLINICAS:"), ln=True)
@@ -586,6 +572,7 @@ with tabs[menu.index("🗄️ PDF")]:
                     pdf.set_font("Arial", 'B', 8); pdf.cell(0, 5, t(f"[{ev.get('fecha','')}] - Firma: {ev.get('firma','')}"), ln=True)
                     pdf.set_font("Arial", '', 9); pdf.multi_cell(0, 5, t(ev.get('nota','')), 'L'); pdf.ln(2)
 
+            # 6. Auditoria Presencia
             chks = [x for x in st.session_state["checkin_db"] if x["paciente"] == p]
             if chks:
                 pdf.set_font("Arial", 'B', 10); pdf.cell(0, 8, t("AUDITORIA DE PRESENCIA EN DOMICILIO (GPS):"), ln=True)
@@ -698,4 +685,4 @@ if "🕵️ Auditoría" in menu:
             with pd.ExcelWriter(out_logs, engine='openpyxl') as writer: df_logs.to_excel(writer, index=False, sheet_name='Logs_MediCare')
             st.download_button("📥 DESCARGAR LOGS A EXCEL", data=out_logs.getvalue(), file_name=f"Reporte_Logs_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# --- FIN DEL SISTEMA MEDICARE PRO V7.3 ---
+# --- FIN DEL SISTEMA MEDICARE PRO V7.4 ---
