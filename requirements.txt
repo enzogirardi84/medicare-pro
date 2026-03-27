@@ -4,3 +4,4 @@ fpdf
 supabase
 pytz
 openpyxl
+streamlit-drawable-canvas
