@@ -8,6 +8,9 @@ from supabase import create_client, Client
 import io
 import base64
 import time
+import os
+import tempfile
+from PIL import Image
 
 # --- 1. CONFIGURACIÓN DE LIBRERÍAS ---
 FPDF_DISPONIBLE = False
@@ -25,7 +28,7 @@ except ImportError:
     CANVAS_DISPONIBLE = False
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="MediCare Enterprise PRO V7.4", page_icon="⚕️", layout="wide")
+st.set_page_config(page_title="MediCare Enterprise PRO V7.5", page_icon="⚕️", layout="wide")
 st.markdown("<html lang='es' translate='no'>", unsafe_allow_html=True)
 
 # --- ZONA HORARIA ARGENTINA ---
@@ -134,7 +137,7 @@ if "logeado" not in st.session_state: st.session_state["logeado"] = False
 if not st.session_state["logeado"]:
     _, col, _ = st.columns([1,1.5,1])
     with col:
-        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V7.4</h2>", unsafe_allow_html=True)
+        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V7.5</h2>", unsafe_allow_html=True)
         tab_login, tab_recuperar = st.tabs(["🔑 Iniciar Sesión", "🆘 Olvidé mi Contraseña"])
         with tab_login:
             with st.form("login", clear_on_submit=True):
@@ -352,16 +355,23 @@ with tabs[menu.index("👶 Pediatría")]:
             if "peso" in df_g.columns: c1.line_chart(df_g["peso"], color="#3b82f6")
             if "talla" in df_g.columns: c2.line_chart(df_g["talla"], color="#10b981")
 
-# 7. EVOLUCIÓN
+# 7. EVOLUCIÓN (AHORA GUARDA LA FIRMA DIGITAL COMO IMAGEN REAL)
 with tabs[menu.index("📝 Evolución")]:
     if paciente_sel:
         if CANVAS_DISPONIBLE:
             st.markdown("##### ✍️ Firma Digital del Paciente/Familiar en Pantalla")
             canvas_result = st_canvas(fill_color="rgba(255, 255, 255, 1)", stroke_width=2, stroke_color="#000000", background_color="#ffffff", height=150, width=400, drawing_mode="freedraw", key="canvas_firma")
-            if st.button("Guardar Firma Digital"):
+            if st.button("Guardar Firma Digital", width="stretch"):
                 if canvas_result.image_data is not None:
-                    st.session_state["firmas_tactiles_db"].append({"paciente": paciente_sel, "fecha": ahora().strftime("%d/%m/%Y"), "firma_img": "Firma Guardada Exitosamente"})
-                    guardar_datos(); st.success("✅ Firma táctil registrada en el legajo del paciente.")
+                    # Convertir el trazo del canvas a imagen Base64
+                    img = Image.fromarray(canvas_result.image_data.astype('uint8'), 'RGBA')
+                    bg = Image.new("RGB", img.size, (255, 255, 255))
+                    bg.paste(img, mask=img.split()[3])
+                    buf = io.BytesIO()
+                    bg.save(buf, format="PNG")
+                    b64_firma = base64.b64encode(buf.getvalue()).decode('utf-8')
+                    st.session_state["firmas_tactiles_db"].append({"paciente": paciente_sel, "fecha": ahora().strftime("%d/%m/%Y"), "firma_img": b64_firma})
+                    guardar_datos(); st.success("✅ Firma táctil registrada e inyectada al PDF.")
         
         st.divider()
         with st.form("evol", clear_on_submit=True):
@@ -436,7 +446,7 @@ with tabs[menu.index("📦 Inventario")]:
             st.session_state["inventario_db"] = [i for i in st.session_state["inventario_db"] if not (i["item"] == del_item and i["empresa"] == mi_empresa)]
             guardar_datos(); st.rerun()
 
-# 11. HISTORIAL COMPLETO (AHORA SÍ, CON TODOS LOS MÓDULOS)
+# 11. HISTORIAL COMPLETO
 with tabs[menu.index("📚 Historial")]:
     if paciente_sel:
         st.subheader(f"📚 Historia Clínica Digital: {paciente_sel}")
@@ -444,35 +454,28 @@ with tabs[menu.index("📚 Historial")]:
             chks = [x for x in st.session_state["checkin_db"] if x["paciente"] == paciente_sel]
             if chks: st.dataframe(pd.DataFrame(chks).drop(columns=["paciente", "empresa"]), use_container_width=True)
             else: st.write("No hay registros de asistencia.")
-            
         with st.expander("📝 Procedimientos y Evoluciones"):
             evs = [x for x in st.session_state["evoluciones_db"] if x["paciente"] == paciente_sel]
             if evs:
                 for e in reversed(evs): st.info(f"📅 **{e['fecha']}** | {e['firma']}\n\n{e['nota']}")
-            else: st.write("No hay procedimientos.")
-            
         with st.expander("📸 Registro de Heridas"):
             fot_her = [x for x in st.session_state["fotos_heridas_db"] if x["paciente"] == paciente_sel]
             if fot_her:
                 for fh in reversed(fot_her):
                     st.success(f"📅 **{fh['fecha']}** | {fh['firma']}\n\nDescripción: {fh['descripcion']}")
                     st.image(base64.b64decode(fh['base64_foto']), caption=f"Herida: {fh['descripcion']}")
-                    
         with st.expander("📊 Signos Vitales"):
             vits = [x for x in st.session_state["vitales_db"] if x["paciente"] == paciente_sel]
             if vits: st.dataframe(pd.DataFrame(vits).drop(columns="paciente"), use_container_width=True)
-            
         with st.expander("👶 Control Pediátrico"):
             peds = [x for x in st.session_state["pediatria_db"] if x["paciente"] == paciente_sel]
             if peds: st.dataframe(pd.DataFrame(peds).drop(columns="paciente"), use_container_width=True)
-            
         with st.expander("⚖️ Balance Hídrico"):
             blp = [x for x in st.session_state["balance_db"] if x["paciente"] == paciente_sel]
             if blp:
                 dfb = pd.DataFrame(blp).drop(columns="paciente")
                 for c in ["ingresos", "egresos", "balance"]: dfb[c] = dfb[c].astype(str)+" ml"
                 st.dataframe(dfb, use_container_width=True)
-                
         with st.expander("💊 Plan Terapéutico (Recetas)"):
             recs = [x for x in st.session_state["indicaciones_db"] if x["paciente"] == paciente_sel]
             if recs:
@@ -504,7 +507,7 @@ with tabs[menu.index("💳 Caja")]:
                 with pd.ExcelWriter(output, engine='openpyxl') as writer: df_caja.drop(columns="empresa").to_excel(writer, index=False, sheet_name='Caja_MediCare')
                 st.download_button("📥 DESCARGAR CAJA A EXCEL", data=output.getvalue(), file_name=f"Caja_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# 13. PDF (CON TODOS LOS MÓDULOS RESTAURADOS)
+# 13. PDF (CON INYECCIÓN DE FIRMA DIGITAL IMAGEN)
 with tabs[menu.index("🗄️ PDF")]:
     if paciente_sel and FPDF_DISPONIBLE:
         def t(txt): return str(txt).replace('⚖️', '').replace('⚠️', '').replace('📌', '').replace('📅', '').replace('📸', '').encode('latin-1', 'replace').decode('latin-1')
@@ -516,7 +519,7 @@ with tabs[menu.index("🗄️ PDF")]:
             pdf.line(21, 14, 21, 28); pdf.line(14, 21, 28, 21)
             emp_paciente = st.session_state["detalles_pacientes_db"].get(p, {}).get("empresa", mi_empresa)
             pdf.set_font("Arial", 'B', 16); pdf.set_xy(38, 14); pdf.cell(0, 10, t(emp_paciente), ln=True)
-            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V7.4)"), ln=True); pdf.ln(15)
+            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V7.5)"), ln=True); pdf.ln(15)
             
             det = st.session_state["detalles_pacientes_db"].get(p, {})
             pdf.set_fill_color(240, 240, 240); pdf.set_font("Arial", 'B', 11)
@@ -525,7 +528,6 @@ with tabs[menu.index("🗄️ PDF")]:
             pdf.cell(0, 6, t(f" DNI: {det.get('dni','S/D')} | Nacimiento: {det.get('fnac','S/D')} | Sexo: {det.get('sexo','S/D')}"), ln=True)
             pdf.cell(0, 6, t(f" Domicilio: {det.get('direccion','S/D')}"), ln=True); pdf.ln(5)
 
-            # 1. Signos
             vits = [x for x in st.session_state["vitales_db"] if x["paciente"] == p]
             if vits:
                 pdf.set_font("Arial", 'B', 10); pdf.cell(0, 8, t("SIGNOS VITALES:"), ln=True); pdf.set_font("Arial", 'B', 8); pdf.set_fill_color(230, 230, 230)
@@ -536,7 +538,6 @@ with tabs[menu.index("🗄️ PDF")]:
                     pdf.cell(20, 6, str(v.get('FR','')), 1, 0, 'C'); pdf.cell(20, 6, str(v.get('Sat','')), 1, 0, 'C'); pdf.cell(20, 6, str(v.get('Temp','')), 1, 0, 'C'); pdf.cell(20, 6, t(v.get('HGT','')), 1, 1, 'C')
                 pdf.ln(4)
 
-            # 2. Pediátrico
             peds = [x for x in st.session_state["pediatria_db"] if x["paciente"] == p]
             if peds:
                 pdf.set_font("Arial", 'B', 10); pdf.cell(0, 8, t("CONTROL PEDIATRICO:"), ln=True); pdf.set_font("Arial", 'B', 8); pdf.set_fill_color(230, 230, 230)
@@ -546,7 +547,6 @@ with tabs[menu.index("🗄️ PDF")]:
                     pdf.cell(30, 6, t(pe.get('fecha','')), 1, 0, 'C'); pdf.cell(25, 6, f"{pe.get('peso','')} kg", 1, 0, 'C'); pdf.cell(25, 6, f"{pe.get('talla','')} cm", 1, 0, 'C'); pdf.cell(25, 6, f"{pe.get('pc','')} cm", 1, 0, 'C'); pdf.cell(25, 6, str(pe.get('imc','')), 1, 0, 'C'); pdf.cell(60, 6, t(pe.get('percentil_sug','')), 1, 1, 'C')
                 pdf.ln(4)
 
-            # 3. Balance
             bals = [x for x in st.session_state["balance_db"] if x["paciente"] == p]
             if bals:
                 pdf.set_font("Arial", 'B', 10); pdf.cell(0, 8, t("BALANCE HIDRICO (ml):"), ln=True); pdf.set_font("Arial", 'B', 8); pdf.set_fill_color(230, 230, 230)
@@ -556,7 +556,6 @@ with tabs[menu.index("🗄️ PDF")]:
                     pdf.cell(40, 6, t(b.get('fecha','')), 1, 0, 'C'); pdf.cell(40, 6, f"+ {b.get('ingresos','')} ml", 1, 0, 'C'); pdf.cell(40, 6, f"- {b.get('egresos','')} ml", 1, 0, 'C'); pdf.cell(40, 6, f"{b.get('balance','')} ml", 1, 1, 'C')
                 pdf.ln(4)
 
-            # 4. Terapéutica
             recs = [x for x in st.session_state["indicaciones_db"] if x["paciente"] == p]
             if recs:
                 pdf.set_font("Arial", 'B', 10); pdf.cell(0, 8, t("PLAN TERAPEUTICO:"), ln=True)
@@ -564,7 +563,6 @@ with tabs[menu.index("🗄️ PDF")]:
                     pdf.set_font("Arial", 'B', 8); pdf.cell(0, 5, t(f"[{r.get('fecha','')}] - Firma: {r.get('firma','')}"), ln=True)
                     pdf.set_font("Arial", '', 9); pdf.multi_cell(0, 5, t(r.get('med','')), 'L'); pdf.ln(2)
 
-            # 5. Evoluciones
             evs = [x for x in st.session_state["evoluciones_db"] if x["paciente"] == p]
             if evs:
                 pdf.set_font("Arial", 'B', 10); pdf.cell(0, 8, t("EVOLUCIONES CLINICAS:"), ln=True)
@@ -572,7 +570,6 @@ with tabs[menu.index("🗄️ PDF")]:
                     pdf.set_font("Arial", 'B', 8); pdf.cell(0, 5, t(f"[{ev.get('fecha','')}] - Firma: {ev.get('firma','')}"), ln=True)
                     pdf.set_font("Arial", '', 9); pdf.multi_cell(0, 5, t(ev.get('nota','')), 'L'); pdf.ln(2)
 
-            # 6. Auditoria Presencia
             chks = [x for x in st.session_state["checkin_db"] if x["paciente"] == p]
             if chks:
                 pdf.set_font("Arial", 'B', 10); pdf.cell(0, 8, t("AUDITORIA DE PRESENCIA EN DOMICILIO (GPS):"), ln=True)
@@ -586,6 +583,21 @@ with tabs[menu.index("🗄️ PDF")]:
             pdf.set_font("Arial", 'B', 9); pdf.set_xy(10, y_firma + 2)
             pdf.cell(70, 5, t(f"Firma Profesional: {user['nombre']}"), ln=2)
             pdf.cell(70, 5, t(f"Matricula: {user.get('matricula', 'S/D')}"), ln=0)
+            
+            # INYECTAR FIRMA TACTIL AL PDF
+            firmas_paciente = [x for x in st.session_state.get("firmas_tactiles_db", []) if x["paciente"] == p]
+            if firmas_paciente:
+                ultima_firma = firmas_paciente[-1]["firma_img"]
+                if ultima_firma != "Firma Guardada Exitosamente":
+                    try:
+                        img_data = base64.b64decode(ultima_firma)
+                        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
+                            tmp.write(img_data)
+                            tmp_path = tmp.name
+                        pdf.image(tmp_path, x=130, y=y_firma - 15, w=40)
+                        os.remove(tmp_path)
+                    except Exception as e: pass
+
             nombre_paciente = p.split(" (")[0] 
             pdf.line(120, y_firma, 190, y_firma)
             pdf.set_xy(120, y_firma + 2)
@@ -611,6 +623,21 @@ Asimismo, entiendo que los registros clinicos seran resguardados en formato digi
             pdf.multi_cell(0, 7, t(texto_legal)); pdf.ln(30)
             
             y_firma = pdf.get_y()
+            
+            # INYECTAR FIRMA TACTIL AL CONSENTIMIENTO
+            firmas_paciente = [x for x in st.session_state.get("firmas_tactiles_db", []) if x["paciente"] == p]
+            if firmas_paciente:
+                ultima_firma = firmas_paciente[-1]["firma_img"]
+                if ultima_firma != "Firma Guardada Exitosamente":
+                    try:
+                        img_data = base64.b64decode(ultima_firma)
+                        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
+                            tmp.write(img_data)
+                            tmp_path = tmp.name
+                        pdf.image(tmp_path, x=85, y=y_firma - 15, w=40)
+                        os.remove(tmp_path)
+                    except Exception as e: pass
+
             pdf.line(60, y_firma, 150, y_firma); pdf.set_xy(60, y_firma + 2)
             pdf.set_font("Arial", 'B', 10); pdf.cell(90, 5, t("Firma del Paciente / Responsable"), ln=2, align='C')
             pdf.cell(90, 5, t(f"Aclaracion: {nombre_paciente}"), ln=2, align='C')
@@ -685,4 +712,4 @@ if "🕵️ Auditoría" in menu:
             with pd.ExcelWriter(out_logs, engine='openpyxl') as writer: df_logs.to_excel(writer, index=False, sheet_name='Logs_MediCare')
             st.download_button("📥 DESCARGAR LOGS A EXCEL", data=out_logs.getvalue(), file_name=f"Reporte_Logs_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# --- FIN DEL SISTEMA MEDICARE PRO V7.4 ---
+# --- FIN DEL SISTEMA MEDICARE PRO V7.5 ---
