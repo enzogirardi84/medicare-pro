@@ -35,7 +35,7 @@ except ImportError:
     GEO_DISPONIBLE = False
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="MediCare Enterprise PRO V7.10", page_icon="⚕️", layout="wide")
+st.set_page_config(page_title="MediCare Enterprise PRO V8.0", page_icon="⚕️", layout="wide")
 st.markdown("<html lang='es' translate='no'>", unsafe_allow_html=True)
 
 # --- ZONA HORARIA ARGENTINA ---
@@ -144,7 +144,7 @@ if "logeado" not in st.session_state: st.session_state["logeado"] = False
 if not st.session_state["logeado"]:
     _, col, _ = st.columns([1,1.5,1])
     with col:
-        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V7.10</h2>", unsafe_allow_html=True)
+        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V8.0</h2>", unsafe_allow_html=True)
         tab_login, tab_recuperar = st.tabs(["🔑 Iniciar Sesión", "🆘 Olvidé mi Contraseña"])
         with tab_login:
             with st.form("login", clear_on_submit=True):
@@ -235,7 +235,6 @@ with tabs[menu.index("📍 Visitas")]:
         st.subheader("⏱️ Fichada Legal de Visita (GPS Real)")
         st.warning("🚨 Control Antifraude Activado: Para poder fichar tu llegada o salida, primero debés autorizar y capturar la ubicación real de tu dispositivo tocando el botón de abajo.")
 
-        # Buscamos la dirección del paciente de antemano para incluirla en la fichada
         det = st.session_state["detalles_pacientes_db"].get(paciente_sel, {})
         dire_paciente = det.get("direccion", "No registrada")
         te = det.get("telefono", "")
@@ -246,7 +245,6 @@ with tabs[menu.index("📍 Visitas")]:
             lon = loc.get('longitude') if loc else None
 
             if lat is not None and lon is not None:
-                # Redondeamos los números largos a 5 decimales (1 metro de precisión) para que quede prolijo
                 try:
                     lat_str = str(round(float(lat), 5))
                     lon_str = str(round(float(lon), 5))
@@ -260,7 +258,6 @@ with tabs[menu.index("📍 Visitas")]:
 
                 c_in, c_out = st.columns(2)
                 if c_in.button("🟢 Fichar LLEGADA en esta Ubicación", use_container_width=True):
-                    # Acá juntamos la dirección del paciente CON la coordenada real
                     st.session_state["checkin_db"].append({"paciente": paciente_sel, "profesional": user["nombre"], "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"), "tipo": f"ENTRADA en: {dire_paciente} (GPS Real: Lat {lat_str}, Lon {lon_str})", "empresa": mi_empresa})
                     guardar_datos(); st.success("Llegada registrada con coordenadas reales."); st.rerun()
                 
@@ -506,43 +503,71 @@ with tabs[menu.index("📦 Inventario")]:
             st.session_state["inventario_db"] = [i for i in st.session_state["inventario_db"] if not (i["item"] == del_item and i["empresa"] == mi_empresa)]
             guardar_datos(); st.rerun()
 
-# 12. HISTORIAL COMPLETO
+# 12. HISTORIAL COMPLETO (SISTEMA DE ESCALABILIDAD V8.0)
 with tabs[menu.index("📚 Historial")]:
     if paciente_sel:
         st.subheader(f"📚 Historia Clínica Digital: {paciente_sel}")
+        
+        # --- FILTRO INTELIGENTE PARA EVITAR COLAPSOS ---
+        st.markdown("##### ⚙️ Opciones de Visualización")
+        col_filt1, col_filt2 = st.columns([1, 2])
+        opcion_limite = col_filt1.selectbox("Mostrar:", ["Últimos 10 registros", "Últimos 30 registros", "Últimos 50 registros", "Ver TODO el historial"])
+        
+        if "10" in opcion_limite: limite = 10
+        elif "30" in opcion_limite: limite = 30
+        elif "50" in opcion_limite: limite = 50
+        else: limite = 999999
+        
+        col_filt2.info(f"💡 Para que la aplicación sea súper rápida, estás viendo un máximo de **{limite if limite != 999999 else 'Todos los'}** registros por sección.")
+        st.divider()
+
         with st.expander("⏱️ Auditoría de Presencia (GPS Real)", expanded=True):
             chks = [x for x in st.session_state["checkin_db"] if x["paciente"] == paciente_sel]
-            if chks: st.dataframe(pd.DataFrame(chks).drop(columns=["paciente", "empresa"]), use_container_width=True)
+            if chks: st.dataframe(pd.DataFrame(chks[-limite:]).drop(columns=["paciente", "empresa"]), use_container_width=True)
+            else: st.write("No hay registros de asistencia en este periodo.")
+            
         with st.expander("📝 Procedimientos y Evoluciones"):
             evs = [x for x in st.session_state["evoluciones_db"] if x["paciente"] == paciente_sel]
             if evs:
-                for e in reversed(evs): st.info(f"📅 **{e['fecha']}** | {e['firma']}\n\n{e['nota']}")
+                for e in reversed(evs[-limite:]): st.info(f"📅 **{e['fecha']}** | {e['firma']}\n\n{e['nota']}")
+            else: st.write("No hay evoluciones médicas cargadas.")
+            
         with st.expander("💉 Materiales Utilizados"):
             cons = [x for x in st.session_state["consumos_db"] if x["paciente"] == paciente_sel]
-            if cons: st.dataframe(pd.DataFrame(cons).drop(columns=["paciente"]), use_container_width=True)
-            else: st.write("No hay consumos registrados.")
+            if cons: st.dataframe(pd.DataFrame(cons[-limite:]).drop(columns=["paciente"]), use_container_width=True)
+            else: st.write("No hay consumos de materiales registrados.")
+            
         with st.expander("📸 Registro de Heridas"):
             fot_her = [x for x in st.session_state["fotos_heridas_db"] if x["paciente"] == paciente_sel]
             if fot_her:
-                for fh in reversed(fot_her):
+                for fh in reversed(fot_her[-limite:]):
                     st.success(f"📅 **{fh['fecha']}** | {fh['firma']}\n\nDescripción: {fh['descripcion']}")
                     st.image(base64.b64decode(fh['base64_foto']), caption=f"Herida: {fh['descripcion']}")
+            else: st.write("No hay registro fotográfico.")
+            
         with st.expander("📊 Signos Vitales"):
             vits = [x for x in st.session_state["vitales_db"] if x["paciente"] == paciente_sel]
-            if vits: st.dataframe(pd.DataFrame(vits).drop(columns="paciente"), use_container_width=True)
+            if vits: st.dataframe(pd.DataFrame(vits[-limite:]).drop(columns="paciente"), use_container_width=True)
+            else: st.write("No hay signos vitales cargados.")
+            
         with st.expander("👶 Control Pediátrico"):
             peds = [x for x in st.session_state["pediatria_db"] if x["paciente"] == paciente_sel]
-            if peds: st.dataframe(pd.DataFrame(peds).drop(columns="paciente"), use_container_width=True)
+            if peds: st.dataframe(pd.DataFrame(peds[-limite:]).drop(columns="paciente"), use_container_width=True)
+            else: st.write("No hay controles pediátricos.")
+            
         with st.expander("⚖️ Balance Hídrico"):
             blp = [x for x in st.session_state["balance_db"] if x["paciente"] == paciente_sel]
             if blp:
-                dfb = pd.DataFrame(blp).drop(columns="paciente")
+                dfb = pd.DataFrame(blp[-limite:]).drop(columns="paciente")
                 for c in ["ingresos", "egresos", "balance"]: dfb[c] = dfb[c].astype(str)+" ml"
                 st.dataframe(dfb, use_container_width=True)
+            else: st.write("No hay balances hídricos calculados.")
+            
         with st.expander("💊 Plan Terapéutico (Recetas)"):
             recs = [x for x in st.session_state["indicaciones_db"] if x["paciente"] == paciente_sel]
             if recs:
-                for r in reversed(recs): st.success(f"📌 **{r['fecha']}** | Indicado por: **{r['firma']}**\n\n{r['med']}")
+                for r in reversed(recs[-limite:]): st.success(f"📌 **{r['fecha']}** | Indicado por: **{r['firma']}**\n\n{r['med']}")
+            else: st.write("No hay terapéutica indicada.")
 
 # 13. CAJA
 with tabs[menu.index("💳 Caja")]:
@@ -581,7 +606,7 @@ with tabs[menu.index("🗄️ PDF")]:
             pdf.line(21, 14, 21, 28); pdf.line(14, 21, 28, 21)
             emp_paciente = st.session_state["detalles_pacientes_db"].get(p, {}).get("empresa", mi_empresa)
             pdf.set_font("Arial", 'B', 16); pdf.set_xy(38, 14); pdf.cell(0, 10, t(emp_paciente), ln=True)
-            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V7.10)"), ln=True); pdf.ln(15)
+            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V8.0)"), ln=True); pdf.ln(15)
             
             det = st.session_state["detalles_pacientes_db"].get(p, {})
             pdf.set_fill_color(240, 240, 240); pdf.set_font("Arial", 'B', 11)
@@ -748,4 +773,4 @@ if "🕵️ Auditoría" in menu:
             with pd.ExcelWriter(out_logs, engine='openpyxl') as writer: df_logs.to_excel(writer, index=False, sheet_name='Logs_MediCare')
             st.download_button("📥 DESCARGAR LOGS A EXCEL", data=out_logs.getvalue(), file_name=f"Reporte_Logs_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# --- FIN DEL SISTEMA MEDICARE PRO V7.10 ---
+# --- FIN DEL SISTEMA MEDICARE PRO V8.0 ---
