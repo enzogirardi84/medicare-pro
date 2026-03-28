@@ -27,8 +27,15 @@ try:
 except ImportError:
     CANVAS_DISPONIBLE = False
 
+GEO_DISPONIBLE = False
+try:
+    from streamlit_geolocation import streamlit_geolocation
+    GEO_DISPONIBLE = True
+except ImportError:
+    GEO_DISPONIBLE = False
+
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="MediCare Enterprise PRO V7.7", page_icon="⚕️", layout="wide")
+st.set_page_config(page_title="MediCare Enterprise PRO V7.9", page_icon="⚕️", layout="wide")
 st.markdown("<html lang='es' translate='no'>", unsafe_allow_html=True)
 
 # --- ZONA HORARIA ARGENTINA ---
@@ -137,7 +144,7 @@ if "logeado" not in st.session_state: st.session_state["logeado"] = False
 if not st.session_state["logeado"]:
     _, col, _ = st.columns([1,1.5,1])
     with col:
-        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V7.7</h2>", unsafe_allow_html=True)
+        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V7.9</h2>", unsafe_allow_html=True)
         tab_login, tab_recuperar = st.tabs(["🔑 Iniciar Sesión", "🆘 Olvidé mi Contraseña"])
         with tab_login:
             with st.form("login", clear_on_submit=True):
@@ -220,37 +227,58 @@ if rol == "SuperAdmin":
     menu.append("🕵️ Auditoría")
 tabs = st.tabs(menu)
 
-# 1. VISITAS (AHORA CON DIRECCIÓN REAL)
+# 1. VISITAS (GPS REAL ESTRICTO Y MAPA)
 with tabs[menu.index("📍 Visitas")]:
     if not paciente_sel:
-        st.info("👈 Seleccioná un paciente en el menú lateral para registrar tu llegada.")
+        st.info("👈 Seleccioná un paciente en el menú lateral para registrar tu visita.")
     else:
-        st.subheader("⏱️ Fichada de Domicilio Legal")
-        
-        det = st.session_state["detalles_pacientes_db"].get(paciente_sel, {})
-        dire = det.get("direccion", "Domicilio no registrado en Admisión")
-        
-        c_in, c_out = st.columns(2)
-        if c_in.button("🟢 Registrar LLEGADA", use_container_width=True):
-            st.session_state["checkin_db"].append({"paciente": paciente_sel, "profesional": user["nombre"], "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"), "tipo": f"ENTRADA en: {dire}", "empresa": mi_empresa})
-            guardar_datos(); st.success("Llegada en domicilio registrada."); st.rerun()
-        if c_out.button("🔴 Registrar SALIDA", use_container_width=True):
-            st.session_state["checkin_db"].append({"paciente": paciente_sel, "profesional": user["nombre"], "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"), "tipo": f"SALIDA de: {dire}", "empresa": mi_empresa})
-            guardar_datos(); st.success("Salida de domicilio registrada."); st.rerun()
-            
-        chk_pac = [c for c in st.session_state["checkin_db"] if c["paciente"] == paciente_sel]
-        if chk_pac: st.dataframe(pd.DataFrame(chk_pac).drop(columns=["paciente", "empresa"]).tail(5), use_container_width=True)
+        st.subheader("⏱️ Fichada Legal de Visita (GPS Real)")
+        st.warning("🚨 Control Antifraude Activado: Para poder fichar tu llegada o salida, primero debés autorizar y capturar la ubicación real de tu dispositivo tocando el botón de abajo.")
+
+        if GEO_DISPONIBLE:
+            loc = streamlit_geolocation()
+            lat = loc.get('latitude') if loc else None
+            lon = loc.get('longitude') if loc else None
+
+            if lat is not None and lon is not None:
+                st.success(f"📍 Ubicación Real Capturada: Latitud {lat} | Longitud {lon}")
+                link_mapa = f"https://www.google.com/maps/search/?api=1&query={lat},{lon}"
+                st.markdown(f"[🗺️ Ver el lugar exacto desde donde estás fichando en Google Maps]({link_mapa})")
+
+                c_in, c_out = st.columns(2)
+                if c_in.button("🟢 Fichar LLEGADA en esta Ubicación", use_container_width=True):
+                    st.session_state["checkin_db"].append({"paciente": paciente_sel, "profesional": user["nombre"], "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"), "tipo": f"ENTRADA (GPS Real: Lat {lat}, Lon {lon})", "empresa": mi_empresa})
+                    guardar_datos(); st.success("Llegada registrada con coordenadas reales."); st.rerun()
+                
+                if c_out.button("🔴 Fichar SALIDA en esta Ubicación", use_container_width=True):
+                    st.session_state["checkin_db"].append({"paciente": paciente_sel, "profesional": user["nombre"], "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"), "tipo": f"SALIDA (GPS Real: Lat {lat}, Lon {lon})", "empresa": mi_empresa})
+                    guardar_datos(); st.success("Salida registrada con coordenadas reales."); st.rerun()
+            else:
+                st.error("❌ Aún no capturaste tu ubicación. Tocá la brújula de arriba 👆 y dale a 'Permitir' en tu navegador.")
+        else:
+            st.error("⚠️ Librería 'streamlit-geolocation' no cargó correctamente. Asegurate de que esté en el requirements.txt.")
 
         st.divider()
+        chk_pac = [c for c in st.session_state["checkin_db"] if c["paciente"] == paciente_sel]
+        if chk_pac: 
+            st.caption("Últimos registros de asistencia (Con prueba geográfica):")
+            st.dataframe(pd.DataFrame(chk_pac).drop(columns=["paciente", "empresa"]).tail(5), use_container_width=True)
+
+        st.divider()
+        det = st.session_state["detalles_pacientes_db"].get(paciente_sel, {})
+        dire_paciente = det.get("direccion", "No registrada")
         te = det.get("telefono", "")
-        if dire and dire != "Domicilio no registrado en Admisión":
-            mapa_html = f'<iframe width="100%" height="300" src="https://maps.google.com/maps?q={urllib.parse.quote(dire)}&z=15&output=embed"></iframe>'
+        
+        if dire_paciente and dire_paciente != "No registrada":
+            st.info(f"🏠 **Domicilio Cargado del Paciente (Para tu referencia):** {dire_paciente}")
+            mapa_html = f'<iframe width="100%" height="300" src="https://maps.google.com/maps?q={urllib.parse.quote(dire_paciente)}&z=15&output=embed"></iframe>'
             st.components.v1.html(mapa_html, height=300)
+            
         if te:
             num_limpio = ''.join(filter(str.isdigit, str(te)))
             if len(num_limpio) >= 10: num_limpio = "549" + num_limpio[-10:]
             msg = urllib.parse.quote(f"Hola, soy {user['nombre']} de {mi_empresa}. Estoy en camino al domicilio.")
-            st.markdown(f'<a href="https://wa.me/{num_limpio}?text={msg}" target="_blank" class="wa-btn">📲 AVISAR WHATSAPP</a>', unsafe_allow_html=True)
+            st.markdown(f'<a href="https://wa.me/{num_limpio}?text={msg}" target="_blank" class="wa-btn">📲 AVISAR WHATSAPP AL PACIENTE</a>', unsafe_allow_html=True)
 
 # 2. DASHBOARD
 with tabs[menu.index("📈 Dashboard")]:
@@ -355,7 +383,7 @@ with tabs[menu.index("👶 Pediatría")]:
             if "peso" in df_g.columns: c1.line_chart(df_g["peso"], color="#3b82f6")
             if "talla" in df_g.columns: c2.line_chart(df_g["talla"], color="#10b981")
 
-# 7. EVOLUCIÓN (LÍMPIA)
+# 7. EVOLUCIÓN
 with tabs[menu.index("📝 Evolución")]:
     if paciente_sel:
         if CANVAS_DISPONIBLE:
@@ -472,7 +500,7 @@ with tabs[menu.index("📦 Inventario")]:
 with tabs[menu.index("📚 Historial")]:
     if paciente_sel:
         st.subheader(f"📚 Historia Clínica Digital: {paciente_sel}")
-        with st.expander("⏱️ Auditoría de Presencia (Check-in/Out)", expanded=True):
+        with st.expander("⏱️ Auditoría de Presencia (GPS Real)", expanded=True):
             chks = [x for x in st.session_state["checkin_db"] if x["paciente"] == paciente_sel]
             if chks: st.dataframe(pd.DataFrame(chks).drop(columns=["paciente", "empresa"]), use_container_width=True)
         with st.expander("📝 Procedimientos y Evoluciones"):
@@ -543,14 +571,14 @@ with tabs[menu.index("🗄️ PDF")]:
             pdf.line(21, 14, 21, 28); pdf.line(14, 21, 28, 21)
             emp_paciente = st.session_state["detalles_pacientes_db"].get(p, {}).get("empresa", mi_empresa)
             pdf.set_font("Arial", 'B', 16); pdf.set_xy(38, 14); pdf.cell(0, 10, t(emp_paciente), ln=True)
-            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V7.7)"), ln=True); pdf.ln(15)
+            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V7.9)"), ln=True); pdf.ln(15)
             
             det = st.session_state["detalles_pacientes_db"].get(p, {})
             pdf.set_fill_color(240, 240, 240); pdf.set_font("Arial", 'B', 11)
             pdf.cell(0, 8, t(f" PACIENTE: {p}"), 1, 1, 'L', True)
             pdf.set_font("Arial", '', 9)
             pdf.cell(0, 6, t(f" DNI: {det.get('dni','S/D')} | Nacimiento: {det.get('fnac','S/D')} | Sexo: {det.get('sexo','S/D')}"), ln=True)
-            pdf.cell(0, 6, t(f" Domicilio: {det.get('direccion','S/D')}"), ln=True); pdf.ln(5)
+            pdf.cell(0, 6, t(f" Domicilio del Legajo: {det.get('direccion','S/D')}"), ln=True); pdf.ln(5)
 
             vits = [x for x in st.session_state["vitales_db"] if x["paciente"] == p]
             if vits:
@@ -578,7 +606,7 @@ with tabs[menu.index("🗄️ PDF")]:
 
             chks = [x for x in st.session_state["checkin_db"] if x["paciente"] == p]
             if chks:
-                pdf.set_font("Arial", 'B', 10); pdf.cell(0, 8, t("AUDITORIA DE PRESENCIA EN DOMICILIO (Llegada/Salida):"), ln=True)
+                pdf.set_font("Arial", 'B', 10); pdf.cell(0, 8, t("AUDITORIA DE PRESENCIA GPS (Llegada/Salida):"), ln=True)
                 pdf.set_font("Arial", '', 8)
                 for c in chks:
                     pdf.multi_cell(0, 5, t(f"[{c['fecha_hora']}] {c['tipo']} | Por: {c['profesional']}"), align='L')
@@ -710,4 +738,4 @@ if "🕵️ Auditoría" in menu:
             with pd.ExcelWriter(out_logs, engine='openpyxl') as writer: df_logs.to_excel(writer, index=False, sheet_name='Logs_MediCare')
             st.download_button("📥 DESCARGAR LOGS A EXCEL", data=out_logs.getvalue(), file_name=f"Reporte_Logs_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# --- FIN DEL SISTEMA MEDICARE PRO V7.7 ---
+# --- FIN DEL SISTEMA MEDICARE PRO V7.9 ---
