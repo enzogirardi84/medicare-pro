@@ -35,7 +35,7 @@ except ImportError:
     GEO_DISPONIBLE = False
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="MediCare Enterprise PRO V7.9", page_icon="⚕️", layout="wide")
+st.set_page_config(page_title="MediCare Enterprise PRO V7.10", page_icon="⚕️", layout="wide")
 st.markdown("<html lang='es' translate='no'>", unsafe_allow_html=True)
 
 # --- ZONA HORARIA ARGENTINA ---
@@ -144,7 +144,7 @@ if "logeado" not in st.session_state: st.session_state["logeado"] = False
 if not st.session_state["logeado"]:
     _, col, _ = st.columns([1,1.5,1])
     with col:
-        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V7.9</h2>", unsafe_allow_html=True)
+        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V7.10</h2>", unsafe_allow_html=True)
         tab_login, tab_recuperar = st.tabs(["🔑 Iniciar Sesión", "🆘 Olvidé mi Contraseña"])
         with tab_login:
             with st.form("login", clear_on_submit=True):
@@ -235,23 +235,37 @@ with tabs[menu.index("📍 Visitas")]:
         st.subheader("⏱️ Fichada Legal de Visita (GPS Real)")
         st.warning("🚨 Control Antifraude Activado: Para poder fichar tu llegada o salida, primero debés autorizar y capturar la ubicación real de tu dispositivo tocando el botón de abajo.")
 
+        # Buscamos la dirección del paciente de antemano para incluirla en la fichada
+        det = st.session_state["detalles_pacientes_db"].get(paciente_sel, {})
+        dire_paciente = det.get("direccion", "No registrada")
+        te = det.get("telefono", "")
+
         if GEO_DISPONIBLE:
             loc = streamlit_geolocation()
             lat = loc.get('latitude') if loc else None
             lon = loc.get('longitude') if loc else None
 
             if lat is not None and lon is not None:
-                st.success(f"📍 Ubicación Real Capturada: Latitud {lat} | Longitud {lon}")
-                link_mapa = f"https://www.google.com/maps/search/?api=1&query={lat},{lon}"
+                # Redondeamos los números largos a 5 decimales (1 metro de precisión) para que quede prolijo
+                try:
+                    lat_str = str(round(float(lat), 5))
+                    lon_str = str(round(float(lon), 5))
+                except:
+                    lat_str = str(lat)
+                    lon_str = str(lon)
+
+                st.success(f"📍 Ubicación Real Capturada: Latitud {lat_str} | Longitud {lon_str}")
+                link_mapa = f"https://www.google.com/maps/search/?api=1&query={lat_str},{lon_str}"
                 st.markdown(f"[🗺️ Ver el lugar exacto desde donde estás fichando en Google Maps]({link_mapa})")
 
                 c_in, c_out = st.columns(2)
                 if c_in.button("🟢 Fichar LLEGADA en esta Ubicación", use_container_width=True):
-                    st.session_state["checkin_db"].append({"paciente": paciente_sel, "profesional": user["nombre"], "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"), "tipo": f"ENTRADA (GPS Real: Lat {lat}, Lon {lon})", "empresa": mi_empresa})
+                    # Acá juntamos la dirección del paciente CON la coordenada real
+                    st.session_state["checkin_db"].append({"paciente": paciente_sel, "profesional": user["nombre"], "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"), "tipo": f"ENTRADA en: {dire_paciente} (GPS Real: Lat {lat_str}, Lon {lon_str})", "empresa": mi_empresa})
                     guardar_datos(); st.success("Llegada registrada con coordenadas reales."); st.rerun()
                 
                 if c_out.button("🔴 Fichar SALIDA en esta Ubicación", use_container_width=True):
-                    st.session_state["checkin_db"].append({"paciente": paciente_sel, "profesional": user["nombre"], "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"), "tipo": f"SALIDA (GPS Real: Lat {lat}, Lon {lon})", "empresa": mi_empresa})
+                    st.session_state["checkin_db"].append({"paciente": paciente_sel, "profesional": user["nombre"], "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"), "tipo": f"SALIDA de: {dire_paciente} (GPS Real: Lat {lat_str}, Lon {lon_str})", "empresa": mi_empresa})
                     guardar_datos(); st.success("Salida registrada con coordenadas reales."); st.rerun()
             else:
                 st.error("❌ Aún no capturaste tu ubicación. Tocá la brújula de arriba 👆 y dale a 'Permitir' en tu navegador.")
@@ -265,10 +279,6 @@ with tabs[menu.index("📍 Visitas")]:
             st.dataframe(pd.DataFrame(chk_pac).drop(columns=["paciente", "empresa"]).tail(5), use_container_width=True)
 
         st.divider()
-        det = st.session_state["detalles_pacientes_db"].get(paciente_sel, {})
-        dire_paciente = det.get("direccion", "No registrada")
-        te = det.get("telefono", "")
-        
         if dire_paciente and dire_paciente != "No registrada":
             st.info(f"🏠 **Domicilio Cargado del Paciente (Para tu referencia):** {dire_paciente}")
             mapa_html = f'<iframe width="100%" height="300" src="https://maps.google.com/maps?q={urllib.parse.quote(dire_paciente)}&z=15&output=embed"></iframe>'
@@ -571,7 +581,7 @@ with tabs[menu.index("🗄️ PDF")]:
             pdf.line(21, 14, 21, 28); pdf.line(14, 21, 28, 21)
             emp_paciente = st.session_state["detalles_pacientes_db"].get(p, {}).get("empresa", mi_empresa)
             pdf.set_font("Arial", 'B', 16); pdf.set_xy(38, 14); pdf.cell(0, 10, t(emp_paciente), ln=True)
-            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V7.9)"), ln=True); pdf.ln(15)
+            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V7.10)"), ln=True); pdf.ln(15)
             
             det = st.session_state["detalles_pacientes_db"].get(p, {})
             pdf.set_fill_color(240, 240, 240); pdf.set_font("Arial", 'B', 11)
@@ -738,4 +748,4 @@ if "🕵️ Auditoría" in menu:
             with pd.ExcelWriter(out_logs, engine='openpyxl') as writer: df_logs.to_excel(writer, index=False, sheet_name='Logs_MediCare')
             st.download_button("📥 DESCARGAR LOGS A EXCEL", data=out_logs.getvalue(), file_name=f"Reporte_Logs_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# --- FIN DEL SISTEMA MEDICARE PRO V7.9 ---
+# --- FIN DEL SISTEMA MEDICARE PRO V7.10 ---
