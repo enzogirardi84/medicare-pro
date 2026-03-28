@@ -5,3 +5,4 @@ supabase
 pytz
 openpyxl
 streamlit-drawable-canvas
+streamlit-geolocation
