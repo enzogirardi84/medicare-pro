@@ -96,27 +96,21 @@ input[type=number] { -moz-appearance: textfield; }
 """
 st.markdown(page_bg_css, unsafe_allow_html=True)
 
-# --- 🎁 NUEVO LOGO EXCLUSIVO PROFESIONAL "EG" ---
+# --- 🎁 NUEVO LOGO EXCLUSIVO PROFESIONAL "EG" (VERSIÓN SEGURA) ---
 def render_logo_eg(size=100):
-    # He creado un ícono abstracto integrado donde las iniciales E y G forman una cresta moderna y sophisticated, 
-    # sugiriendo tecnología, seguridad y crecimiento. La paleta de colores es Enterprise (Azul Marino Profundo y Verde Turquesa).
     svg_code = f"""
     <svg width="{size}" height="{size}" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
         <defs>
             <linearGradient id="egGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#1e3a8a;stop-opacity:1" /> <stop offset="100%" style="stop-color:#0d9488;stop-opacity:1" /> </linearGradient>
-            <filter id="egShadow" x="-5" y="0" width="130" height="130">
-                <feDropShadow dx="1.5" dy="1.5" stdDeviation="1.2" flood-color="#000" flood-opacity="0.25"/>
-            </filter>
+                <stop offset="0%" style="stop-color:#1e3a8a;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#0d9488;stop-opacity:1" />
+            </linearGradient>
         </defs>
-        
-        <circle cx="60" cy="60" r="55" fill="url(#egGrad)" filter="url(#egShadow)" stroke="white" stroke-width="0.8"/>
-        
+        <circle cx="60" cy="60" r="55" fill="url(#egGrad)" stroke="white" stroke-width="2"/>
         <g fill="white" font-family="Arial, Helvetica, sans-serif" font-weight="bold" text-anchor="middle">
-            <text x="60" y="55" font-size="36" letter-spacing="-2">E.G</text>
-            
+            <text x="60" y="55" font-size="36" letter-spacing="-1">E.G</text>
             <text x="60" y="80" font-size="10" font-weight="normal" letter-spacing="0.5">ENZO GIRARDI</text>
-            <text x="60" y="92" font-size="8" font-weight="normal" letter-spacing="0.2" opacity="0.8">SISTEMAS SOLUTIONS</text>
+            <text x="60" y="92" font-size="8" font-weight="normal" letter-spacing="0.2">SISTEMAS SOLUTIONS</text>
         </g>
     </svg>
     """
