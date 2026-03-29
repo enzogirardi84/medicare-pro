@@ -831,7 +831,7 @@ if "⚙️ Mi Equipo" in menu:
                 elif d.get("estado", "Activo") != "Activo" and c2.button("▶️ Reactivar", key=f"reac_{u}"): st.session_state["usuarios_db"][u]["estado"] = "Activo"; guardar_datos(); st.rerun()
             if c3.button("❌ Bajar", key=f"del_{u}"): del st.session_state["usuarios_db"][u]; guardar_datos(); st.rerun()
 
-# 17. AUDITORÍA (CON FILTROS GLOBALES)
+# 17. AUDITORÍA (CON FILTROS GLOBALES Y REPORTE RRHH MEJORADO)
 if "🕵️ Auditoría" in menu:
     with tabs[menu.index("🕵️ Auditoría")]:
         st.subheader("Auditoría General de Movimientos")
@@ -858,8 +858,16 @@ if "🕵️ Auditoría" in menu:
         st.divider()
         st.subheader("📄 Reporte RRHH (Auditoría de Asistencia por Profesional)")
         if FPDF_DISPONIBLE:
-            profesionales_lista = [v['nombre'] for k, v in st.session_state["usuarios_db"].items() if v['empresa'] == mi_empresa or rol == "SuperAdmin"]
+            # Trae a todos los profesionales (evita duplicados)
+            profesionales_lista = list(set([v['nombre'] for k, v in st.session_state["usuarios_db"].items()]))
+            
+            # Sumamos también a los que ficharon alguna vez por si los borraron del equipo
+            profesionales_historicos = list(set([c.get("profesional", "") for c in st.session_state["checkin_db"]]))
+            profesionales_lista = list(set(profesionales_lista + profesionales_historicos))
+            
             if profesionales_lista:
+                # Ordenamos alfabéticamente
+                profesionales_lista.sort()
                 prof_sel = st.selectbox("Seleccionar Profesional para liquidación:", profesionales_lista)
                 
                 def t(txt): return str(txt).replace('⚖️', '').replace('⚠️', '').replace('📌', '').replace('📅', '').replace('📸', '').replace('🗄️', '').encode('latin-1', 'replace').decode('latin-1')
@@ -875,13 +883,14 @@ if "🕵️ Auditoría" in menu:
                     pdf.ln(5)
                     
                     pdf.set_font("Arial", '', 9)
-                    chks_prof = [c for c in st.session_state["checkin_db"] if c["profesional"] == profesional and c.get("empresa", "") == mi_empresa]
+                    # Parche: Trae las visitas directas del profesional seleccionado
+                    chks_prof = [c for c in st.session_state["checkin_db"] if c.get("profesional", "") == profesional]
                     
                     if not chks_prof:
                         pdf.cell(0, 10, t("No hay registros de visitas (Llegada/Salida) para este profesional."), ln=True)
                     else:
                         for c in reversed(chks_prof):
-                            texto_linea = f"[{c['fecha_hora']}] PACIENTE: {c['paciente']} | ACCION: {c['tipo']}"
+                            texto_linea = f"[{c.get('fecha_hora', '')}] PACIENTE: {c.get('paciente', '')} | ACCION: {c.get('tipo', '')}"
                             pdf.multi_cell(0, 6, t(texto_linea), border=1)
                             pdf.ln(2)
                             
