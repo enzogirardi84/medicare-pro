@@ -36,7 +36,7 @@ except ImportError:
     GEO_DISPONIBLE = False
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="MediCare Enterprise PRO V8.2", page_icon="⚕️", layout="wide")
+st.set_page_config(page_title="MediCare Enterprise PRO V9.1", page_icon="⚕️", layout="wide")
 st.markdown("<html lang='es' translate='no'>", unsafe_allow_html=True)
 
 # --- ZONA HORARIA ARGENTINA ---
@@ -44,7 +44,7 @@ ARG_TZ = pytz.timezone('America/Argentina/Buenos_Aires')
 def ahora():
     return datetime.now(ARG_TZ)
 
-# --- TRADUCTOR GPS A CALLE REAL (GEOCODIFICACIÓN INVERSA) ---
+# --- TRADUCTOR GPS A CALLE REAL ---
 def obtener_direccion_real(lat, lon):
     try:
         url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}&zoom=18&addressdetails=1"
@@ -52,7 +52,6 @@ def obtener_direccion_real(lat, lon):
         with urllib.request.urlopen(req, timeout=5) as response:
             data = json.loads(response.read().decode('utf-8'))
             display_name = data.get('display_name', 'Dirección no encontrada')
-            # Cortamos la dirección para que no sea tan larga (sacamos el país y el CP)
             partes = display_name.split(", ")
             if len(partes) > 3:
                 return ", ".join(partes[:3])
@@ -96,7 +95,7 @@ input[type=number] { -moz-appearance: textfield; }
 """
 st.markdown(page_bg_css, unsafe_allow_html=True)
 
-# --- 🎁 NUEVO LOGO EXCLUSIVO PROFESIONAL "EG" (VERSIÓN SEGURA) ---
+# --- 🎁 LOGO EXCLUSIVO PROFESIONAL ---
 def render_logo_eg(size=100):
     svg_code = f"""
     <svg width="{size}" height="{size}" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
@@ -161,7 +160,7 @@ if "logeado" not in st.session_state: st.session_state["logeado"] = False
 if not st.session_state["logeado"]:
     _, col, _ = st.columns([1,1.5,1])
     with col:
-        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V8.2</h2>", unsafe_allow_html=True)
+        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V9.1</h2>", unsafe_allow_html=True)
         tab_login, tab_recuperar = st.tabs(["🔑 Iniciar Sesión", "🆘 Olvidé mi Contraseña"])
         with tab_login:
             with st.form("login", clear_on_submit=True):
@@ -214,24 +213,48 @@ user = st.session_state["u_actual"]
 mi_empresa = user["empresa"]
 rol = user["rol"]
 
-# --- SIDEBAR ---
+# --- SIDEBAR (CON BUSCADOR INTELIGENTE Y SISTEMA DE ALTAS) ---
 with st.sidebar:
-    # Mostramos el NUEVO LOGO REDISEÑADO
     render_logo_eg(110)
     st.header(f"🏢 {mi_empresa}")
     st.write(f"👤 **{user['nombre']}** ({user['rol']})")
     st.divider()
     
+    # 🔍 El buscador que filtra la lista de pacientes al instante
     buscar = st.text_input("🔍 Buscar Paciente:")
-    pacientes_visibles = st.session_state["pacientes_db"] if rol == "SuperAdmin" else [p for p in st.session_state["pacientes_db"] if st.session_state["detalles_pacientes_db"].get(p,{}).get("empresa") == mi_empresa]
-    p_f = [p for p in pacientes_visibles if buscar.lower() in p.lower()]
-    paciente_sel = st.selectbox("Seleccionar Paciente:", p_f) if p_f else None
     
-    if paciente_sel and st.button("🔴 ELIMINAR PACIENTE", width="stretch"):
-        st.session_state["pacientes_db"].remove(paciente_sel)
-        del st.session_state["detalles_pacientes_db"][paciente_sel]
-        st.session_state["logs_db"].append({"F": ahora().strftime("%d/%m/%Y"), "H": ahora().strftime("%H:%M"), "U": user["nombre"], "E": mi_empresa, "A": f"Baja Paciente: {paciente_sel}"})
-        guardar_datos(); st.rerun()
+    ver_altas = False
+    if rol in ["SuperAdmin", "Coordinador"]:
+        ver_altas = st.checkbox("📁 Mostrar Pacientes de Alta")
+
+    pacientes_visibles = []
+    for p in st.session_state["pacientes_db"]:
+        det = st.session_state["detalles_pacientes_db"].get(p, {})
+        if rol != "SuperAdmin" and det.get("empresa") != mi_empresa:
+            continue
+        
+        estado = det.get("estado", "Activo")
+        if estado == "Activo" or ver_altas:
+            display_name = f"🗄️ {p} [ALTA]" if estado == "De Alta" else p
+            pacientes_visibles.append((p, display_name))
+
+    p_f = [pv for pv in pacientes_visibles if buscar.lower() in pv[1].lower()]
+    paciente_sel_tuple = st.selectbox("Seleccionar Paciente:", p_f, format_func=lambda x: x[1]) if p_f else None
+    
+    paciente_sel = paciente_sel_tuple[0] if paciente_sel_tuple else None
+
+    if paciente_sel and rol in ["SuperAdmin", "Coordinador"]:
+        estado_actual = st.session_state["detalles_pacientes_db"].get(paciente_sel, {}).get("estado", "Activo")
+        if estado_actual == "Activo":
+            if st.button("📦 ARCHIVAR (Dar de Alta)", width="stretch"):
+                st.session_state["detalles_pacientes_db"][paciente_sel]["estado"] = "De Alta"
+                st.session_state["logs_db"].append({"F": ahora().strftime("%d/%m/%Y"), "H": ahora().strftime("%H:%M"), "U": user["nombre"], "E": mi_empresa, "A": f"Alta Médica Archivo: {paciente_sel}"})
+                guardar_datos(); st.rerun()
+        else:
+            if st.button("🔄 REVERTIR ALTA (Reactivar)", width="stretch"):
+                st.session_state["detalles_pacientes_db"][paciente_sel]["estado"] = "Activo"
+                st.session_state["logs_db"].append({"F": ahora().strftime("%d/%m/%Y"), "H": ahora().strftime("%H:%M"), "U": user["nombre"], "E": mi_empresa, "A": f"Reactivación Legajo: {paciente_sel}"})
+                guardar_datos(); st.rerun()
 
     st.divider()
     if st.button("Cerrar Sesión", width="stretch"): st.session_state["logeado"] = False; st.rerun()
@@ -245,75 +268,75 @@ if rol == "SuperAdmin":
     menu.append("🕵️ Auditoría")
 tabs = st.tabs(menu)
 
-# 1. VISITAS (GPS REAL CON DIRECCIÓN FÍSICA)
+# 1. VISITAS
 with tabs[menu.index("📍 Visitas")]:
     if not paciente_sel:
         st.info("👈 Seleccioná un paciente en el menú lateral para registrar tu visita.")
     else:
         st.subheader("⏱️ Fichada Legal de Visita (GPS Real)")
-        st.warning("🚨 Control Antifraude Activado: El sistema traducirá tu ubicación satelital a una dirección real de calle para la auditoría.")
-
-        det = st.session_state["detalles_pacientes_db"].get(paciente_sel, {})
-        dire_paciente = det.get("direccion", "No registrada")
-        te = det.get("telefono", "")
-
-        if GEO_DISPONIBLE:
-            loc = streamlit_geolocation()
-            lat = loc.get('latitude') if loc else None
-            lon = loc.get('longitude') if loc else None
-
-            if lat is not None and lon is not None:
-                # 1. Redondeamos números
-                try:
-                    lat_str = str(round(float(lat), 5))
-                    lon_str = str(round(float(lon), 5))
-                except:
-                    lat_str = str(lat)
-                    lon_str = str(lon)
-
-                # 2. Traducimos la coordenada a una CALLE real (La magia nueva)
-                direccion_real = obtener_direccion_real(lat_str, lon_str)
-
-                st.success(f"📍 **Estás físicamente en:** {direccion_real}")
-                link_mapa = f"https://www.google.com/maps/search/?api=1&query={lat_str},{lon_str}"
-                st.markdown(f"[🗺️ Ver en Google Maps]({link_mapa})")
-
-                c_in, c_out = st.columns(2)
-                if c_in.button("🟢 Fichar LLEGADA en esta Ubicación", use_container_width=True):
-                    # Eliminamos la dirección teórica del texto para que no haya falsos positivos. Solo la verdad del GPS traducia a calle.
-                    st.session_state["checkin_db"].append({"paciente": paciente_sel, "profesional": user["nombre"], "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"), "tipo": f"LLEGADA en: {direccion_real} (Lat: {lat_str})", "empresa": mi_empresa})
-                    guardar_datos(); st.success("Llegada registrada exitosamente."); st.rerun()
-                
-                if c_out.button("🔴 Fichar SALIDA en esta Ubicación", use_container_width=True):
-                    st.session_state["checkin_db"].append({"paciente": paciente_sel, "profesional": user["nombre"], "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"), "tipo": f"SALIDA de: {direccion_real} (Lat: {lat_str})", "empresa": mi_empresa})
-                    guardar_datos(); st.success("Salida registrada exitosamente."); st.rerun()
-            else:
-                st.error("❌ Aún no capturaste tu ubicación. Tocá la brújula de arriba 👆 y dale a 'Permitir' en tu navegador.")
+        estado_pac = st.session_state["detalles_pacientes_db"].get(paciente_sel, {}).get("estado", "Activo")
+        if estado_pac == "De Alta":
+            st.error("⚠️ Este paciente se encuentra DE ALTA. Su legajo está archivado. Solo se puede visualizar el historial.")
         else:
-            st.error("⚠️ Librería 'streamlit-geolocation' no cargó correctamente. Asegurate de que esté en el requirements.txt.")
+            st.warning("🚨 Control Antifraude Activado: El sistema traducirá tu ubicación satelital a una dirección real de calle para la auditoría.")
+
+            det = st.session_state["detalles_pacientes_db"].get(paciente_sel, {})
+            dire_paciente = det.get("direccion", "No registrada")
+            te = det.get("telefono", "")
+
+            if GEO_DISPONIBLE:
+                loc = streamlit_geolocation()
+                lat = loc.get('latitude') if loc else None
+                lon = loc.get('longitude') if loc else None
+
+                if lat is not None and lon is not None:
+                    try:
+                        lat_str = str(round(float(lat), 5))
+                        lon_str = str(round(float(lon), 5))
+                    except:
+                        lat_str = str(lat)
+                        lon_str = str(lon)
+
+                    direccion_real = obtener_direccion_real(lat_str, lon_str)
+                    st.success(f"📍 **Estás físicamente en:** {direccion_real}")
+                    link_mapa = f"https://www.google.com/maps/search/?api=1&query={lat_str},{lon_str}"
+                    st.markdown(f"[🗺️ Ver en Google Maps]({link_mapa})")
+
+                    c_in, c_out = st.columns(2)
+                    if c_in.button("🟢 Fichar LLEGADA en esta Ubicación", use_container_width=True):
+                        st.session_state["checkin_db"].append({"paciente": paciente_sel, "profesional": user["nombre"], "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"), "tipo": f"LLEGADA en: {direccion_real} (Lat: {lat_str})", "empresa": mi_empresa})
+                        guardar_datos(); st.success("Llegada registrada exitosamente."); st.rerun()
+                    
+                    if c_out.button("🔴 Fichar SALIDA en esta Ubicación", use_container_width=True):
+                        st.session_state["checkin_db"].append({"paciente": paciente_sel, "profesional": user["nombre"], "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"), "tipo": f"SALIDA de: {direccion_real} (Lat: {lat_str})", "empresa": mi_empresa})
+                        guardar_datos(); st.success("Salida registrada exitosamente."); st.rerun()
+                else:
+                    st.error("❌ Aún no capturaste tu ubicación. Tocá la brújula de arriba 👆 y dale a 'Permitir' en tu navegador.")
+            else:
+                st.error("⚠️ Librería 'streamlit-geolocation' no cargó correctamente.")
+
+            st.divider()
+            if dire_paciente and dire_paciente != "No registrada":
+                st.info(f"🏠 **Domicilio Asignado del Paciente:** {dire_paciente}")
+                mapa_html = f'<iframe width="100%" height="300" src="https://maps.google.com/maps?q={urllib.parse.quote(dire_paciente)}&z=15&output=embed"></iframe>'
+                st.components.v1.html(mapa_html, height=300)
+                
+            if te:
+                num_limpio = ''.join(filter(str.isdigit, str(te)))
+                if len(num_limpio) >= 10: num_limpio = "549" + num_limpio[-10:]
+                msg = urllib.parse.quote(f"Hola, soy {user['nombre']} de {mi_empresa}. Estoy en camino al domicilio.")
+                st.markdown(f'<a href="https://wa.me/{num_limpio}?text={msg}" target="_blank" class="wa-btn">📲 AVISAR WHATSAPP AL PACIENTE</a>', unsafe_allow_html=True)
 
         st.divider()
         chk_pac = [c for c in st.session_state["checkin_db"] if c["paciente"] == paciente_sel]
         if chk_pac: 
-            st.caption("Últimos registros de asistencia (Con dirección física confirmada):")
+            st.caption("Últimos registros de asistencia:")
             st.dataframe(pd.DataFrame(chk_pac).drop(columns=["paciente", "empresa"]).tail(5), use_container_width=True)
-
-        st.divider()
-        if dire_paciente and dire_paciente != "No registrada":
-            st.info(f"🏠 **Domicilio Asignado del Paciente (Para que corrobores):** {dire_paciente}")
-            mapa_html = f'<iframe width="100%" height="300" src="https://maps.google.com/maps?q={urllib.parse.quote(dire_paciente)}&z=15&output=embed"></iframe>'
-            st.components.v1.html(mapa_html, height=300)
-            
-        if te:
-            num_limpio = ''.join(filter(str.isdigit, str(te)))
-            if len(num_limpio) >= 10: num_limpio = "549" + num_limpio[-10:]
-            msg = urllib.parse.quote(f"Hola, soy {user['nombre']} de {mi_empresa}. Estoy en camino al domicilio.")
-            st.markdown(f'<a href="https://wa.me/{num_limpio}?text={msg}" target="_blank" class="wa-btn">📲 AVISAR WHATSAPP AL PACIENTE</a>', unsafe_allow_html=True)
 
 # 2. DASHBOARD
 with tabs[menu.index("📈 Dashboard")]:
     st.markdown(f"<h3 style='color: #3b82f6;'>📈 Panel de Gestión - {mi_empresa}</h3>", unsafe_allow_html=True)
-    if not pacientes_visibles: st.warning("No hay pacientes cargados.")
+    if not st.session_state["pacientes_db"]: st.warning("No hay pacientes cargados.")
     else:
         df_evs = pd.DataFrame(st.session_state["evoluciones_db"])
         if not df_evs.empty:
@@ -342,15 +365,16 @@ with tabs[menu.index("👤 Admisión")]:
             if n and d and emp_d: 
                 id_p = f"{n} ({o}) - {emp_d.strip()}"
                 st.session_state["pacientes_db"].append(id_p)
-                st.session_state["detalles_pacientes_db"][id_p] = {"dni": d, "fnac": f_nac.strftime("%d/%m/%Y"), "sexo": se, "telefono": tel, "direccion": dir_p, "empresa": emp_d.strip()}
+                st.session_state["detalles_pacientes_db"][id_p] = {"dni": d, "fnac": f_nac.strftime("%d/%m/%Y"), "sexo": se, "telefono": tel, "direccion": dir_p, "empresa": emp_d.strip(), "estado": "Activo"}
                 guardar_datos(); st.rerun()
 
 # 4. AGENDA 
 with tabs[menu.index("📅 Agenda")]:
     with st.form("agenda_form", clear_on_submit=True):
-        if pacientes_visibles:
+        pacs_activos = [p[0] for p in pacientes_visibles if st.session_state["detalles_pacientes_db"].get(p[0], {}).get("estado") != "De Alta"]
+        if pacs_activos:
             c1, c2 = st.columns(2)
-            pac_ag = c1.selectbox("Paciente a visitar", pacientes_visibles)
+            pac_ag = c1.selectbox("Paciente a visitar", pacs_activos)
             profesionales = [v['nombre'] for k, v in st.session_state["usuarios_db"].items() if v['empresa'] == mi_empresa or rol == "SuperAdmin"]
             prof_ag = c2.selectbox("Asignar Profesional", profesionales)
             c3, c4 = st.columns(2)
@@ -501,8 +525,17 @@ with tabs[menu.index("⚖️ Balance")]:
                 st.session_state["balance_db"].append({"paciente": paciente_sel, "ingresos": ting, "egresos": tegr, "balance": bal, "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
                 guardar_datos(); st.rerun()
 
-# 11. INVENTARIO 
+# 11. INVENTARIO
 with tabs[menu.index("📦 Inventario")]:
+    inv_mio = [i for i in st.session_state["inventario_db"] if i["empresa"] == mi_empresa]
+    if inv_mio:
+        stock_critico = [i for i in inv_mio if i['stock'] <= 10]
+        if stock_critico:
+            st.error("🚨 **ALERTA DE STOCK CRÍTICO EN FARMACIA:**")
+            for item in stock_critico:
+                st.warning(f"⚠️ {item['item']}: Quedan solo **{item['stock']}** unidades.")
+            st.divider()
+
     with st.form("form_inv", clear_on_submit=True):
         c1, c2 = st.columns([3, 1])
         nuevo_item = c1.text_input("Nombre del Insumo (Ej: Gasas 10x10)")
@@ -517,7 +550,6 @@ with tabs[menu.index("📦 Inventario")]:
                     st.session_state["inventario_db"].append({"item": nuevo_item.strip().title(), "stock": cantidad_ini, "empresa": mi_empresa})
                 guardar_datos(); st.rerun()
     st.divider()
-    inv_mio = [i for i in st.session_state["inventario_db"] if i["empresa"] == mi_empresa]
     if inv_mio: 
         st.dataframe(pd.DataFrame(inv_mio).drop(columns="empresa"), use_container_width=True)
         col_del1, col_del2 = st.columns([3,1])
@@ -526,12 +558,12 @@ with tabs[menu.index("📦 Inventario")]:
             st.session_state["inventario_db"] = [i for i in st.session_state["inventario_db"] if not (i["item"] == del_item and i["empresa"] == mi_empresa)]
             guardar_datos(); st.rerun()
 
-# 12. HISTORIAL COMPLETO (SISTEMA DE ESCALABILIDAD V8.2)
+# 12. HISTORIAL COMPLETO 
 with tabs[menu.index("📚 Historial")]:
     if paciente_sel:
-        st.subheader(f"📚 Historia Clínica Digital: {paciente_sel}")
+        estado_badge = "🗄️ [ARCHIVADO DE ALTA]" if st.session_state["detalles_pacientes_db"].get(paciente_sel, {}).get("estado") == "De Alta" else ""
+        st.subheader(f"📚 Historia Clínica Digital: {paciente_sel} {estado_badge}")
         
-        # --- FILTRO INTELIGENTE PARA EVITAR COLAPSOS ---
         st.markdown("##### ⚙️ Opciones de Visualización")
         col_filt1, col_filt2 = st.columns([1, 2])
         opcion_limite = col_filt1.selectbox("Mostrar:", ["Últimos 10 registros", "Últimos 30 registros", "Últimos 50 registros", "Ver TODO el historial"])
@@ -592,7 +624,7 @@ with tabs[menu.index("📚 Historial")]:
                 for r in reversed(recs[-limite:]): st.success(f"📌 **{r['fecha']}** | Indicado por: **{r['firma']}**\n\n{r['med']}")
             else: st.write("No hay terapéutica indicada.")
 
-# 13. CAJA
+# 13. CAJA (CON FILTRO GLOBAL)
 with tabs[menu.index("💳 Caja")]:
     if paciente_sel:
         nom_empresa = [n for n in st.session_state["nomenclador_db"] if n["empresa"] == mi_empresa]
@@ -610,18 +642,31 @@ with tabs[menu.index("💳 Caja")]:
                     st.session_state["facturacion_db"].append({"paciente": paciente_sel, "serv": serv_desc, "monto": mon, "fecha": ahora().strftime("%d/%m/%Y"), "empresa": mi_empresa})
                     guardar_datos(); st.rerun()
         st.divider()
-        if rol in ["SuperAdmin", "Coordinador"]:
-            df_caja = pd.DataFrame([f for f in st.session_state["facturacion_db"] if f.get("empresa", "") == mi_empresa])
-            if not df_caja.empty:
-                st.dataframe(df_caja.drop(columns="empresa"))
-                output = io.BytesIO()
-                with pd.ExcelWriter(output, engine='openpyxl') as writer: df_caja.drop(columns="empresa").to_excel(writer, index=False, sheet_name='Caja_MediCare')
-                st.download_button("📥 DESCARGAR CAJA A EXCEL", data=output.getvalue(), file_name=f"Caja_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+    if rol in ["SuperAdmin", "Coordinador"]:
+        df_caja = pd.DataFrame([f for f in st.session_state["facturacion_db"] if f.get("empresa", "") == mi_empresa])
+        if not df_caja.empty:
+            st.markdown("#### 🔍 Filtro y Reporte de Facturación")
+            filtro_caja = st.text_input("Filtrar por paciente, fecha o práctica:")
+            
+            if filtro_caja:
+                mask = df_caja.astype(str).apply(lambda x: x.str.contains(filtro_caja, case=False, na=False)).any(axis=1)
+                df_caja_filtrada = df_caja[mask]
+            else:
+                df_caja_filtrada = df_caja
+
+            total_facturacion = df_caja_filtrada["monto"].sum()
+            st.success(f"💰 **FACTURACIÓN TOTAL (Mostrada): ${total_facturacion:,.2f}**")
+            
+            st.dataframe(df_caja_filtrada.drop(columns="empresa", errors='ignore'), use_container_width=True)
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer: df_caja_filtrada.drop(columns="empresa", errors='ignore').to_excel(writer, index=False, sheet_name='Caja_MediCare')
+            st.download_button("📥 DESCARGAR RESULTADOS A EXCEL", data=output.getvalue(), file_name=f"Caja_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 # 14. PDF 
 with tabs[menu.index("🗄️ PDF")]:
     if paciente_sel and FPDF_DISPONIBLE:
-        def t(txt): return str(txt).replace('⚖️', '').replace('⚠️', '').replace('📌', '').replace('📅', '').replace('📸', '').encode('latin-1', 'replace').decode('latin-1')
+        def t(txt): return str(txt).replace('⚖️', '').replace('⚠️', '').replace('📌', '').replace('📅', '').replace('📸', '').replace('🗄️', '').encode('latin-1', 'replace').decode('latin-1')
 
         def crear_pdf_pro(p):
             pdf = FPDF(); pdf.add_page()
@@ -629,11 +674,12 @@ with tabs[menu.index("🗄️ PDF")]:
             pdf.line(21, 14, 21, 28); pdf.line(14, 21, 28, 21)
             emp_paciente = st.session_state["detalles_pacientes_db"].get(p, {}).get("empresa", mi_empresa)
             pdf.set_font("Arial", 'B', 16); pdf.set_xy(38, 14); pdf.cell(0, 10, t(emp_paciente), ln=True)
-            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V8.2)"), ln=True); pdf.ln(15)
+            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V9.1)"), ln=True); pdf.ln(15)
             
             det = st.session_state["detalles_pacientes_db"].get(p, {})
+            estado_texto = " [ARCHIVADO/ALTA]" if det.get("estado") == "De Alta" else ""
             pdf.set_fill_color(240, 240, 240); pdf.set_font("Arial", 'B', 11)
-            pdf.cell(0, 8, t(f" PACIENTE: {p}"), 1, 1, 'L', True)
+            pdf.cell(0, 8, t(f" PACIENTE: {p}{estado_texto}"), 1, 1, 'L', True)
             pdf.set_font("Arial", '', 9)
             pdf.cell(0, 6, t(f" DNI: {det.get('dni','S/D')} | Nacimiento: {det.get('fnac','S/D')} | Sexo: {det.get('sexo','S/D')}"), ln=True)
             pdf.cell(0, 6, t(f" Domicilio del Legajo: {det.get('direccion','S/D')}"), ln=True); pdf.ln(5)
@@ -785,15 +831,64 @@ if "⚙️ Mi Equipo" in menu:
                 elif d.get("estado", "Activo") != "Activo" and c2.button("▶️ Reactivar", key=f"reac_{u}"): st.session_state["usuarios_db"][u]["estado"] = "Activo"; guardar_datos(); st.rerun()
             if c3.button("❌ Bajar", key=f"del_{u}"): del st.session_state["usuarios_db"][u]; guardar_datos(); st.rerun()
 
-# 17. AUDITORÍA
+# 17. AUDITORÍA (CON FILTROS GLOBALES)
 if "🕵️ Auditoría" in menu:
     with tabs[menu.index("🕵️ Auditoría")]:
-        st.subheader("Auditoría de Movimientos")
+        st.subheader("Auditoría General de Movimientos")
         df_logs = pd.DataFrame(st.session_state["logs_db"])
-        st.dataframe(df_logs)
+        
         if not df_logs.empty:
+            col_b1, col_b2 = st.columns([2, 1])
+            buscar_log = col_b1.text_input("🔍 Filtrar reportes (por Acción, Usuario, etc.):")
+            
+            if buscar_log:
+                mask = df_logs.astype(str).apply(lambda x: x.str.contains(buscar_log, case=False, na=False)).any(axis=1)
+                df_logs_filtrado = df_logs[mask]
+            else:
+                df_logs_filtrado = df_logs
+                
+            st.dataframe(df_logs_filtrado, use_container_width=True)
+            
             out_logs = io.BytesIO()
-            with pd.ExcelWriter(out_logs, engine='openpyxl') as writer: df_logs.to_excel(writer, index=False, sheet_name='Logs_MediCare')
-            st.download_button("📥 DESCARGAR LOGS A EXCEL", data=out_logs.getvalue(), file_name=f"Reporte_Logs_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            with pd.ExcelWriter(out_logs, engine='openpyxl') as writer: df_logs_filtrado.to_excel(writer, index=False, sheet_name='Logs_MediCare')
+            st.download_button("📥 DESCARGAR RESULTADOS A EXCEL", data=out_logs.getvalue(), file_name=f"Reporte_Logs_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        else:
+            st.info("No hay registros en la auditoría.")
+        
+        st.divider()
+        st.subheader("📄 Reporte RRHH (Auditoría de Asistencia por Profesional)")
+        if FPDF_DISPONIBLE:
+            profesionales_lista = [v['nombre'] for k, v in st.session_state["usuarios_db"].items() if v['empresa'] == mi_empresa or rol == "SuperAdmin"]
+            if profesionales_lista:
+                prof_sel = st.selectbox("Seleccionar Profesional para liquidación:", profesionales_lista)
+                
+                def t(txt): return str(txt).replace('⚖️', '').replace('⚠️', '').replace('📌', '').replace('📅', '').replace('📸', '').replace('🗄️', '').encode('latin-1', 'replace').decode('latin-1')
 
-# --- FIN DEL SISTEMA MEDICARE PRO V8.2 ---
+                def crear_pdf_rrhh(profesional):
+                    pdf = FPDF(); pdf.add_page()
+                    pdf.set_font("Arial", 'B', 14)
+                    pdf.cell(0, 10, t(f"REPORTE DE ASISTENCIA Y GPS - {mi_empresa}"), ln=True, align='C')
+                    pdf.set_font("Arial", 'B', 11)
+                    pdf.cell(0, 10, t(f"Profesional Auditado: {profesional}"), ln=True)
+                    pdf.set_font("Arial", 'I', 9)
+                    pdf.cell(0, 5, t(f"Fecha de emisión: {ahora().strftime('%d/%m/%Y %H:%M')}"), ln=True)
+                    pdf.ln(5)
+                    
+                    pdf.set_font("Arial", '', 9)
+                    chks_prof = [c for c in st.session_state["checkin_db"] if c["profesional"] == profesional and c.get("empresa", "") == mi_empresa]
+                    
+                    if not chks_prof:
+                        pdf.cell(0, 10, t("No hay registros de visitas (Llegada/Salida) para este profesional."), ln=True)
+                    else:
+                        for c in reversed(chks_prof):
+                            texto_linea = f"[{c['fecha_hora']}] PACIENTE: {c['paciente']} | ACCION: {c['tipo']}"
+                            pdf.multi_cell(0, 6, t(texto_linea), border=1)
+                            pdf.ln(2)
+                            
+                    return pdf.output(dest='S').encode('latin-1')
+
+                st.download_button("📥 DESCARGAR REPORTE RRHH (PDF)", crear_pdf_rrhh(prof_sel), f"Auditoria_RRHH_{prof_sel}.pdf", "application/pdf")
+        else:
+            st.error("Librería FPDF no disponible. Instalar para generar reportes.")
+
+# --- FIN DEL SISTEMA MEDICARE PRO V9.1 ---
