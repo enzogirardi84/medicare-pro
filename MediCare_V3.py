@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime, date, timedelta
 import json
 import pytz
+import urllib.request
 import urllib.parse
 from supabase import create_client, Client
 import io
@@ -35,13 +36,29 @@ except ImportError:
     GEO_DISPONIBLE = False
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="MediCare Enterprise PRO V8.0", page_icon="⚕️", layout="wide")
+st.set_page_config(page_title="MediCare Enterprise PRO V8.2", page_icon="⚕️", layout="wide")
 st.markdown("<html lang='es' translate='no'>", unsafe_allow_html=True)
 
 # --- ZONA HORARIA ARGENTINA ---
 ARG_TZ = pytz.timezone('America/Argentina/Buenos_Aires')
 def ahora():
     return datetime.now(ARG_TZ)
+
+# --- TRADUCTOR GPS A CALLE REAL (GEOCODIFICACIÓN INVERSA) ---
+def obtener_direccion_real(lat, lon):
+    try:
+        url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}&zoom=18&addressdetails=1"
+        req = urllib.request.Request(url, headers={'User-Agent': 'MediCareProApp/1.0'})
+        with urllib.request.urlopen(req, timeout=5) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            display_name = data.get('display_name', 'Dirección no encontrada')
+            # Cortamos la dirección para que no sea tan larga (sacamos el país y el CP)
+            partes = display_name.split(", ")
+            if len(partes) > 3:
+                return ", ".join(partes[:3])
+            return display_name
+    except:
+        return "Dirección exacta no disponible (Solo coordenadas)"
 
 # --- CONEXIÓN A SUPABASE ---
 @st.cache_resource
@@ -144,7 +161,7 @@ if "logeado" not in st.session_state: st.session_state["logeado"] = False
 if not st.session_state["logeado"]:
     _, col, _ = st.columns([1,1.5,1])
     with col:
-        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V8.0</h2>", unsafe_allow_html=True)
+        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V8.2</h2>", unsafe_allow_html=True)
         tab_login, tab_recuperar = st.tabs(["🔑 Iniciar Sesión", "🆘 Olvidé mi Contraseña"])
         with tab_login:
             with st.form("login", clear_on_submit=True):
@@ -227,13 +244,13 @@ if rol == "SuperAdmin":
     menu.append("🕵️ Auditoría")
 tabs = st.tabs(menu)
 
-# 1. VISITAS (GPS REAL ESTRICTO Y MAPA)
+# 1. VISITAS (GPS REAL CON DIRECCIÓN FÍSICA)
 with tabs[menu.index("📍 Visitas")]:
     if not paciente_sel:
         st.info("👈 Seleccioná un paciente en el menú lateral para registrar tu visita.")
     else:
         st.subheader("⏱️ Fichada Legal de Visita (GPS Real)")
-        st.warning("🚨 Control Antifraude Activado: Para poder fichar tu llegada o salida, primero debés autorizar y capturar la ubicación real de tu dispositivo tocando el botón de abajo.")
+        st.warning("🚨 Control Antifraude Activado: El sistema traducirá tu ubicación satelital a una dirección real de calle para la auditoría.")
 
         det = st.session_state["detalles_pacientes_db"].get(paciente_sel, {})
         dire_paciente = det.get("direccion", "No registrada")
@@ -245,6 +262,7 @@ with tabs[menu.index("📍 Visitas")]:
             lon = loc.get('longitude') if loc else None
 
             if lat is not None and lon is not None:
+                # 1. Redondeamos números
                 try:
                     lat_str = str(round(float(lat), 5))
                     lon_str = str(round(float(lon), 5))
@@ -252,18 +270,21 @@ with tabs[menu.index("📍 Visitas")]:
                     lat_str = str(lat)
                     lon_str = str(lon)
 
-                st.success(f"📍 Ubicación Real Capturada: Latitud {lat_str} | Longitud {lon_str}")
+                # 2. Traducimos la coordenada a una CALLE real (La magia nueva)
+                direccion_real = obtener_direccion_real(lat_str, lon_str)
+
+                st.success(f"📍 **Estás físicamente en:** {direccion_real}")
                 link_mapa = f"https://www.google.com/maps/search/?api=1&query={lat_str},{lon_str}"
-                st.markdown(f"[🗺️ Ver el lugar exacto desde donde estás fichando en Google Maps]({link_mapa})")
+                st.markdown(f"[🗺️ Ver en Google Maps]({link_mapa})")
 
                 c_in, c_out = st.columns(2)
                 if c_in.button("🟢 Fichar LLEGADA en esta Ubicación", use_container_width=True):
-                    st.session_state["checkin_db"].append({"paciente": paciente_sel, "profesional": user["nombre"], "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"), "tipo": f"ENTRADA en: {dire_paciente} (GPS Real: Lat {lat_str}, Lon {lon_str})", "empresa": mi_empresa})
-                    guardar_datos(); st.success("Llegada registrada con coordenadas reales."); st.rerun()
+                    st.session_state["checkin_db"].append({"paciente": paciente_sel, "profesional": user["nombre"], "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"), "tipo": f"LLEGADA en: {direccion_real} (Lat: {lat_str})", "empresa": mi_empresa})
+                    guardar_datos(); st.success("Llegada registrada exitosamente."); st.rerun()
                 
                 if c_out.button("🔴 Fichar SALIDA en esta Ubicación", use_container_width=True):
-                    st.session_state["checkin_db"].append({"paciente": paciente_sel, "profesional": user["nombre"], "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"), "tipo": f"SALIDA de: {dire_paciente} (GPS Real: Lat {lat_str}, Lon {lon_str})", "empresa": mi_empresa})
-                    guardar_datos(); st.success("Salida registrada con coordenadas reales."); st.rerun()
+                    st.session_state["checkin_db"].append({"paciente": paciente_sel, "profesional": user["nombre"], "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"), "tipo": f"SALIDA de: {direccion_real} (Lat: {lat_str})", "empresa": mi_empresa})
+                    guardar_datos(); st.success("Salida registrada exitosamente."); st.rerun()
             else:
                 st.error("❌ Aún no capturaste tu ubicación. Tocá la brújula de arriba 👆 y dale a 'Permitir' en tu navegador.")
         else:
@@ -272,12 +293,12 @@ with tabs[menu.index("📍 Visitas")]:
         st.divider()
         chk_pac = [c for c in st.session_state["checkin_db"] if c["paciente"] == paciente_sel]
         if chk_pac: 
-            st.caption("Últimos registros de asistencia (Con prueba geográfica):")
+            st.caption("Últimos registros de asistencia (Con dirección física confirmada):")
             st.dataframe(pd.DataFrame(chk_pac).drop(columns=["paciente", "empresa"]).tail(5), use_container_width=True)
 
         st.divider()
         if dire_paciente and dire_paciente != "No registrada":
-            st.info(f"🏠 **Domicilio Cargado del Paciente (Para tu referencia):** {dire_paciente}")
+            st.info(f"🏠 **Domicilio Asignado del Paciente (Para que corrobores):** {dire_paciente}")
             mapa_html = f'<iframe width="100%" height="300" src="https://maps.google.com/maps?q={urllib.parse.quote(dire_paciente)}&z=15&output=embed"></iframe>'
             st.components.v1.html(mapa_html, height=300)
             
@@ -503,7 +524,7 @@ with tabs[menu.index("📦 Inventario")]:
             st.session_state["inventario_db"] = [i for i in st.session_state["inventario_db"] if not (i["item"] == del_item and i["empresa"] == mi_empresa)]
             guardar_datos(); st.rerun()
 
-# 12. HISTORIAL COMPLETO (SISTEMA DE ESCALABILIDAD V8.0)
+# 12. HISTORIAL COMPLETO (SISTEMA DE ESCALABILIDAD V8.2)
 with tabs[menu.index("📚 Historial")]:
     if paciente_sel:
         st.subheader(f"📚 Historia Clínica Digital: {paciente_sel}")
@@ -606,7 +627,7 @@ with tabs[menu.index("🗄️ PDF")]:
             pdf.line(21, 14, 21, 28); pdf.line(14, 21, 28, 21)
             emp_paciente = st.session_state["detalles_pacientes_db"].get(p, {}).get("empresa", mi_empresa)
             pdf.set_font("Arial", 'B', 16); pdf.set_xy(38, 14); pdf.cell(0, 10, t(emp_paciente), ln=True)
-            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V8.0)"), ln=True); pdf.ln(15)
+            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V8.2)"), ln=True); pdf.ln(15)
             
             det = st.session_state["detalles_pacientes_db"].get(p, {})
             pdf.set_fill_color(240, 240, 240); pdf.set_font("Arial", 'B', 11)
@@ -773,4 +794,4 @@ if "🕵️ Auditoría" in menu:
             with pd.ExcelWriter(out_logs, engine='openpyxl') as writer: df_logs.to_excel(writer, index=False, sheet_name='Logs_MediCare')
             st.download_button("📥 DESCARGAR LOGS A EXCEL", data=out_logs.getvalue(), file_name=f"Reporte_Logs_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# --- FIN DEL SISTEMA MEDICARE PRO V8.0 ---
+# --- FIN DEL SISTEMA MEDICARE PRO V8.2 ---
