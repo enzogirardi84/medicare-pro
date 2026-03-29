@@ -96,21 +96,27 @@ input[type=number] { -moz-appearance: textfield; }
 """
 st.markdown(page_bg_css, unsafe_allow_html=True)
 
-# --- 🎁 LOGO EXCLUSIVO ---
+# --- 🎁 NUEVO LOGO EXCLUSIVO PROFESIONAL "EG" ---
 def render_logo_eg(size=100):
+    # He creado un ícono abstracto integrado donde las iniciales E y G forman una cresta moderna y sophisticated, 
+    # sugiriendo tecnología, seguridad y crecimiento. La paleta de colores es Enterprise (Azul Marino Profundo y Verde Turquesa).
     svg_code = f"""
     <svg width="{size}" height="{size}" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
         <defs>
-            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
-                <stop offset="100%" style="stop-color:#10b981;stop-opacity:1" />
-            </linearGradient>
+            <linearGradient id="egGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#1e3a8a;stop-opacity:1" /> <stop offset="100%" style="stop-color:#0d9488;stop-opacity:1" /> </linearGradient>
+            <filter id="egShadow" x="-5" y="0" width="130" height="130">
+                <feDropShadow dx="1.5" dy="1.5" stdDeviation="1.2" flood-color="#000" flood-opacity="0.25"/>
+            </filter>
         </defs>
-        <circle cx="60" cy="60" r="55" fill="url(#grad1)" />
-        <path d="M60 25 V95 M25 60 H95" stroke="white" stroke-width="8" stroke-linecap="round"/>
-        <g fill="white" font-family="Arial" font-weight="bold" font-size="30">
-            <text x="35" y="62" text-anchor="middle">E.</text>
-            <text x="85" y="62" text-anchor="middle">G</text>
+        
+        <circle cx="60" cy="60" r="55" fill="url(#egGrad)" filter="url(#egShadow)" stroke="white" stroke-width="0.8"/>
+        
+        <g fill="white" font-family="Arial, Helvetica, sans-serif" font-weight="bold" text-anchor="middle">
+            <text x="60" y="55" font-size="36" letter-spacing="-2">E.G</text>
+            
+            <text x="60" y="80" font-size="10" font-weight="normal" letter-spacing="0.5">ENZO GIRARDI</text>
+            <text x="60" y="92" font-size="8" font-weight="normal" letter-spacing="0.2" opacity="0.8">SISTEMAS SOLUTIONS</text>
         </g>
     </svg>
     """
@@ -216,6 +222,7 @@ rol = user["rol"]
 
 # --- SIDEBAR ---
 with st.sidebar:
+    # Mostramos el NUEVO LOGO REDISEÑADO
     render_logo_eg(110)
     st.header(f"🏢 {mi_empresa}")
     st.write(f"👤 **{user['nombre']}** ({user['rol']})")
@@ -279,6 +286,7 @@ with tabs[menu.index("📍 Visitas")]:
 
                 c_in, c_out = st.columns(2)
                 if c_in.button("🟢 Fichar LLEGADA en esta Ubicación", use_container_width=True):
+                    # Eliminamos la dirección teórica del texto para que no haya falsos positivos. Solo la verdad del GPS traducia a calle.
                     st.session_state["checkin_db"].append({"paciente": paciente_sel, "profesional": user["nombre"], "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"), "tipo": f"LLEGADA en: {direccion_real} (Lat: {lat_str})", "empresa": mi_empresa})
                     guardar_datos(); st.success("Llegada registrada exitosamente."); st.rerun()
                 
