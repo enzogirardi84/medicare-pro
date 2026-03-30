@@ -259,7 +259,7 @@ def guardar_datos():
         "indicaciones_db", "turnos_db", "evoluciones_db", "facturacion_db", "logs_db", 
         "balance_db", "pediatria_db", "fotos_heridas_db",
         "agenda_db", "checkin_db", "inventario_db", "consumos_db", "nomenclador_db", "firmas_tactiles_db",
-        "reportes_diarios_db", "estudios_db" 
+        "reportes_diarios_db", "estudios_db", "administracion_med_db" # <-- ¡Agregado acá!
     ]
     data = {k: st.session_state[k] for k in claves if k in st.session_state}
     try:
@@ -267,6 +267,24 @@ def guardar_datos():
         st.toast("✅ Guardado exitosamente en la nube", icon="☁️")
     except Exception as e:
         st.error(f"⚠️ Error al subir a la nube: {e}")
+
+# --- INICIALIZACIÓN ---
+if "db_inicializada" not in st.session_state:
+    db = cargar_datos()
+    claves_base = {
+        "usuarios_db": {"admin": {"pass": "37108100", "rol": "SuperAdmin", "nombre": "Enzo Girardi", "empresa": "SISTEMAS E.G.", "matricula": "M.P 21947", "dni": "37108100", "titulo": "Director de Sistemas", "estado": "Activo", "pin": "1234"}},
+        "pacientes_db": [], "detalles_pacientes_db": {}, "vitales_db": [], "indicaciones_db": [], "turnos_db": [], 
+        "evoluciones_db": [], "facturacion_db": [], "logs_db": [], "balance_db": [], "pediatria_db": [], "fotos_heridas_db": [],
+        "agenda_db": [], "checkin_db": [], "inventario_db": [], "consumos_db": [], "nomenclador_db": [], "firmas_tactiles_db": [],
+        "reportes_diarios_db": [], "estudios_db": [], "administracion_med_db": [] # <-- ¡Agregado acá!
+    }
+    if db:
+        for k, v in db.items(): st.session_state[k] = v
+        for k, v in claves_base.items():
+            if k not in st.session_state: st.session_state[k] = v
+    else:
+        for k, v in claves_base.items(): st.session_state[k] = v
+    st.session_state["db_inicializada"] = True
 
 # --- INICIALIZACIÓN ---
 if "db_inicializada" not in st.session_state:
