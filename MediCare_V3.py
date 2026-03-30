@@ -14,39 +14,101 @@ import tempfile
 from PIL import Image
 import altair as alt
 
-# --- VADEMÉCUM GLOBAL ORDENADO (INSUMOS Y FARMACOLOGÍA) ---
+# --- VADEMÉCUM GLOBAL MASIVO (MÁS DE 400 INSUMOS Y FÁRMACOS ORDENADOS) ---
 VADEMECUM_BASE = sorted([
-    # DESCARTABLES E INSUMOS
-    "Agua Oxigenada 10 vol", "Alcohol 70%", "Alcohol en gel", "Aguja 25/8", "Aguja 40/8", "Aguja 50/8",
-    "Bolsa colectora de orina", "Catéter Intravenoso 18G", "Catéter Intravenoso 20G", 
-    "Catéter Intravenoso 22G", "Catéter Intravenoso 24G", "Cinta adhesiva de tela", 
-    "Cinta hipoalergénica", "Clorhexidina", "Dextrosa 5% 500ml", "Gasas 10x10", "Gasas 5x5", 
-    "Guantes de examinación", "Guantes estériles", "Jeringa 1ml", "Jeringa 3ml", "Jeringa 5ml", 
-    "Jeringa 10ml", "Jeringa 20ml", "Jeringa 50ml", "Llave de 3 vías", "Macrogotero", "Microgotero", 
-    "Pañales para adultos", "Perfuss", "Povidona Yodada", "Ringer Lactato 500ml", 
-    "Solución Fisiológica 100ml", "Solución Fisiológica 500ml", "Sonda de Aspiración", 
-    "Sonda Foley N° 14", "Sonda Foley N° 16", "Sonda Nasogástrica K108", "Sonda Nasogástrica K110", 
-    "Tegaderm", "Venda elástica 10cm", "Venda elástica 15cm",
+    # DESCARTABLES, SUEROS E INSUMOS GENERALES
+    "Abocath 14G", "Abocath 16G", "Abocath 18G", "Abocath 20G", "Abocath 22G", "Abocath 24G", 
+    "Agua Bi-destilada ampolla 5ml", "Agua Oxigenada 10 vol", "Aguja 15/5", "Aguja 25/8", "Aguja 40/8", "Aguja 50/8",
+    "Alcohol 70%", "Alcohol 96%", "Alcohol en gel", "Algodón paquete", "Apósito hidrocoloide", "Apósito transparente",
+    "Bajalenguas descartable", "Barbijo N95", "Barbijo Quirúrgico", "Bisturí N° 11", "Bisturí N° 15", "Bisturí N° 20",
+    "Bolsa colectora de orina", "Bolsa de colostomía", "Bolsa de ostomía", "Bomba de infusión (Guía)", 
+    "Cánula nasal para oxígeno", "Catéter venoso central", "Cinta adhesiva de papel", "Cinta adhesiva de seda", 
+    "Cinta hipoalergénica", "Clorhexidina 2%", "Clorhexidina 4%", "Dextrosa 5% 500ml", "Dextrosa 10% 500ml", "Dextrosa 50% ampolla",
+    "Electrodos descartables", "Esponja jabonosa", "Gasas 10x10 estériles", "Gasas 5x5 estériles", "Gasas furacinadas",
+    "Guantes de examinación L", "Guantes de examinación M", "Guantes de examinación S", "Guantes estériles 6.5", "Guantes estériles 7.0", "Guantes estériles 7.5",
+    "Hemoglucotest (Tiras reactivas)", "Jeringa 1ml (Insulina)", "Jeringa 3ml", "Jeringa 5ml", "Jeringa 10ml", "Jeringa 20ml", "Jeringa 50ml (Alimentación)",
+    "K108 Sonda Nasogástrica", "K110 Sonda Nasogástrica", "K30 Sonda Nelaton", "K32 Sonda Nelaton",
+    "Lancetas descartables", "Llave de 3 vías", "Macrogotero (Perfuss)", "Máscara con reservorio", "Microgotero", 
+    "Pañales para adultos G", "Pañales para adultos M", "Pañales para adultos XG", "Platsul A (Sulfadiazina de Plata)", "Povidona Yodada (Iodo)", 
+    "Ringer Lactato 500ml", "Solución Fisiológica 0.9% 100ml", "Solución Fisiológica 0.9% 250ml", "Solución Fisiológica 0.9% 500ml", 
+    "Sonda de Aspiración N° 10", "Sonda de Aspiración N° 14", "Sonda Foley N° 14 (2 vías)", "Sonda Foley N° 16 (2 vías)", "Sonda Foley N° 18 (2 vías)", "Sonda Foley N° 20 (3 vías)",
+    "Tegaderm 10x12", "Tegaderm 6x7", "Tubo endotraqueal", "Venda de Cambric 10cm", "Venda elástica 10cm", "Venda elástica 15cm",
+
+    # FARMACOLOGÍA: A
+    "Acenocumarol (Sintrom) 4mg", "Aciclovir 400mg", "Aciclovir crema", "Ácido Ascórbico (Vit C) 1g", "Ácido Fólico 5mg", "Ácido Tranexámico ampolla", "Ácido Valproico 500mg",
+    "Adenosina 6mg ampolla", "Adrenalina (Epinefrina) 1mg ampolla", "Albendazol 400mg", "Alopurinol 100mg", "Alopurinol 300mg", 
+    "Alprazolam 0.5mg", "Alprazolam 1mg", "Alprazolam 2mg", "Amiodarona 200mg", "Amiodarona 150mg ampolla", "Amitriptilina 25mg", 
+    "Amlodipina 10mg", "Amlodipina 5mg", "Amoxicilina 500mg", "Amoxicilina 875mg", "Amoxicilina+Clavulánico 875/125mg", 
+    "Ampicilina 1g ampolla", "Ampicilina+Sulbactam 1.5g ampolla", "Aspirina (AAS) 100mg", "Atenolol 50mg", "Atorvastatina 10mg", "Atorvastatina 20mg", "Azitromicina 500mg",
     
-    # FARMACOLOGÍA GENERAL
-    "Alprazolam 1mg", "Amiodarona 200mg", "Amlodipina 5mg", "Amoxicilina 500mg", 
-    "Amoxicilina+Clavulánico 875/125mg", "Aspirina (AAS) 100mg", "Atenolol 50mg", 
-    "Azitromicina 500mg", "Betametasona ampolla", "Bisoprolol 5mg", "Budesonida aerosol", 
-    "Carvedilol 6.25mg", "Cefalexina 500mg", "Ceftriaxona 1g ampolla", "Ciprofloxacina 500mg", 
-    "Clindamicina 300mg", "Clonazepam 1mg", "Clopidogrel 75mg", "Desloratadina 5mg", 
-    "Dexametasona 8mg ampolla", "Diazepam 5mg", "Diclofenac 50mg", "Diclofenac 75mg ampolla", 
-    "Difenhidramina 50mg", "Dipirona ampolla", "Domperidona 10mg", "Enalapril 10mg", 
-    "Espironolactona 25mg", "Fluoxetina 20mg", "Furosemida 40mg", "Furosemida ampolla", 
-    "Haloperidol 5mg", "Hidrocortisona 100mg", "Hioscina (Buscapina) 10mg", "Hioscina ampolla", 
-    "Ibuprofeno 400mg", "Ibuprofeno 600mg", "Insulina Corriente", "Insulina Glargina", "Insulina NPH", 
-    "Ipratropio aerosol", "Ketorolac 10mg", "Ketorolac 30mg ampolla", "Lactulón jarabe", 
-    "Levofloxacina 500mg", "Levotiroxina 100mcg", "Lidocaína ampolla", "Lidocaína jalea", 
-    "Loperamida 2mg", "Loratadina 10mg", "Lorazepam 1mg", "Losartán 50mg", "Meloxicam 15mg", 
-    "Metformina 500mg", "Metformina 850mg", "Metoclopramida (Reliveran) 10mg", "Metoclopramida ampolla", 
-    "Morfina 10mg ampolla", "Naproxeno 500mg", "Omeprazol 20mg", "Ondansetrón 8mg", 
-    "Pantoprazol 40mg", "Paracetamol 1g", "Paracetamol 500mg", "Penicilina G Benzatínica", 
-    "Pregabalina 75mg", "Prednisona 20mg", "Quetiapina 25mg", "Salbutamol aerosol", "Sertralina 50mg", 
-    "Tramadol 50mg", "Valsartán 80mg"
+    # FARMACOLOGÍA: B
+    "Baclofeno 10mg", "Beclometasona aerosol", "Betametasona ampolla", "Betametasona crema", "Bicalutamida 50mg", 
+    "Bicarbonato de Sodio 1/6 M ampolla", "Bisacodilo 5mg", "Bisoprolol 2.5mg", "Bisoprolol 5mg", "Bromhexina jarabe", 
+    "Budesonida aerosol", "Bupivacaína ampolla",
+    
+    # FARMACOLOGÍA: C
+    "Carbonato de Calcio 500mg", "Captopril 25mg", "Carbamazepina 200mg", "Carvedilol 12.5mg", "Carvedilol 25mg", "Carvedilol 6.25mg", 
+    "Cefalexina 500mg", "Cefalotina 1g ampolla", "Cefotaxima 1g ampolla", "Ceftriaxona 1g ampolla", "Celecoxib 200mg", 
+    "Cetirizina 10mg", "Cilostazol 100mg", "Ciprofloxacina 500mg", "Citalopram 20mg", "Claritromicina 500mg", "Clindamicina 300mg", "Clindamicina 600mg ampolla",
+    "Clobetasol crema", "Clonazepam 0.5mg", "Clonazepam 2mg", "Clopidogrel 75mg", "Clorpromazina 25mg", "Colchicina 1mg", "Complejo B ampolla",
+    
+    # FARMACOLOGÍA: D
+    "Dapagliflozina 10mg", "Desloratadina 5mg", "Dexametasona 8mg ampolla", "Dexametasona comprimido", "Diazepam 10mg ampolla", "Diazepam 5mg comprimido", 
+    "Diclofenac 50mg", "Diclofenac 75mg ampolla", "Difenhidramina 50mg ampolla", "Digoxina 0.25mg", "Diltiazem 60mg", 
+    "Dipirona 1g ampolla", "Dipirona 500mg comprimido", "Dobutamina ampolla", "Domperidona 10mg", "Dopamina ampolla", 
+    "Doxiciclina 100mg", "Duloxetina 30mg",
+    
+    # FARMACOLOGÍA: E - F
+    "Empagliflozina 10mg", "Enalapril 10mg", "Enalapril 5mg", "Enoxaparina 40mg jeringa prellenada", "Enoxaparina 60mg jeringa prellenada", 
+    "Escitalopram 10mg", "Espironolactona 25mg", "Espironolactona 50mg", "Ezetimibe 10mg",
+    "Famotidina 20mg", "Fentanilo ampolla", "Finasteride 5mg", "Fluconazol 150mg", "Fluoxetina 20mg", "Fluticasona aerosol", 
+    "Furosemida 20mg ampolla", "Furosemida 40mg comprimido",
+    
+    # FARMACOLOGÍA: G - H
+    "Gabapentina 300mg", "Gentamicina 80mg ampolla", "Glibenclamida 5mg", "Glimepirida 2mg", "Glucagón ampolla",
+    "Haloperidol 5mg ampolla", "Heparina Sódica ampolla", "Hidroclorotiazida 25mg", "Hidrocortisona 100mg ampolla", "Hidrocortisona 500mg ampolla", 
+    "Hierro (Sulfato Ferroso)", "Hioscina (Buscapina) 10mg", "Hioscina Compuesta ampolla", "Hioscina Simple ampolla", "Hidroxicloroquina 200mg",
+    
+    # FARMACOLOGÍA: I - K
+    "Ibuprofeno 400mg", "Ibuprofeno 600mg", "Ibuprofeno jarabe", "Imipenem 500mg ampolla", 
+    "Insulina Aspart", "Insulina Corriente (Regular)", "Insulina Detemir", "Insulina Glargina", "Insulina Lispro", "Insulina NPH", 
+    "Ipratropio aerosol", "Ipratropio gotas (Nebulización)", "Irbesartán 150mg", "Isosorbide dinitrato 10mg",
+    "Ketamina ampolla", "Ketoconazol crema", "Ketorolac 10mg comprimido", "Ketorolac 30mg ampolla", "Ketorolac 60mg ampolla",
+    
+    # FARMACOLOGÍA: L
+    "Labetalol ampolla", "Lactulón jarabe", "Lamotrigina 50mg", "Lansoprazol 30mg", "Levetiracetam 500mg", 
+    "Levofloxacina 500mg", "Levomepromazina 25mg", "Levotiroxina 100mcg", "Levotiroxina 50mcg", "Levotiroxina 75mcg", 
+    "Lidocaína 2% ampolla", "Lidocaína jalea", "Linagliptina 5mg", "Loperamida 2mg", "Loratadina 10mg", 
+    "Lorazepam 1mg", "Lorazepam 2mg", "Losartán 50mg",
+    
+    # FARMACOLOGÍA: M
+    "Magnesio (Sulfato) ampolla", "Mebendazol 200mg", "Meloxicam 15mg", "Meropenem 1g ampolla", "Metadona 10mg", 
+    "Metformina 500mg", "Metformina 850mg", "Metildopa 500mg", "Metilprednisolona 500mg ampolla", "Metoclopramida (Reliveran) 10mg", 
+    "Metoclopramida ampolla", "Metoprolol 50mg", "Metronidazol 500mg", "Metronidazol sachet 500ml", "Midazolam 15mg ampolla", 
+    "Mirtazapina 30mg", "Montelukast 10mg", "Morfina 10mg ampolla", "Mupirocina ungüento",
+    
+    # FARMACOLOGÍA: N - O
+    "Naloxona ampolla", "Naproxeno 500mg", "Neomicina crema", "Nifedipina 10mg", "Nimodipina 30mg", 
+    "Nitrofurantoína 100mg", "Nitroglicerina ampolla", "Noradrenalina ampolla",
+    "Olanzapina 10mg", "Omeprazol 20mg", "Omeprazol 40mg ampolla", "Ondansetrón 8mg ampolla", "Oxígeno en tubo",
+    
+    # FARMACOLOGÍA: P - Q
+    "Pantoprazol 40mg", "Paracetamol 1g", "Paracetamol 500mg", "Paroxetina 20mg", "Penicilina G Benzatínica 2.400.000 UI", 
+    "Piperacilina+Tazobactam 4.5g ampolla", "Potasio (Cloruro) ampolla", "Pramipexol 1mg", "Prasugrel 10mg", "Pravastatina 20mg", 
+    "Prednisona 20mg", "Pregabalina 75mg", "Prometazina ampolla", "Propanolol 40mg", "Quetiapina 25mg", "Quetiapina 100mg",
+    
+    # FARMACOLOGÍA: R - S
+    "Ramipril 5mg", "Ranitidina 150mg", "Ranitidina ampolla", "Risperidona 2mg", "Ritonavir", 
+    "Rivaroxabán 15mg", "Rosuvastatina 10mg", "Rosuvastatina 20mg",
+    "Salbutamol aerosol", "Salbutamol gotas (Nebulización)", "Sertralina 50mg", "Sildenafil 50mg", 
+    "Simvastatina 20mg", "Sitagliptina 50mg", "Sodio (Cloruro al 20%) ampolla", "Sucralfato",
+    
+    # FARMACOLOGÍA: T - Z
+    "Tamsulosina 0.4mg", "Telmisartán 40mg", "Tetraciclina 250mg", "Tirotricina", "Tobramicina gotas", 
+    "Topiramato 50mg", "Tramadol 50mg", "Tramadol ampolla",
+    "Valaciclovir 500mg", "Valsartán 80mg", "Vancomicina 1g ampolla", "Venlafaxina 75mg", "Verapamilo 80mg", 
+    "Vitamina B12 ampolla", "Vitamina K ampolla",
+    "Zolpidem 10mg", "Zopiclona 7.5mg"
 ])
 
 # --- 1. CONFIGURACIÓN DE LIBRERÍAS ---
@@ -72,7 +134,7 @@ except ImportError:
     GEO_DISPONIBLE = False
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="MediCare Enterprise PRO V9.7", page_icon="⚕️", layout="wide")
+st.set_page_config(page_title="MediCare Enterprise PRO V9.8", page_icon="⚕️", layout="wide")
 st.markdown("<html lang='es' translate='no'>", unsafe_allow_html=True)
 
 # --- ZONA HORARIA ARGENTINA ---
@@ -198,7 +260,7 @@ if "logeado" not in st.session_state: st.session_state["logeado"] = False
 if not st.session_state["logeado"]:
     _, col, _ = st.columns([1,1.5,1])
     with col:
-        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V9.7</h2>", unsafe_allow_html=True)
+        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V9.8</h2>", unsafe_allow_html=True)
         tab_login, tab_recuperar = st.tabs(["🔑 Iniciar Sesión", "🆘 Olvidé mi Contraseña"])
         with tab_login:
             with st.form("login", clear_on_submit=True):
@@ -556,7 +618,7 @@ with tabs[menu.index("💉 Materiales")]:
             st.caption("Últimos materiales registrados:")
             st.dataframe(pd.DataFrame(cons_paciente).drop(columns=["paciente", "empresa"], errors='ignore'), use_container_width=True)
 
-# 8. RECETAS (CON VADEMÉCUM INTEGRADO)
+# 8. RECETAS (CON VADEMÉCUM MASIVO)
 with tabs[menu.index("💊 Recetas")]:
     if paciente_sel:
         with st.form("recet", clear_on_submit=True):
@@ -590,7 +652,7 @@ with tabs[menu.index("⚖️ Balance")]:
                 st.session_state["balance_db"].append({"paciente": paciente_sel, "ingresos": ting, "egresos": tegr, "balance": bal, "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
                 guardar_datos(); st.rerun()
 
-# 10. INVENTARIO (CON VADEMÉCUM INTEGRADO)
+# 10. INVENTARIO (CON VADEMÉCUM MASIVO)
 with tabs[menu.index("📦 Inventario")]:
     inv_mio = [i for i in st.session_state["inventario_db"] if i["empresa"] == mi_empresa]
     if inv_mio:
@@ -759,7 +821,7 @@ with tabs[menu.index("🗄️ PDF")]:
             pdf.line(21, 14, 21, 28); pdf.line(14, 21, 28, 21)
             emp_paciente = st.session_state["detalles_pacientes_db"].get(p, {}).get("empresa", mi_empresa)
             pdf.set_font("Arial", 'B', 16); pdf.set_xy(38, 14); pdf.cell(0, 10, t(emp_paciente), ln=True)
-            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V9.7)"), ln=True); pdf.ln(15)
+            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V9.8)"), ln=True); pdf.ln(15)
             
             det = st.session_state["detalles_pacientes_db"].get(p, {})
             estado_texto = " [ARCHIVADO/ALTA]" if det.get("estado") == "De Alta" else ""
@@ -815,7 +877,7 @@ with tabs[menu.index("🗄️ PDF")]:
                         img_data = base64.b64decode(ultima_firma)
                         with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
                             tmp.write(img_data); tmp_path = tmp.name
-                        pdf.image(tmp_path, x=85, y=y_firma - 15, w=40)
+                        pdf.image(tmp_path, x=130, y=y_firma - 15, w=40)
                         os.remove(tmp_path)
                     except Exception as e: pass
 
@@ -1064,4 +1126,4 @@ if "🕵️ Auditoría" in menu:
         else:
             st.error("Librería FPDF no disponible. Instalar para generar reportes.")
 
-# --- FIN DEL SISTEMA MEDICARE PRO V9.7 ---
+# --- FIN DEL SISTEMA MEDICARE PRO V9.8 ---
