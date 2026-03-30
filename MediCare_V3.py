@@ -36,7 +36,7 @@ except ImportError:
     GEO_DISPONIBLE = False
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="MediCare Enterprise PRO V9.1", page_icon="⚕️", layout="wide")
+st.set_page_config(page_title="MediCare Enterprise PRO V9.2", page_icon="⚕️", layout="wide")
 st.markdown("<html lang='es' translate='no'>", unsafe_allow_html=True)
 
 # --- ZONA HORARIA ARGENTINA ---
@@ -160,7 +160,7 @@ if "logeado" not in st.session_state: st.session_state["logeado"] = False
 if not st.session_state["logeado"]:
     _, col, _ = st.columns([1,1.5,1])
     with col:
-        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V9.1</h2>", unsafe_allow_html=True)
+        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V9.2</h2>", unsafe_allow_html=True)
         tab_login, tab_recuperar = st.tabs(["🔑 Iniciar Sesión", "🆘 Olvidé mi Contraseña"])
         with tab_login:
             with st.form("login", clear_on_submit=True):
@@ -213,14 +213,13 @@ user = st.session_state["u_actual"]
 mi_empresa = user["empresa"]
 rol = user["rol"]
 
-# --- SIDEBAR (CON BUSCADOR INTELIGENTE Y SISTEMA DE ALTAS) ---
+# --- SIDEBAR ---
 with st.sidebar:
     render_logo_eg(110)
     st.header(f"🏢 {mi_empresa}")
     st.write(f"👤 **{user['nombre']}** ({user['rol']})")
     st.divider()
     
-    # 🔍 El buscador que filtra la lista de pacientes al instante
     buscar = st.text_input("🔍 Buscar Paciente:")
     
     ver_altas = False
@@ -259,31 +258,30 @@ with st.sidebar:
     st.divider()
     if st.button("Cerrar Sesión", width="stretch"): st.session_state["logeado"] = False; st.rerun()
 
-# --- MENU DINÁMICO ---
-menu = ["📍 Visitas", "📈 Dashboard", "👤 Admisión", "📅 Agenda", "📊 Clínica", "👶 Pediatría", "📝 Evolución", "💉 Materiales", "💊 Recetas", "⚖️ Balance", "📦 Inventario", "📚 Historial", "💳 Caja", "🗄️ PDF"]
+# --- MENU DINÁMICO (SIMPLIFICADO Y OPTIMIZADO) ---
+# Hemos unificado Agenda en Visitas y eliminado Nomenclador.
+menu = ["📍 Visitas y Agenda", "📈 Dashboard", "👤 Admisión", "📊 Clínica", "👶 Pediatría", "📝 Evolución", "💉 Materiales", "💊 Recetas", "⚖️ Balance", "📦 Inventario", "📚 Historial", "💳 Caja", "🗄️ PDF"]
 if rol in ["SuperAdmin", "Coordinador"]: 
-    menu.append("📋 Nomenclador")
     menu.append("⚙️ Mi Equipo")
 if rol == "SuperAdmin": 
     menu.append("🕵️ Auditoría")
 tabs = st.tabs(menu)
 
-# 1. VISITAS
-with tabs[menu.index("📍 Visitas")]:
+# 1. VISITAS Y AGENDA UNIFICADA (CON WHATSAPP INTELIGENTE)
+with tabs[menu.index("📍 Visitas y Agenda")]:
     if not paciente_sel:
-        st.info("👈 Seleccioná un paciente en el menú lateral para registrar tu visita.")
+        st.info("👈 Seleccioná un paciente en el menú lateral para gestionar sus visitas y turnos.")
     else:
         st.subheader("⏱️ Fichada Legal de Visita (GPS Real)")
         estado_pac = st.session_state["detalles_pacientes_db"].get(paciente_sel, {}).get("estado", "Activo")
         if estado_pac == "De Alta":
             st.error("⚠️ Este paciente se encuentra DE ALTA. Su legajo está archivado. Solo se puede visualizar el historial.")
         else:
-            st.warning("🚨 Control Antifraude Activado: El sistema traducirá tu ubicación satelital a una dirección real de calle para la auditoría.")
-
             det = st.session_state["detalles_pacientes_db"].get(paciente_sel, {})
             dire_paciente = det.get("direccion", "No registrada")
             te = det.get("telefono", "")
 
+            # --- SECCIÓN 1: FICHADA GPS ---
             if GEO_DISPONIBLE:
                 loc = streamlit_geolocation()
                 lat = loc.get('latitude') if loc else None
@@ -315,23 +313,55 @@ with tabs[menu.index("📍 Visitas")]:
             else:
                 st.error("⚠️ Librería 'streamlit-geolocation' no cargó correctamente.")
 
+            # --- SECCIÓN 2: WHATSAPP INTELIGENTE ---
             st.divider()
+            
+            # Buscamos si hay un turno pendiente para inyectar la hora en el mensaje
+            agenda_paciente = [a for a in st.session_state["agenda_db"] if a["paciente"] == paciente_sel and a["empresa"] == mi_empresa and a["estado"] == "Pendiente"]
+            hora_turno_str = ""
+            if agenda_paciente:
+                turno_prox = agenda_paciente[-1] # Toma el último turno agendado
+                hora_turno_str = f" a las {turno_prox['hora']} hs"
+            
             if dire_paciente and dire_paciente != "No registrada":
                 st.info(f"🏠 **Domicilio Asignado del Paciente:** {dire_paciente}")
-                mapa_html = f'<iframe width="100%" height="300" src="https://maps.google.com/maps?q={urllib.parse.quote(dire_paciente)}&z=15&output=embed"></iframe>'
-                st.components.v1.html(mapa_html, height=300)
                 
             if te:
                 num_limpio = ''.join(filter(str.isdigit, str(te)))
                 if len(num_limpio) >= 10: num_limpio = "549" + num_limpio[-10:]
-                msg = urllib.parse.quote(f"Hola, soy {user['nombre']} de {mi_empresa}. Estoy en camino al domicilio.")
-                st.markdown(f'<a href="https://wa.me/{num_limpio}?text={msg}" target="_blank" class="wa-btn">📲 AVISAR WHATSAPP AL PACIENTE</a>', unsafe_allow_html=True)
+                
+                # Mensaje Inteligente que avisa a qué hora va
+                if hora_turno_str:
+                    msg_text = f"Hola, soy {user['nombre']} de {mi_empresa}. Me comunico para confirmar la visita médica. Estaré llegando{hora_turno_str}. ¡Saludos!"
+                else:
+                    msg_text = f"Hola, soy {user['nombre']} de {mi_empresa}. Estoy en camino al domicilio."
+                    
+                msg = urllib.parse.quote(msg_text)
+                st.markdown(f'<a href="https://wa.me/{num_limpio}?text={msg}" target="_blank" class="wa-btn">📲 AVISAR LLEGADA POR WHATSAPP</a>', unsafe_allow_html=True)
+                if hora_turno_str:
+                    st.caption(f"*(El mensaje de WhatsApp incluirá automáticamente el horario programado: {hora_turno_str})*")
 
-        st.divider()
-        chk_pac = [c for c in st.session_state["checkin_db"] if c["paciente"] == paciente_sel]
-        if chk_pac: 
-            st.caption("Últimos registros de asistencia:")
-            st.dataframe(pd.DataFrame(chk_pac).drop(columns=["paciente", "empresa"]).tail(5), use_container_width=True)
+            # --- SECCIÓN 3: AGENDA EN EL MISMO LUGAR ---
+            st.divider()
+            st.subheader("📅 Agendar Próxima Visita")
+            with st.form("agenda_form", clear_on_submit=True):
+                c1_ag, c2_ag = st.columns(2)
+                fecha_ag = c1_ag.date_input("Fecha programada")
+                hora_ag = c2_ag.time_input("Hora aproximada")
+                profesionales = [v['nombre'] for k, v in st.session_state["usuarios_db"].items() if v['empresa'] == mi_empresa or rol == "SuperAdmin"]
+                
+                # Selecciona por defecto al usuario actual
+                idx_prof = profesionales.index(user['nombre']) if user['nombre'] in profesionales else 0
+                prof_ag = st.selectbox("Asignar Profesional", profesionales, index=idx_prof)
+                
+                if st.form_submit_button("Agendar Visita", width="stretch"):
+                    st.session_state["agenda_db"].append({"paciente": paciente_sel, "profesional": prof_ag, "fecha": fecha_ag.strftime("%d/%m/%Y"), "hora": hora_ag.strftime("%H:%M"), "empresa": mi_empresa, "estado": "Pendiente"})
+                    guardar_datos(); st.success("✅ Turno agendado. El paciente recibirá la hora automáticamente en el próximo WhatsApp."); st.rerun()
+            
+            agenda_mia = [a for a in st.session_state["agenda_db"] if a["empresa"] == mi_empresa and a["paciente"] == paciente_sel]
+            if agenda_mia: 
+                st.caption("Próximas visitas agendadas para este paciente:")
+                st.dataframe(pd.DataFrame(agenda_mia).drop(columns=["empresa", "paciente"]).tail(3), use_container_width=True)
 
 # 2. DASHBOARD
 with tabs[menu.index("📈 Dashboard")]:
@@ -368,25 +398,7 @@ with tabs[menu.index("👤 Admisión")]:
                 st.session_state["detalles_pacientes_db"][id_p] = {"dni": d, "fnac": f_nac.strftime("%d/%m/%Y"), "sexo": se, "telefono": tel, "direccion": dir_p, "empresa": emp_d.strip(), "estado": "Activo"}
                 guardar_datos(); st.rerun()
 
-# 4. AGENDA 
-with tabs[menu.index("📅 Agenda")]:
-    with st.form("agenda_form", clear_on_submit=True):
-        pacs_activos = [p[0] for p in pacientes_visibles if st.session_state["detalles_pacientes_db"].get(p[0], {}).get("estado") != "De Alta"]
-        if pacs_activos:
-            c1, c2 = st.columns(2)
-            pac_ag = c1.selectbox("Paciente a visitar", pacs_activos)
-            profesionales = [v['nombre'] for k, v in st.session_state["usuarios_db"].items() if v['empresa'] == mi_empresa or rol == "SuperAdmin"]
-            prof_ag = c2.selectbox("Asignar Profesional", profesionales)
-            c3, c4 = st.columns(2)
-            fecha_ag = c3.date_input("Fecha programada"); hora_ag = c4.time_input("Hora aproximada")
-            if st.form_submit_button("Agendar Visita"):
-                st.session_state["agenda_db"].append({"paciente": pac_ag, "profesional": prof_ag, "fecha": fecha_ag.strftime("%d/%m/%Y"), "hora": hora_ag.strftime("%H:%M"), "empresa": mi_empresa, "estado": "Pendiente"})
-                guardar_datos(); st.success("✅ Turno agendado."); st.rerun()
-    st.divider()
-    agenda_mia = [a for a in st.session_state["agenda_db"] if a["empresa"] == mi_empresa]
-    if agenda_mia: st.dataframe(pd.DataFrame(agenda_mia), use_container_width=True)
-
-# 5. CLÍNICA
+# 4. CLÍNICA
 with tabs[menu.index("📊 Clínica")]:
     if paciente_sel:
         vits = [v for v in st.session_state["vitales_db"] if v["paciente"] == paciente_sel]
@@ -410,7 +422,7 @@ with tabs[menu.index("📊 Clínica")]:
                 if temp > 38.0: st.warning(f"⚠️ ALERTA AMARILLA: Paciente febril (Temp: {temp}°C)."); alerta_disparada = True
                 if not alerta_disparada: st.rerun()
 
-# 6. PEDIATRÍA 
+# 5. PEDIATRÍA 
 with tabs[menu.index("👶 Pediatría")]:
     if paciente_sel:
         det = st.session_state["detalles_pacientes_db"].get(paciente_sel, {})
@@ -437,7 +449,7 @@ with tabs[menu.index("👶 Pediatría")]:
             if "peso" in df_g.columns: c1.line_chart(df_g["peso"], color="#3b82f6")
             if "talla" in df_g.columns: c2.line_chart(df_g["talla"], color="#10b981")
 
-# 7. EVOLUCIÓN
+# 6. EVOLUCIÓN
 with tabs[menu.index("📝 Evolución")]:
     if paciente_sel:
         if CANVAS_DISPONIBLE:
@@ -469,7 +481,7 @@ with tabs[menu.index("📝 Evolución")]:
                         st.session_state["fotos_heridas_db"].append({"paciente": paciente_sel, "fecha": fecha_n, "descripcion": desc_w, "base64_foto": base64_foto, "firma": user["nombre"]})
                     guardar_datos(); st.rerun()
 
-# 8. MATERIALES Y DESCARTABLES
+# 7. MATERIALES Y DESCARTABLES
 with tabs[menu.index("💉 Materiales")]:
     if paciente_sel:
         st.subheader("Registro de Materiales Descartables")
@@ -501,7 +513,7 @@ with tabs[menu.index("💉 Materiales")]:
             st.caption("Últimos materiales registrados:")
             st.dataframe(pd.DataFrame(cons_paciente).drop(columns="paciente"), use_container_width=True)
 
-# 9. RECETAS
+# 8. RECETAS
 with tabs[menu.index("💊 Recetas")]:
     if paciente_sel:
         with st.form("recet", clear_on_submit=True):
@@ -513,7 +525,7 @@ with tabs[menu.index("💊 Recetas")]:
                 st.session_state["indicaciones_db"].append({"paciente": paciente_sel, "med": f"{d} vía {p} por {f} días.", "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
                 guardar_datos(); st.rerun()
 
-# 10. BALANCE HÍDRICO
+# 9. BALANCE HÍDRICO
 with tabs[menu.index("⚖️ Balance")]:
     if paciente_sel:
         with st.form("bal", clear_on_submit=True):
@@ -525,7 +537,7 @@ with tabs[menu.index("⚖️ Balance")]:
                 st.session_state["balance_db"].append({"paciente": paciente_sel, "ingresos": ting, "egresos": tegr, "balance": bal, "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
                 guardar_datos(); st.rerun()
 
-# 11. INVENTARIO
+# 10. INVENTARIO (LISTA BÁSICA PRECARGADA)
 with tabs[menu.index("📦 Inventario")]:
     inv_mio = [i for i in st.session_state["inventario_db"] if i["empresa"] == mi_empresa]
     if inv_mio:
@@ -538,17 +550,36 @@ with tabs[menu.index("📦 Inventario")]:
 
     with st.form("form_inv", clear_on_submit=True):
         c1, c2 = st.columns([3, 1])
-        nuevo_item = c1.text_input("Nombre del Insumo (Ej: Gasas 10x10)")
-        cantidad_ini = c2.number_input("Cantidad a agregar", min_value=1, value=10)
+        # Lista Inteligente para no tener que escribir todo a mano
+        lista_base = [
+            "Gasas 10x10", "Gasas 5x5", "Jeringa 10ml", "Jeringa 5ml", "Jeringa 3ml", 
+            "Aguja 40/8", "Aguja 25/8", "Guantes descartables", "Solución Fisiológica 500ml", 
+            "Cinta hipoalergénica", "Alcohol 70%", "Povidona Yodada", "Keterolak 30mg ampolla", 
+            "Diclofenac 75mg ampolla", "Dexametasona 8mg ampolla", "Reliveran ampolla", 
+            "Dipirona ampolla", "-- Otro (Cargar Manualmente) --"
+        ]
+        
+        item_sel = c1.selectbox("Seleccionar Insumo / Medicación Básica:", lista_base)
+        
+        # Si selecciona "Otro", le muestra el campo de texto
+        nuevo_item_manual = ""
+        if item_sel == "-- Otro (Cargar Manualmente) --":
+            nuevo_item_manual = c1.text_input("Escribir nombre del insumo particular:")
+            
+        cantidad_ini = c2.number_input("Cantidad a sumar al stock", min_value=1, value=10)
+        
         if st.form_submit_button("Actualizar Stock", width="stretch"):
-            if nuevo_item:
+            item_final = nuevo_item_manual.strip().title() if item_sel == "-- Otro (Cargar Manualmente) --" else item_sel
+            
+            if item_final:
                 encontrado = False
                 for i in st.session_state["inventario_db"]:
-                    if i["item"].lower() == nuevo_item.strip().lower() and i["empresa"] == mi_empresa:
+                    if i["item"].lower() == item_final.lower() and i["empresa"] == mi_empresa:
                         i["stock"] += cantidad_ini; encontrado = True; break
                 if not encontrado:
-                    st.session_state["inventario_db"].append({"item": nuevo_item.strip().title(), "stock": cantidad_ini, "empresa": mi_empresa})
+                    st.session_state["inventario_db"].append({"item": item_final, "stock": cantidad_ini, "empresa": mi_empresa})
                 guardar_datos(); st.rerun()
+                
     st.divider()
     if inv_mio: 
         st.dataframe(pd.DataFrame(inv_mio).drop(columns="empresa"), use_container_width=True)
@@ -558,7 +589,7 @@ with tabs[menu.index("📦 Inventario")]:
             st.session_state["inventario_db"] = [i for i in st.session_state["inventario_db"] if not (i["item"] == del_item and i["empresa"] == mi_empresa)]
             guardar_datos(); st.rerun()
 
-# 12. HISTORIAL COMPLETO 
+# 11. HISTORIAL COMPLETO 
 with tabs[menu.index("📚 Historial")]:
     if paciente_sel:
         estado_badge = "🗄️ [ARCHIVADO DE ALTA]" if st.session_state["detalles_pacientes_db"].get(paciente_sel, {}).get("estado") == "De Alta" else ""
@@ -624,19 +655,14 @@ with tabs[menu.index("📚 Historial")]:
                 for r in reversed(recs[-limite:]): st.success(f"📌 **{r['fecha']}** | Indicado por: **{r['firma']}**\n\n{r['med']}")
             else: st.write("No hay terapéutica indicada.")
 
-# 13. CAJA (CON FILTRO GLOBAL)
+# 12. CAJA (CARGA MANUAL RÁPIDA, SIN NOMENCLADOR)
 with tabs[menu.index("💳 Caja")]:
     if paciente_sel:
-        nom_empresa = [n for n in st.session_state["nomenclador_db"] if n["empresa"] == mi_empresa]
         with st.form("caja_form", clear_on_submit=True):
-            if nom_empresa:
-                opciones = [f"{n['codigo']} - {n['descripcion']} (${n['valor']})" for n in nom_empresa]
-                practica_sel = st.selectbox("Seleccionar Práctica del Nomenclador", opciones)
-                precio_sug = float(practica_sel.split("($")[1].replace(")", ""))
-                mon = st.number_input("Monto a Facturar", value=float(precio_sug))
-                serv_desc = practica_sel.split(" - ")[1].split(" ($")[0]
-            else:
-                serv_desc = st.text_input("Servicio / Práctica"); mon = st.number_input("Monto", 0.0)
+            # Carga directa y rápida sin Nomenclador
+            serv_desc = st.text_input("Descripción del Servicio / Práctica Médica / Insumo Extra")
+            mon = st.number_input("Monto a Facturar ($)", 0.0)
+            
             if st.form_submit_button("Registrar Cobro / Práctica", width="stretch"):
                 if serv_desc:
                     st.session_state["facturacion_db"].append({"paciente": paciente_sel, "serv": serv_desc, "monto": mon, "fecha": ahora().strftime("%d/%m/%Y"), "empresa": mi_empresa})
@@ -663,7 +689,7 @@ with tabs[menu.index("💳 Caja")]:
             with pd.ExcelWriter(output, engine='openpyxl') as writer: df_caja_filtrada.drop(columns="empresa", errors='ignore').to_excel(writer, index=False, sheet_name='Caja_MediCare')
             st.download_button("📥 DESCARGAR RESULTADOS A EXCEL", data=output.getvalue(), file_name=f"Caja_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# 14. PDF 
+# 13. PDF 
 with tabs[menu.index("🗄️ PDF")]:
     if paciente_sel and FPDF_DISPONIBLE:
         def t(txt): return str(txt).replace('⚖️', '').replace('⚠️', '').replace('📌', '').replace('📅', '').replace('📸', '').replace('🗄️', '').encode('latin-1', 'replace').decode('latin-1')
@@ -674,7 +700,7 @@ with tabs[menu.index("🗄️ PDF")]:
             pdf.line(21, 14, 21, 28); pdf.line(14, 21, 28, 21)
             emp_paciente = st.session_state["detalles_pacientes_db"].get(p, {}).get("empresa", mi_empresa)
             pdf.set_font("Arial", 'B', 16); pdf.set_xy(38, 14); pdf.cell(0, 10, t(emp_paciente), ln=True)
-            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V9.1)"), ln=True); pdf.ln(15)
+            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V9.2)"), ln=True); pdf.ln(15)
             
             det = st.session_state["detalles_pacientes_db"].get(p, {})
             estado_texto = " [ARCHIVADO/ALTA]" if det.get("estado") == "De Alta" else ""
@@ -778,34 +804,7 @@ Asimismo, entiendo que los registros clinicos seran resguardados en formato digi
         st.download_button("📥 1. Generar Historia Clínica en PDF", crear_pdf_pro(paciente_sel), f"HC_{paciente_sel}.pdf", "application/pdf")
         st.download_button("📄 2. Descargar Consentimiento Informado Legal", crear_consentimiento_pdf(paciente_sel), f"Consentimiento_{paciente_sel}.pdf", "application/pdf")
 
-# 15. NOMENCLADOR 
-if "📋 Nomenclador" in menu:
-    with tabs[menu.index("📋 Nomenclador")]:
-        st.subheader("Configuración de Códigos y Valores")
-        with st.form("nom_form", clear_on_submit=True):
-            col_1, col_2, col_3 = st.columns([1, 2, 1])
-            n_cod = col_1.text_input("Código (Ej: 01.01)"); n_desc = col_2.text_input("Descripción de la Práctica")
-            n_val = col_3.number_input("Valor ($)", min_value=0.0); n_os = st.text_input("Obra Social Asociada (Opcional)")
-            if st.form_submit_button("Guardar / Actualizar", width="stretch"):
-                if n_cod and n_desc:
-                    encontrado = False
-                    for n in st.session_state["nomenclador_db"]:
-                        if n["codigo"].strip() == n_cod.strip() and n["empresa"] == mi_empresa:
-                            n["descripcion"] = n_desc.strip(); n["valor"] = n_val; n["obra_social"] = n_os.strip(); encontrado = True; break
-                    if not encontrado: st.session_state["nomenclador_db"].append({"codigo": n_cod.strip(), "descripcion": n_desc.strip(), "valor": n_val, "obra_social": n_os.strip(), "empresa": mi_empresa})
-                    guardar_datos(); st.rerun()
-        st.divider()
-        nom_mio = [n for n in st.session_state["nomenclador_db"] if n["empresa"] == mi_empresa]
-        if nom_mio: 
-            st.dataframe(pd.DataFrame(nom_mio).drop(columns="empresa"), use_container_width=True)
-            col_del1, col_del2 = st.columns([3,1])
-            del_nom = col_del1.selectbox("Seleccionar código a eliminar", [n["codigo"] + " - " + n["descripcion"] for n in nom_mio])
-            if col_del2.button("Eliminar Práctica", use_container_width=True):
-                cod_to_del = del_nom.split(" - ")[0]
-                st.session_state["nomenclador_db"] = [n for n in st.session_state["nomenclador_db"] if not (n["codigo"] == cod_to_del and n["empresa"] == mi_empresa)]
-                guardar_datos(); st.rerun()
-
-# 16. EQUIPO Y SUSCRIPCIONES
+# 14. EQUIPO Y SUSCRIPCIONES
 if "⚙️ Mi Equipo" in menu:
     with tabs[menu.index("⚙️ Mi Equipo")]:
         st.subheader(f"Gestión de Personal - {mi_empresa}")
@@ -831,7 +830,7 @@ if "⚙️ Mi Equipo" in menu:
                 elif d.get("estado", "Activo") != "Activo" and c2.button("▶️ Reactivar", key=f"reac_{u}"): st.session_state["usuarios_db"][u]["estado"] = "Activo"; guardar_datos(); st.rerun()
             if c3.button("❌ Bajar", key=f"del_{u}"): del st.session_state["usuarios_db"][u]; guardar_datos(); st.rerun()
 
-# 17. AUDITORÍA (CON FILTROS GLOBALES Y REPORTE RRHH MEJORADO)
+# 15. AUDITORÍA (CON FILTROS GLOBALES)
 if "🕵️ Auditoría" in menu:
     with tabs[menu.index("🕵️ Auditoría")]:
         st.subheader("Auditoría General de Movimientos")
@@ -858,15 +857,11 @@ if "🕵️ Auditoría" in menu:
         st.divider()
         st.subheader("📄 Reporte RRHH (Auditoría de Asistencia por Profesional)")
         if FPDF_DISPONIBLE:
-            # Trae a todos los profesionales (evita duplicados)
             profesionales_lista = list(set([v['nombre'] for k, v in st.session_state["usuarios_db"].items()]))
-            
-            # Sumamos también a los que ficharon alguna vez por si los borraron del equipo
             profesionales_historicos = list(set([c.get("profesional", "") for c in st.session_state["checkin_db"]]))
             profesionales_lista = list(set(profesionales_lista + profesionales_historicos))
             
             if profesionales_lista:
-                # Ordenamos alfabéticamente
                 profesionales_lista.sort()
                 prof_sel = st.selectbox("Seleccionar Profesional para liquidación:", profesionales_lista)
                 
@@ -883,7 +878,6 @@ if "🕵️ Auditoría" in menu:
                     pdf.ln(5)
                     
                     pdf.set_font("Arial", '', 9)
-                    # Parche: Trae las visitas directas del profesional seleccionado
                     chks_prof = [c for c in st.session_state["checkin_db"] if c.get("profesional", "") == profesional]
                     
                     if not chks_prof:
@@ -900,4 +894,4 @@ if "🕵️ Auditoría" in menu:
         else:
             st.error("Librería FPDF no disponible. Instalar para generar reportes.")
 
-# --- FIN DEL SISTEMA MEDICARE PRO V9.1 ---
+# --- FIN DEL SISTEMA MEDICARE PRO V9.2 ---
