@@ -885,7 +885,67 @@ with tabs[menu.index("💊 Recetas")]:
                 with st.expander("🔴 Tratamientos Finalizados / Vencidos"):
                     for r in reversed(finalizadas):
                         st.error(f"❌ **FINALIZADO** | Iniciado: {r['fecha'][:10]} | {r['med']} *(Por: {r.get('firma', 'S/D')})*")
+
+            # --- NUEVO: REGISTRO DE ADMINISTRACIÓN DE ENFERMERÍA ---
+            st.divider()
+            st.markdown("#### 🩺 Control Diario de Enfermería (MAR)")
             
+            if activas:
+                with st.form("form_admin_med", clear_on_submit=True):
+                    st.caption("Registrar aplicación de medicación:")
+                    
+                    # 1. Lista desplegable con la medicación activa del paciente
+                    meds_activas_list = [r['med'] for r in activas]
+                    med_sel = st.selectbox("Seleccionar Medicación Indicada", meds_activas_list)
+
+                    # 2. Hora y Estado
+                    c_h, c_est = st.columns([1, 2])
+                    hora_admin = c_h.time_input("Hora", value=ahora().time())
+                    estado_admin = c_est.selectbox("Estado de la aplicación", ["✅ Realizada", "❌ No realizada", "⚠️ Suspendida"])
+
+                    # 3. Justificación (Motivo)
+                    motivo = st.text_input("Justificación clínica (Obligatorio si no se realiza o se suspende, ej: Paciente hipotenso):")
+
+                    if st.form_submit_button("Registrar en Planilla", width="stretch"):
+                        # Validación: Si no la hizo, tiene que justificar sí o sí.
+                        if estado_admin != "✅ Realizada" and not motivo.strip():
+                            st.error("🚨 Debes especificar el motivo clínico por el cual no se administró o se suspendió la medicación.")
+                        else:
+                            st.session_state["administracion_med_db"].append({
+                                "paciente": paciente_sel,
+                                "med": med_sel.split(" |")[0], # Guardamos solo el nombre para que la tabla no sea gigante
+                                "fecha": ahora().strftime("%d/%m/%Y"),
+                                "hora": hora_admin.strftime("%H:%M"),
+                                "estado": estado_admin,
+                                "motivo": motivo.strip(),
+                                "firma": user["nombre"]
+                            })
+                            guardar_datos()
+                            st.success("✅ Administración registrada exitosamente.")
+                            st.rerun()
+
+                # --- TABLA DE CONTROL DEL DÍA ---
+                st.markdown("##### 📅 Planilla de Aplicaciones de Hoy")
+                fecha_hoy = ahora().strftime("%d/%m/%Y")
+                
+                # Filtramos las aplicaciones de este paciente en el día de hoy
+                admin_hoy = [a for a in st.session_state.get("administracion_med_db", []) 
+                             if a["paciente"] == paciente_sel and a["fecha"] == fecha_hoy]
+
+                if admin_hoy:
+                    df_admin = pd.DataFrame(admin_hoy)
+                    # Ordenamos para mostrar y renombramos columnas para prolijidad
+                    df_admin = df_admin[["hora", "med", "estado", "motivo", "firma"]]
+                    df_admin.columns = ["Hora", "Fármaco", "Estado", "Justificación", "Enfermero/a"]
+                    
+                    # Mostrar la tabla. Los emojis de "estado" harán de semáforo visual (verde, rojo, amarillo)
+                    st.dataframe(df_admin.sort_values(by="Hora", ascending=False), use_container_width=True, hide_index=True)
+                else:
+                    st.info("Aún no se registraron aplicaciones de medicación en el día de la fecha.")
+            else:
+                st.warning("El paciente no tiene medicación activa para administrar.")
+
+            # --- MODIFICAR O SUSPENDER ---
             st.divider()
             st.markdown("#### ⚙️ Modificar o Suspender Manualmente")
             c_ed1, c_ed2 = st.columns([3, 2])
