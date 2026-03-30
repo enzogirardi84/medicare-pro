@@ -618,7 +618,7 @@ with tabs[menu.index("💉 Materiales")]:
             st.caption("Últimos materiales registrados:")
             st.dataframe(pd.DataFrame(cons_paciente).drop(columns=["paciente", "empresa"], errors='ignore'), use_container_width=True)
 
-# 8. RECETAS (CON VADEMÉCUM MASIVO)
+# 8. RECETAS (CON VADEMÉCUM MASIVO Y FRECUENCIA)
 with tabs[menu.index("💊 Recetas")]:
     if paciente_sel:
         with st.form("recet", clear_on_submit=True):
@@ -628,16 +628,23 @@ with tabs[menu.index("💊 Recetas")]:
             med_vademecum = c_rec1.selectbox("1. Medicamento / Vademécum Oficial:", lista_vademecum_receta)
             med_manual = c_rec2.text_input("O 2. Cargar Manualmente:")
             
-            c_rec3, c_rec4 = st.columns(2)
+            # Dividimos en 3 columnas para agregar la frecuencia
+            c_rec3, c_rec4, c_rec5 = st.columns([2, 2, 1])
             lista_vias = ["Oral", "Endovenosa (EV)", "Intramuscular (IM)", "Subcutánea (SC)", "Sublingual", "Tópica", "Inhalatoria", "Oftálmica", "Ótica", "Nasal", "Rectal", "Vaginal"]
             p = c_rec3.selectbox("Vía de Administración", lista_vias)
-            f = c_rec4.number_input("Días de tratamiento", 1, 30, 7)
+            
+            lista_frecuencias = ["Cada 4 horas", "Cada 6 horas", "Cada 8 horas", "Cada 12 horas", "Cada 24 horas", "Dosis única", "Según necesidad (SOS)"]
+            frec = c_rec4.selectbox("Frecuencia (Horario)", lista_frecuencias, index=2) # Viene "Cada 8 horas" por defecto
+            
+            f = c_rec5.number_input("Días", min_value=1, max_value=90, value=7)
             
             if st.form_submit_button("Cargar Terapéutica", width="stretch"):
                 med_final = med_manual.strip().title() if med_manual.strip() else med_vademecum
                 
                 if med_final and med_final != "-- Seleccionar del Vademécum --":
-                    st.session_state["indicaciones_db"].append({"paciente": paciente_sel, "med": f"{med_final} vía {p} por {f} días.", "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
+                    # Armamos el texto completo para el PDF
+                    texto_receta = f"{med_final} | Vía: {p} | {frec} | Durante {f} días."
+                    st.session_state["indicaciones_db"].append({"paciente": paciente_sel, "med": texto_receta, "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
                     guardar_datos(); st.rerun()
 
 # 9. BALANCE HÍDRICO
