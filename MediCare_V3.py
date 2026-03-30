@@ -134,7 +134,7 @@ except ImportError:
     GEO_DISPONIBLE = False
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="MediCare Enterprise PRO V9.8", page_icon="⚕️", layout="wide")
+st.set_page_config(page_title="MediCare Enterprise PRO V10.0", page_icon="⚕️", layout="wide")
 st.markdown("<html lang='es' translate='no'>", unsafe_allow_html=True)
 
 # --- ZONA HORARIA ARGENTINA ---
@@ -167,7 +167,6 @@ def init_supabase() -> Client:
 supabase = init_supabase()
 
 # --- 🎨 DISEÑO VISUAL ADAPTATIVO AVANZADO (CSS ENTERPRISE DARK) ---
-# Reemplazá el bloque CSS anterior por este para dar más definición y belleza.
 page_bg_css = """
 <style>
 /* --- BASE DEL TEMA: Ricos Grises Oscuros --- */
@@ -182,20 +181,17 @@ page_bg_css = """
 /* Base de la App */
 .stApp {
     background-color: var(--background-color);
-    /* Sutil degradado radial en la esquina superior para dar profundidad */
     background-image: radial-gradient(at top left, rgba(96, 165, 250, 0.07), transparent 70%);
     color: var(--text-color);
     font-family: var(--font-stack);
 }
 
 /* --- DEFINICIÓN DE BLOQUES (Forms, Tablas, Métricas) --- */
-/* Efecto de "tarjeta flotante" con sombras suaves para dar definición */
 div[data-testid="stForm"], .stDataFrame, div[data-testid="stMetric"], .stAlert {
     background-color: var(--secondary-background-color) !important;
-    border: 1px solid rgba(229, 231, 235, 0.08) !important; /* Borde casi invisible pero que define */
-    border-radius: 16px !important; /* Esquinas más suaves y modernas */
+    border: 1px solid rgba(229, 231, 235, 0.08) !important; 
+    border-radius: 16px !important; 
     padding: 25px !important;
-    /* Sombras avanzadas para dar profundidad (definición) */
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2) !important;
     margin-bottom: 20px;
 }
@@ -214,14 +210,14 @@ h3 {
 }
 
 /* --- ESTILO DE INPUTS (Campos de Tipeo) --- */
-.stTextInput input, .stNumberInput input, .stSelectbox [data-baseweb="select"] {
+.stTextInput input, .stNumberInput input, .stSelectbox [data-baseweb="select"], .stTextArea textarea {
     border-radius: 10px !important;
     border: 1px solid rgba(229, 231, 235, 0.15) !important;
-    background-color: #111827 !important; /* Fondo de inputs igual al fondo base */
+    background-color: #111827 !important; 
     color: var(--text-color) !important;
     transition: all 0.2s ease;
 }
-.stTextInput input:focus, .stNumberInput input:focus {
+.stTextInput input:focus, .stNumberInput input:focus, .stTextArea textarea:focus {
     border-color: var(--primary-color) !important;
     box-shadow: 0 0 0 1px var(--primary-color) !important;
 }
@@ -230,13 +226,11 @@ h3 {
 .stAlert {
     border: none !important;
 }
-/* Alerta Roja de Signos Vitales */
 div[data-testid="stAlert"] { 
-    border-left: 5px solid #ef4444 !important; /* Borde rojo definido a la izquierda */
+    border-left: 5px solid #ef4444 !important; 
 }
-/* Alerta Verde (Success) */
 div[data-testid="stAlert"].stAlert[data-baseweb="alert"] { 
-    border-left: 5px solid #34d399 !important; /* Borde verde definido a la izquierda */
+    border-left: 5px solid #34d399 !important; 
 }
 
 /* --- BOTONES --- */
@@ -248,7 +242,7 @@ div[data-testid="stAlert"].stAlert[data-baseweb="alert"] {
     margin-top: 10px;
 }
 .stButton > button:active {
-    transform: scale(0.98); /* Efecto de "presionado" */
+    transform: scale(0.98); 
 }
 
 /* BOTÓN WHATSAPP EG (Estilo Premium) */
@@ -305,7 +299,7 @@ def guardar_datos():
         "indicaciones_db", "turnos_db", "evoluciones_db", "facturacion_db", "logs_db", 
         "balance_db", "pediatria_db", "fotos_heridas_db",
         "agenda_db", "checkin_db", "inventario_db", "consumos_db", "nomenclador_db", "firmas_tactiles_db",
-        "reportes_diarios_db"
+        "reportes_diarios_db", "estudios_db" # SE AGREGÓ ESTUDIOS A LA NUBE
     ]
     data = {k: st.session_state[k] for k in claves if k in st.session_state}
     try:
@@ -322,7 +316,7 @@ if "db_inicializada" not in st.session_state:
         "pacientes_db": [], "detalles_pacientes_db": {}, "vitales_db": [], "indicaciones_db": [], "turnos_db": [], 
         "evoluciones_db": [], "facturacion_db": [], "logs_db": [], "balance_db": [], "pediatria_db": [], "fotos_heridas_db": [],
         "agenda_db": [], "checkin_db": [], "inventario_db": [], "consumos_db": [], "nomenclador_db": [], "firmas_tactiles_db": [],
-        "reportes_diarios_db": []
+        "reportes_diarios_db": [], "estudios_db": [] # SE AGREGÓ ESTUDIOS A LA BASE LOCAL
     }
     if db:
         for k, v in db.items(): st.session_state[k] = v
@@ -337,7 +331,7 @@ if "logeado" not in st.session_state: st.session_state["logeado"] = False
 if not st.session_state["logeado"]:
     _, col, _ = st.columns([1,1.5,1])
     with col:
-        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V9.8</h2>", unsafe_allow_html=True)
+        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V10.0</h2>", unsafe_allow_html=True)
         tab_login, tab_recuperar = st.tabs(["🔑 Iniciar Sesión", "🆘 Olvidé mi Contraseña"])
         with tab_login:
             with st.form("login", clear_on_submit=True):
@@ -436,7 +430,7 @@ with st.sidebar:
     if st.button("Cerrar Sesión", width="stretch"): st.session_state["logeado"] = False; st.rerun()
 
 # --- MENU DINÁMICO ---
-menu = ["📍 Visitas y Agenda", "👤 Admisión", "📊 Clínica", "👶 Pediatría", "📝 Evolución", "💉 Materiales", "💊 Recetas", "⚖️ Balance", "📦 Inventario", "💳 Caja", "📚 Historial", "🗄️ PDF"]
+menu = ["📍 Visitas y Agenda", "👤 Admisión", "📊 Clínica", "👶 Pediatría", "📝 Evolución", "📎 Estudios", "💉 Materiales", "💊 Recetas", "⚖️ Balance", "📦 Inventario", "💳 Caja", "📚 Historial", "🗄️ PDF"]
 
 if rol in ["SuperAdmin", "Coordinador"]: 
     menu.insert(1, "📈 Dashboard") 
@@ -533,7 +527,7 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
                 st.caption("Próximas visitas agendadas para este paciente:")
                 st.dataframe(pd.DataFrame(agenda_mia).drop(columns=["empresa", "paciente"]).tail(3), use_container_width=True)
 
-# 2. DASHBOARD
+# 2. DASHBOARD (SOLO VISIBLE PARA ADMIN/COORDINADOR)
 if "📈 Dashboard" in menu:
     with tabs[menu.index("📈 Dashboard")]:
         st.markdown(f"<h3 style='color: #3b82f6;'>📈 Panel de Gestión - {mi_empresa}</h3>", unsafe_allow_html=True)
@@ -663,7 +657,72 @@ with tabs[menu.index("📝 Evolución")]:
                         st.session_state["fotos_heridas_db"].append({"paciente": paciente_sel, "fecha": fecha_n, "descripcion": desc_w, "base64_foto": base64_foto, "firma": user["nombre"]})
                     guardar_datos(); st.rerun()
 
-# 7. MATERIALES Y DESCARTABLES
+# 7. ESTUDIOS COMPLEMENTARIOS (NUEVO)
+with tabs[menu.index("📎 Estudios")]:
+    if paciente_sel:
+        st.subheader("📎 Cargar Estudio Complementario")
+        with st.form("form_estudios", clear_on_submit=True):
+            c_est1, c_est2 = st.columns([2, 1])
+            tipo_estudio = c_est1.text_input("Descripción del Estudio (Ej: Laboratorio Sangre, Rx Tórax, Epicrisis)")
+            fecha_estudio = c_est2.date_input("Fecha de realización del estudio")
+            
+            archivo_subido = st.file_uploader("Adjuntar Archivo (Soporta PDF o Imágenes)", type=['pdf', 'png', 'jpg', 'jpeg'])
+            
+            if st.form_submit_button("Guardar Estudio en Legajo", width="stretch"):
+                if tipo_estudio and archivo_subido:
+                    bytes_data = archivo_subido.getvalue()
+                    b64_encoded = base64.b64encode(bytes_data).decode('utf-8')
+                    extension = archivo_subido.name.split('.')[-1].lower()
+                    
+                    st.session_state["estudios_db"].append({
+                        "paciente": paciente_sel,
+                        "tipo": tipo_estudio.strip(),
+                        "fecha_realizacion": fecha_estudio.strftime("%d/%m/%Y"),
+                        "fecha_carga": ahora().strftime("%d/%m/%Y %H:%M"),
+                        "firma": user["nombre"],
+                        "archivo_b64": b64_encoded,
+                        "extension": extension
+                    })
+                    guardar_datos()
+                    st.success("✅ Estudio encriptado y guardado en la historia clínica del paciente.")
+                    st.rerun()
+                else:
+                    st.warning("⚠️ Debes ponerle un nombre al estudio y adjuntar un archivo válido.")
+
+        st.divider()
+        st.subheader("🗂️ Archivo Histórico de Estudios")
+        
+        estudios_pac = [e for e in st.session_state.get("estudios_db", []) if e.get("paciente") == paciente_sel]
+        
+        if estudios_pac:
+            filtro_estudio = st.text_input("🔍 Filtrar estudios (por nombre, fecha, etc.):")
+            if filtro_estudio:
+                estudios_pac = [e for e in estudios_pac if filtro_estudio.lower() in e['tipo'].lower() or filtro_estudio in e['fecha_realizacion']]
+            
+            if estudios_pac:
+                for i, est in enumerate(reversed(estudios_pac)):
+                    with st.expander(f"📄 {est['fecha_realizacion']} - {est['tipo']}", expanded=False):
+                        st.caption(f"Subido al sistema por {est['firma']} el {est.get('fecha_carga', '')}")
+                        archivo_bytes = base64.b64decode(est['archivo_b64'])
+                        mime_type = "application/pdf" if est['extension'] == 'pdf' else f"image/{est['extension']}"
+                        
+                        c_dl1, c_dl2 = st.columns([1, 3])
+                        c_dl1.download_button(
+                            label="📥 Descargar Archivo original",
+                            data=archivo_bytes,
+                            file_name=f"{est['tipo'].replace(' ', '_')}_{est['fecha_realizacion'].replace('/','-')}.{est['extension']}",
+                            mime=mime_type,
+                            key=f"dl_est_{est.get('fecha_carga', i)}_{i}"
+                        )
+                        
+                        if est['extension'] in ['jpg', 'jpeg', 'png']:
+                            c_dl2.image(archivo_bytes, caption=est['tipo'], use_container_width=True)
+            else:
+                st.info("No se encontraron estudios que coincidan con tu búsqueda.")
+        else:
+            st.info("El paciente no tiene estudios complementarios cargados aún.")
+
+# 8. MATERIALES Y DESCARTABLES
 with tabs[menu.index("💉 Materiales")]:
     if paciente_sel:
         st.subheader("Registro de Materiales Descartables")
@@ -695,7 +754,7 @@ with tabs[menu.index("💉 Materiales")]:
             st.caption("Últimos materiales registrados:")
             st.dataframe(pd.DataFrame(cons_paciente).drop(columns=["paciente", "empresa"], errors='ignore'), use_container_width=True)
 
-# 8. RECETAS (PLAN TERAPÉUTICO Y MODIFICACIONES)
+# 9. RECETAS 
 with tabs[menu.index("💊 Recetas")]:
     if paciente_sel:
         st.subheader("✍️ Cargar Nueva Indicación Médica")
@@ -717,7 +776,6 @@ with tabs[menu.index("💊 Recetas")]:
             
             st.markdown("##### 👨‍⚕️ Datos del Médico Prescriptor (Firma Legal)")
             c_med1, c_med2 = st.columns(2)
-            # Trae tus datos por defecto, pero se pueden borrar y cambiar por los del médico real
             doc_nombre = c_med1.text_input("Nombre y Apellido:", value=user["nombre"])
             doc_mat = c_med2.text_input("Matrícula (Ej: MP 12345):", value=user.get("matricula", ""))
             
@@ -761,7 +819,7 @@ with tabs[menu.index("💊 Recetas")]:
         else:
             st.info("El paciente no tiene medicación activa en este momento.")
 
-# 9. BALANCE HÍDRICO
+# 10. BALANCE HÍDRICO
 with tabs[menu.index("⚖️ Balance")]:
     if paciente_sel:
         with st.form("bal", clear_on_submit=True):
@@ -773,7 +831,7 @@ with tabs[menu.index("⚖️ Balance")]:
                 st.session_state["balance_db"].append({"paciente": paciente_sel, "ingresos": ting, "egresos": tegr, "balance": bal, "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
                 guardar_datos(); st.rerun()
 
-# 10. INVENTARIO (CON VADEMÉCUM MASIVO)
+# 11. INVENTARIO 
 with tabs[menu.index("📦 Inventario")]:
     inv_mio = [i for i in st.session_state["inventario_db"] if i["empresa"] == mi_empresa]
     if inv_mio:
@@ -832,7 +890,7 @@ with tabs[menu.index("📦 Inventario")]:
             st.session_state["inventario_db"] = [i for i in st.session_state["inventario_db"] if not (i["item"] == del_item and i["empresa"] == mi_empresa)]
             guardar_datos(); st.rerun()
 
-# 11. CAJA
+# 12. CAJA
 with tabs[menu.index("💳 Caja")]:
     if paciente_sel:
         with st.form("caja_form", clear_on_submit=True):
@@ -865,7 +923,7 @@ with tabs[menu.index("💳 Caja")]:
             with pd.ExcelWriter(output, engine='openpyxl') as writer: df_caja_filtrada.drop(columns="empresa", errors='ignore').to_excel(writer, index=False, sheet_name='Caja_MediCare')
             st.download_button("📥 DESCARGAR RESULTADOS A EXCEL", data=output.getvalue(), file_name=f"Caja_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# 12. HISTORIAL COMPLETO 
+# 13. HISTORIAL COMPLETO 
 with tabs[menu.index("📚 Historial")]:
     if paciente_sel:
         estado_badge = "🗄️ [ARCHIVADO DE ALTA]" if st.session_state["detalles_pacientes_db"].get(paciente_sel, {}).get("estado") == "De Alta" else ""
@@ -931,7 +989,7 @@ with tabs[menu.index("📚 Historial")]:
                 for r in reversed(recs[-limite:]): st.success(f"📌 **{r['fecha']}** | Indicado por: **{r['firma']}**\n\n{r['med']}")
             else: st.write("No hay terapéutica indicada.")
 
-# 13. PDF 
+# 14. PDF 
 with tabs[menu.index("🗄️ PDF")]:
     if paciente_sel and FPDF_DISPONIBLE:
         def t(txt): return str(txt).replace('⚖️', '').replace('⚠️', '').replace('📌', '').replace('📅', '').replace('📸', '').replace('🗄️', '').encode('latin-1', 'replace').decode('latin-1')
@@ -942,7 +1000,7 @@ with tabs[menu.index("🗄️ PDF")]:
             pdf.line(21, 14, 21, 28); pdf.line(14, 21, 28, 21)
             emp_paciente = st.session_state["detalles_pacientes_db"].get(p, {}).get("empresa", mi_empresa)
             pdf.set_font("Arial", 'B', 16); pdf.set_xy(38, 14); pdf.cell(0, 10, t(emp_paciente), ln=True)
-            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V9.8)"), ln=True); pdf.ln(15)
+            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V10.0)"), ln=True); pdf.ln(15)
             
             det = st.session_state["detalles_pacientes_db"].get(p, {})
             estado_texto = " [ARCHIVADO/ALTA]" if det.get("estado") == "De Alta" else ""
@@ -1046,7 +1104,7 @@ Asimismo, entiendo que los registros clinicos seran resguardados en formato digi
         st.download_button("📥 1. Generar Historia Clínica en PDF", crear_pdf_pro(paciente_sel), f"HC_{paciente_sel}.pdf", "application/pdf")
         st.download_button("📄 2. Descargar Consentimiento Informado Legal", crear_consentimiento_pdf(paciente_sel), f"Consentimiento_{paciente_sel}.pdf", "application/pdf")
 
-# 14. CIERRE DIARIO Y REPORTES DE STOCK (SOLO VISIBLE PARA ADMIN/COORDINADOR)
+# 15. CIERRE DIARIO Y REPORTES DE STOCK (SOLO VISIBLE PARA ADMIN/COORDINADOR)
 if "📑 Cierre Diario" in menu:
     with tabs[menu.index("📑 Cierre Diario")]:
         st.subheader("📑 Conciliación y Cierre Diario de Operaciones")
@@ -1157,7 +1215,7 @@ if "📑 Cierre Diario" in menu:
         else:
             st.write("Aún no hay reportes de cierre diario guardados.")
 
-# 15. EQUIPO Y SUSCRIPCIONES (SOLO VISIBLE PARA ADMIN/COORDINADOR)
+# 16. EQUIPO Y SUSCRIPCIONES (SOLO VISIBLE PARA ADMIN/COORDINADOR)
 if "⚙️ Mi Equipo" in menu:
     with tabs[menu.index("⚙️ Mi Equipo")]:
         st.subheader(f"Gestión de Personal - {mi_empresa}")
@@ -1183,7 +1241,7 @@ if "⚙️ Mi Equipo" in menu:
                 elif d.get("estado", "Activo") != "Activo" and c2.button("▶️ Reactivar", key=f"reac_{u}"): st.session_state["usuarios_db"][u]["estado"] = "Activo"; guardar_datos(); st.rerun()
             if c3.button("❌ Bajar", key=f"del_{u}"): del st.session_state["usuarios_db"][u]; guardar_datos(); st.rerun()
 
-# 16. AUDITORÍA (SOLO VISIBLE PARA ADMIN/COORDINADOR)
+# 17. AUDITORÍA (SOLO VISIBLE PARA ADMIN/COORDINADOR)
 if "🕵️ Auditoría" in menu:
     with tabs[menu.index("🕵️ Auditoría")]:
         st.subheader("Auditoría General de Movimientos")
@@ -1247,4 +1305,4 @@ if "🕵️ Auditoría" in menu:
         else:
             st.error("Librería FPDF no disponible. Instalar para generar reportes.")
 
-# --- FIN DEL SISTEMA MEDICARE PRO V9.8 ---
+# --- FIN DEL SISTEMA MEDICARE PRO V10.0 ---
