@@ -551,7 +551,7 @@ with tabs[menu.index("📝 Evolución")]:
                         st.session_state["fotos_heridas_db"].append({"paciente": paciente_sel, "fecha": fecha_n, "descripcion": desc_w, "base64_foto": base64_foto, "firma": user["nombre"]})
                     guardar_datos(); st.rerun()
 
-# 6.5 ESTUDIOS COMPLEMENTARIOS (MÓDULO DE LABORATORIOS/RX)
+# 6.5 ESTUDIOS COMPLEMENTARIOS (CON UPLOAD DE ARCHIVOS Y ANTI-COLAPSO)
 with tabs[menu.index("🔬 Estudios")]:
     if paciente_sel:
         st.subheader("Órdenes y Resultados de Estudios")
@@ -561,32 +561,64 @@ with tabs[menu.index("🔬 Estudios")]:
                 "Laboratorio (Sangre/Orina)", "Radiografía (Rx)", "Ecografía", 
                 "Electrocardiograma (ECG)", "Tomografía (TAC)", "Resonancia Magnética (RMN)", "Otro"
             ])
-            detalle_estudio = col_e2.text_input("Detalle del Pedido o Resultado (Ej: Rx Tórax frente, Glucemia alta...)")
+            detalle_estudio = col_e2.text_input("Detalle del Pedido o Resultado (Ej: Rx Tórax frente...)")
             
-            with st.expander("📷 Adjuntar Foto del Estudio / Orden Médica", expanded=False):
-                foto_estudio = st.camera_input("Tomar foto del estudio")
+            # --- NUEVO: UPLOADER MEJORADO PARA GALERÍA Y PDF ---
+            st.markdown("##### 📎 Adjuntar Documento (Opcional)")
+            archivo_subido = st.file_uploader("Subir archivo, foto de galería o PDF", type=["png", "jpg", "jpeg", "pdf"])
+            
+            with st.expander("📷 O tomar foto con la cámara ahora", expanded=False):
+                foto_estudio = st.camera_input("Tomar foto en vivo")
             
             if st.form_submit_button("Guardar Estudio Clínico", width="stretch"):
-                img_b64 = base64.b64encode(foto_estudio.getvalue()).decode('utf-8') if foto_estudio else ""
+                img_b64 = ""
+                ext = ""
+                
+                # Lógica Inteligente: Prioriza el archivo de galería/pdf si hay ambos
+                if archivo_subido is not None:
+                    img_b64 = base64.b64encode(archivo_subido.getvalue()).decode('utf-8')
+                    ext = archivo_subido.name.split('.')[-1].lower()
+                elif foto_estudio is not None:
+                    img_b64 = base64.b64encode(foto_estudio.getvalue()).decode('utf-8')
+                    ext = "png"
+
                 st.session_state["estudios_db"].append({
                     "paciente": paciente_sel,
-                    "fecha": ahora().strftime("%d/%m/%Y %H:%M"),
+                    "fecha": ahora().strftime("%d/%m/%Y %H:%M:%S"), # Segundos para evitar errores de sistema
                     "tipo": tipo_estudio,
                     "detalle": detalle_estudio,
                     "imagen": img_b64,
+                    "extension": ext,
                     "firma": user["nombre"]
                 })
-                guardar_datos(); st.success("Estudio guardado correctamente."); st.rerun()
+                guardar_datos(); st.success("✅ Estudio guardado correctamente."); st.rerun()
 
+        # --- NUEVO: SISTEMA ANTI-COLAPSO PARA EL HISTORIAL DE ESTUDIOS ---
         estudios_pac = [e for e in st.session_state.get("estudios_db", []) if e["paciente"] == paciente_sel]
         if estudios_pac:
             st.divider()
             st.markdown("#### Historial de Estudios")
-            with st.container(height=350):
-                for est in reversed(estudios_pac):
-                    st.info(f"🔬 **{est['tipo']}** | {est['fecha']} por {est['firma']}\n\nDetalle: {est['detalle']}")
+            
+            # Filtro rápido
+            limite_est = st.selectbox("Mostrar últimos:", [10, 20, 50, "Todos"], key="lim_estudios")
+            if limite_est != "Todos":
+                estudios_mostrar = estudios_pac[-int(limite_est):]
+            else:
+                estudios_mostrar = estudios_pac
+                
+            # Cajita con Scroll (Anti-Colapso)
+            with st.container(height=450):
+                for idx, est in enumerate(reversed(estudios_mostrar)):
+                    st.info(f"🔬 **{est['tipo']}** | {est['fecha']} por {est['firma']}\n\nDetalle: {est.get('detalle', '')}")
+                    
                     if est.get('imagen'):
-                        st.image(base64.b64decode(est['imagen']), caption="Documento Adjunto")
+                        if est.get('extension') == 'pdf':
+                            # Si es PDF, arma un botón de descarga
+                            pdf_bytes = base64.b64decode(est['imagen'])
+                            st.download_button("📥 Descargar PDF Adjunto", data=pdf_bytes, file_name=f"Estudio_{est['fecha'].replace('/','-').replace(':','')}.pdf", mime="application/pdf", key=f"dl_est_{idx}_{est['fecha']}")
+                        else:
+                            # Si es imagen, la muestra en pantalla
+                            st.image(base64.b64decode(est['imagen']), caption="Imagen Adjunta", use_column_width=True)
 
 # 7. MATERIALES Y DESCARTABLES
 with tabs[menu.index("💉 Materiales")]:
