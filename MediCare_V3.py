@@ -166,29 +166,106 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# --- 🎨 DISEÑO VISUAL ADAPTATIVO (CSS) ---
+# --- 🎨 DISEÑO VISUAL ADAPTATIVO AVANZADO (CSS ENTERPRISE DARK) ---
+# Reemplazá el bloque CSS anterior por este para dar más definición y belleza.
 page_bg_css = """
 <style>
+/* --- BASE DEL TEMA: Ricos Grises Oscuros --- */
+:root {
+    --primary-color: #60a5fa; /* Azul Moderno Enterprise */
+    --background-color: #111827; /* Gris muy oscuro base (Rich Dark) */
+    --secondary-background-color: #1f2937; /* Gris intermedio para Cards/Formularios */
+    --text-color: #f3f4f6; /* Blanco suave para no cansar */
+    --font-stack: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Base de la App */
 .stApp {
     background-color: var(--background-color);
-    background-image: radial-gradient(circle at top, var(--secondary-background-color) 0%, transparent 80%);
+    /* Sutil degradado radial en la esquina superior para dar profundidad */
+    background-image: radial-gradient(at top left, rgba(96, 165, 250, 0.07), transparent 70%);
+    color: var(--text-color);
+    font-family: var(--font-stack);
 }
-div[data-testid="stForm"] {
-    background-color: var(--secondary-background-color);
-    border: 1px solid rgba(150, 150, 150, 0.2);
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+
+/* --- DEFINICIÓN DE BLOQUES (Forms, Tablas, Métricas) --- */
+/* Efecto de "tarjeta flotante" con sombras suaves para dar definición */
+div[data-testid="stForm"], .stDataFrame, div[data-testid="stMetric"], .stAlert {
+    background-color: var(--secondary-background-color) !important;
+    border: 1px solid rgba(229, 231, 235, 0.08) !important; /* Borde casi invisible pero que define */
+    border-radius: 16px !important; /* Esquinas más suaves y modernas */
+    padding: 25px !important;
+    /* Sombras avanzadas para dar profundidad (definición) */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2) !important;
+    margin-bottom: 20px;
 }
-input[type=number]::-webkit-inner-spin-button, 
-input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-input[type=number] { -moz-appearance: textfield; }
+
+/* Estilo para los títulos (Subheaders) */
+.stHeader, h1, h2, h3 {
+    font-weight: 700 !important;
+    color: var(--text-color) !important;
+    letter-spacing: -0.5px;
+}
+h3 {
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 5px;
+    display: inline-block;
+    margin-bottom: 15px;
+}
+
+/* --- ESTILO DE INPUTS (Campos de Tipeo) --- */
+.stTextInput input, .stNumberInput input, .stSelectbox [data-baseweb="select"] {
+    border-radius: 10px !important;
+    border: 1px solid rgba(229, 231, 235, 0.15) !important;
+    background-color: #111827 !important; /* Fondo de inputs igual al fondo base */
+    color: var(--text-color) !important;
+    transition: all 0.2s ease;
+}
+.stTextInput input:focus, .stNumberInput input:focus {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 1px var(--primary-color) !important;
+}
+
+/* --- ALERTAS (Alerta Roja, Success) --- */
+.stAlert {
+    border: none !important;
+}
+/* Alerta Roja de Signos Vitales */
+div[data-testid="stAlert"] { 
+    border-left: 5px solid #ef4444 !important; /* Borde rojo definido a la izquierda */
+}
+/* Alerta Verde (Success) */
+div[data-testid="stAlert"].stAlert[data-baseweb="alert"] { 
+    border-left: 5px solid #34d399 !important; /* Borde verde definido a la izquierda */
+}
+
+/* --- BOTONES --- */
+.stButton > button {
+    border-radius: 10px !important;
+    border: none !important;
+    transition: transform 0.1s ease, background-color 0.2s ease;
+    font-weight: 600 !important;
+    margin-top: 10px;
+}
+.stButton > button:active {
+    transform: scale(0.98); /* Efecto de "presionado" */
+}
+
+/* BOTÓN WHATSAPP EG (Estilo Premium) */
 .wa-btn {
     display: block; width: 100%; text-align: center; background-color: #25D366; 
-    color: white !important; padding: 10px; border-radius: 8px; font-weight: bold; text-decoration: none;
-    margin-top: 10px; margin-bottom: 10px;
+    color: white !important; padding: 12px; border-radius: 12px; font-weight: bold; text-decoration: none;
+    margin: 15px 0; border: 1px solid transparent;
+    transition: all 0.3s;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.15);
 }
-.wa-btn:hover { background-color: #128C7E; }
+.wa-btn:hover { background-color: #1c9d4b; box-shadow: 0 6px 8px rgba(0,0,0,0.2); }
+
+/* --- OCULTAR DECORACIÓN ESTÁNDAR --- */
+[data-testid="stDecoration"] {
+    background-image: none !important;
+    background-color: transparent !important;
+}
 </style>
 """
 st.markdown(page_bg_css, unsafe_allow_html=True)
