@@ -96,7 +96,7 @@ except ImportError:
     GEO_DISPONIBLE = False
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="MediCare Enterprise PRO V9.10", page_icon="⚕️", layout="wide")
+st.set_page_config(page_title="MediCare Enterprise PRO V9.11", page_icon="⚕️", layout="wide")
 st.markdown("<html lang='es' translate='no'>", unsafe_allow_html=True)
 
 # --- ZONA HORARIA ARGENTINA ---
@@ -127,80 +127,33 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# --- 🎨 DISEÑO VISUAL PREMIUM Y OPTIMIZACIÓN MÓVIL (CSS) ---
+# --- 🎨 DISEÑO VISUAL CLÁSICO Y ADAPTATIVO (CSS) ---
+# Se mantiene el bloqueo de pull-to-refresh para optimización móvil, pero se usa el diseño nativo de Streamlit.
 page_bg_css = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap');
-
-html, body, [class*="css"] { font-family: 'Nunito', sans-serif !important; }
+/* Bloquear recargas accidentales en celulares (Pull-to-refresh) */
 body { overscroll-behavior-y: none; }
-* { text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
 
 .stApp {
-    background-color: #f8fafc;
-    background-image: radial-gradient(circle at top right, #e0f2fe 0%, transparent 60%),
-                      radial-gradient(circle at bottom left, #f3e8ff 0%, transparent 60%);
+    background-color: var(--background-color);
+    background-image: radial-gradient(circle at top, var(--secondary-background-color) 0%, transparent 80%);
 }
-
-div[data-testid="stForm"], div[data-testid="stExpander"] {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    border-radius: 16px;
+div[data-testid="stForm"] {
+    background-color: var(--secondary-background-color);
+    border: 1px solid rgba(150, 150, 150, 0.2);
+    border-radius: 12px;
     padding: 20px;
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
-    transition: transform 0.2s ease;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
 }
-
-.stButton>button {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    color: white;
-    min-height: 48px; 
-    border-radius: 12px;
-    border: none;
-    font-weight: 600;
-    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
-    transition: all 0.2s ease;
-}
-.stButton>button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.4);
-}
-.stButton>button:active {
-    transform: scale(0.96);
-}
-
-div[data-testid="stMetric"] {
-    background-color: rgba(255,255,255,0.9);
-    border-radius: 12px;
-    padding: 15px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.04);
-    border-left: 5px solid #3b82f6; 
-}
-
-button[data-baseweb="tab"] {
-    border-radius: 8px 8px 0 0;
-    margin-right: 2px;
-}
-button[data-baseweb="tab"]:focus, button[data-baseweb="tab"]:active {
-    outline: none !important;
-    background-color: rgba(59, 130, 246, 0.1);
-}
-
-.wa-btn {
-    display: block; width: 100%; text-align: center; 
-    background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); 
-    color: white !important; padding: 14px; border-radius: 12px; font-weight: 800; text-decoration: none;
-    margin-top: 15px; margin-bottom: 15px;
-    box-shadow: 0 4px 10px rgba(37, 211, 102, 0.3);
-    transition: transform 0.2s ease;
-}
-.wa-btn:hover { transform: scale(1.02); }
-
 input[type=number]::-webkit-inner-spin-button, 
 input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 input[type=number] { -moz-appearance: textfield; }
+.wa-btn {
+    display: block; width: 100%; text-align: center; background-color: #25D366; 
+    color: white !important; padding: 10px; border-radius: 8px; font-weight: bold; text-decoration: none;
+    margin-top: 10px; margin-bottom: 10px;
+}
+.wa-btn:hover { background-color: #128C7E; }
 </style>
 """
 st.markdown(page_bg_css, unsafe_allow_html=True)
@@ -240,7 +193,7 @@ def guardar_datos():
         "indicaciones_db", "turnos_db", "evoluciones_db", "facturacion_db", "logs_db", 
         "balance_db", "pediatria_db", "fotos_heridas_db",
         "agenda_db", "checkin_db", "inventario_db", "consumos_db", "nomenclador_db", "firmas_tactiles_db",
-        "reportes_diarios_db", "estudios_db" # NUEVO: Base de datos de Estudios
+        "reportes_diarios_db", "estudios_db" 
     ]
     data = {k: st.session_state[k] for k in claves if k in st.session_state}
     try:
@@ -257,7 +210,7 @@ if "db_inicializada" not in st.session_state:
         "pacientes_db": [], "detalles_pacientes_db": {}, "vitales_db": [], "indicaciones_db": [], "turnos_db": [], 
         "evoluciones_db": [], "facturacion_db": [], "logs_db": [], "balance_db": [], "pediatria_db": [], "fotos_heridas_db": [],
         "agenda_db": [], "checkin_db": [], "inventario_db": [], "consumos_db": [], "nomenclador_db": [], "firmas_tactiles_db": [],
-        "reportes_diarios_db": [], "estudios_db": [] # NUEVO
+        "reportes_diarios_db": [], "estudios_db": [] 
     }
     if db:
         for k, v in db.items(): st.session_state[k] = v
@@ -272,7 +225,7 @@ if "logeado" not in st.session_state: st.session_state["logeado"] = False
 if not st.session_state["logeado"]:
     _, col, _ = st.columns([1,1.5,1])
     with col:
-        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V9.10</h2>", unsafe_allow_html=True)
+        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V9.11</h2>", unsafe_allow_html=True)
         tab_login, tab_recuperar = st.tabs(["🔑 Iniciar Sesión", "🆘 Olvidé mi Contraseña"])
         with tab_login:
             with st.form("login", clear_on_submit=True):
@@ -371,7 +324,6 @@ with st.sidebar:
     if st.button("Cerrar Sesión", width="stretch"): st.session_state["logeado"] = False; st.rerun()
 
 # --- MENU DINÁMICO ---
-# ¡NUEVO!: Se agregó la pestaña "🔬 Estudios"
 menu = ["📍 Visitas y Agenda", "👤 Admisión", "📊 Clínica", "👶 Pediatría", "📝 Evolución", "🔬 Estudios", "💉 Materiales", "💊 Recetas", "⚖️ Balance", "📦 Inventario", "💳 Caja", "📚 Historial", "🗄️ PDF"]
 
 if rol in ["SuperAdmin", "Coordinador"]: 
@@ -599,7 +551,7 @@ with tabs[menu.index("📝 Evolución")]:
                         st.session_state["fotos_heridas_db"].append({"paciente": paciente_sel, "fecha": fecha_n, "descripcion": desc_w, "base64_foto": base64_foto, "firma": user["nombre"]})
                     guardar_datos(); st.rerun()
 
-# 6.5 ESTUDIOS COMPLEMENTARIOS (NUEVO MÓDULO)
+# 6.5 ESTUDIOS COMPLEMENTARIOS (MÓDULO DE LABORATORIOS/RX)
 with tabs[menu.index("🔬 Estudios")]:
     if paciente_sel:
         st.subheader("Órdenes y Resultados de Estudios")
@@ -799,7 +751,7 @@ with tabs[menu.index("💳 Caja")]:
             with pd.ExcelWriter(output, engine='openpyxl') as writer: df_caja_filtrada.drop(columns="empresa", errors='ignore').to_excel(writer, index=False, sheet_name='Caja_MediCare')
             st.download_button("📥 DESCARGAR RESULTADOS A EXCEL", data=output.getvalue(), file_name=f"Caja_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# 12. HISTORIAL COMPLETO 
+# 12. HISTORIAL COMPLETO (CONTENEDORES CON SCROLL MÓVIL)
 with tabs[menu.index("📚 Historial")]:
     if paciente_sel:
         estado_badge = "🗄️ [ARCHIVADO DE ALTA]" if st.session_state["detalles_pacientes_db"].get(paciente_sel, {}).get("estado") == "De Alta" else ""
@@ -829,7 +781,7 @@ with tabs[menu.index("📚 Historial")]:
                     for e in reversed(evs[-limite:]): st.info(f"📅 **{e['fecha']}** | {e['firma']}\n\n{e['nota']}")
             else: st.write("No hay evoluciones médicas cargadas.")
 
-        # NUEVO: EXPANSOR DE ESTUDIOS COMPLEMENTARIOS
+        # NUEVO: HISTORIAL DE ESTUDIOS COMPLEMENTARIOS
         with st.expander("🔬 Estudios Complementarios"):
             estudios = [x for x in st.session_state.get("estudios_db", []) if x["paciente"] == paciente_sel]
             if estudios:
@@ -890,7 +842,7 @@ with tabs[menu.index("🗄️ PDF")]:
             pdf.line(21, 14, 21, 28); pdf.line(14, 21, 28, 21)
             emp_paciente = st.session_state["detalles_pacientes_db"].get(p, {}).get("empresa", mi_empresa)
             pdf.set_font("Arial", 'B', 16); pdf.set_xy(38, 14); pdf.cell(0, 10, t(emp_paciente), ln=True)
-            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V9.10)"), ln=True); pdf.ln(15)
+            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V9.11)"), ln=True); pdf.ln(15)
             
             det = st.session_state["detalles_pacientes_db"].get(p, {})
             estado_texto = " [ARCHIVADO/ALTA]" if det.get("estado") == "De Alta" else ""
@@ -1205,4 +1157,4 @@ if "🕵️ Auditoría" in menu:
         else:
             st.error("Librería FPDF no disponible. Instalar para generar reportes.")
 
-# --- FIN DEL SISTEMA MEDICARE PRO V9.10 ---
+# --- FIN DEL SISTEMA MEDICARE PRO V9.11 ---
