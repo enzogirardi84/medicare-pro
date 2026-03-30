@@ -823,7 +823,7 @@ with tabs[menu.index("💊 Recetas")]:
             lista_frecuencias = ["Cada 4 horas", "Cada 6 horas", "Cada 8 horas", "Cada 12 horas", "Cada 24 horas", "Dosis única", "Según necesidad (SOS)"]
             frec = c_rec4.selectbox("Frecuencia (Horario)", lista_frecuencias, index=2)
             
-            f = c_rec5.number_input("Días", min_value=1, max_value=90, value=7)
+            f = c_rec5.number_input("Días de Tratamiento", min_value=1, max_value=90, value=7)
             
             if st.form_submit_button("➕ Cargar Nueva Terapéutica", width="stretch"):
                 med_final = med_manual.strip().title() if med_manual.strip() else med_vademecum
@@ -839,7 +839,7 @@ with tabs[menu.index("💊 Recetas")]:
                     })
                     guardar_datos(); st.rerun()
 
-        # --- LÓGICA DE VENCIMIENTO AUTOMÁTICO ---
+        # --- LÓGICA DE VENCIMIENTO AUTOMÁTICO Y EXTRACCIÓN DE DATOS ---
         recs_paciente = [r for r in st.session_state.get("indicaciones_db", []) if r["paciente"] == paciente_sel]
         
         if recs_paciente:
@@ -868,12 +868,45 @@ with tabs[menu.index("💊 Recetas")]:
 
             st.divider()
             
-            # --- PANEL DE MEDICACIÓN VIGENTE ---
-            st.markdown("#### 🟢 Plan Terapéutico VIGENTE")
+            # --- PANEL LEGAL DE TRAZABILIDAD (NUNCA SE CORTA) ---
+            st.markdown("#### 🟢 Plan Terapéutico VIGENTE y Trazabilidad")
+            st.info("⚠️ **LEGAL:** Revisar detenidamente la pauta médica y la última dosis registrada antes de administrar para evitar errores de medicación.")
+
+            # Obtenemos TODA la historia de aplicaciones para buscar la "última vez"
+            todas_admins = [a for a in st.session_state.get("administracion_med_db", []) if a["paciente"] == paciente_sel]
+
             if activas:
-                with st.container(height=280):
-                    for r in reversed(activas):
-                        st.success(f"💊 **{r['fecha']}** | {r['med']} *(Por: {r.get('firma', 'S/D')})*")
+                for r in reversed(activas):
+                    try: f_ini = datetime.strptime(r["fecha"], "%d/%m/%Y %H:%M:%S")
+                    except: f_ini = datetime.strptime(r["fecha"], "%d/%m/%Y %H:%M")
+                    dias_dur = r.get("dias_duracion", 30)
+                    f_fin = f_ini + timedelta(days=dias_dur)
+
+                    partes = r['med'].split(" | ")
+                    med_nombre = partes[0].strip()
+                    via = partes[1].replace("Vía: ", "").strip() if len(partes) > 1 else ""
+                    frecuencia = partes[2].strip() if len(partes) > 2 else ""
+
+                    # Búsqueda de la última administración de ESTA droga
+                    admins_esta_med = [a for a in todas_admins if a["med"] == med_nombre and a["estado"] == "✅ Realizada"]
+                    if admins_esta_med:
+                        # Ordenamos por fecha y hora para sacar la última exacta
+                        def get_dt(a):
+                            try: return datetime.strptime(f"{a['fecha']} {a['hora']}", "%d/%m/%Y %H:%M")
+                            except: return datetime(2000, 1, 1)
+                        admins_esta_med.sort(key=get_dt)
+                        ultima = admins_esta_med[-1]
+                        texto_ultima = f"🕒 **Última dosis administrada:** {ultima['fecha']} a las {ultima['hora']}hs *(Por: {ultima['firma']})*"
+                    else:
+                        texto_ultima = "🕒 **Última dosis administrada:** Aún no hay registros de administración para este ciclo."
+
+                    # Mostramos la caja visual que no se corta
+                    st.success(f"""
+**💊 {med_nombre}**
+* **Pauta:** {via} | {frecuencia}
+* **Período Indicado:** Del {f_ini.strftime('%d/%m/%Y')} al {f_fin.strftime('%d/%m/%Y')} (Duración: {dias_dur} días)
+* {texto_ultima}
+                    """)
             else:
                 st.info("✅ El paciente no tiene medicación activa indicada en este momento.")
 
@@ -885,34 +918,22 @@ with tabs[menu.index("💊 Recetas")]:
 
             # --- NUEVO: SÁBANA DE ENFERMERÍA (MAR) 24 HORAS ---
             st.divider()
-            st.markdown("#### 🩺 Sábana de Enfermería (MAR 24hs)")
-            st.info("💡 **Instrucciones:** En la tabla, hacé doble clic en la hora correspondiente para cambiar a **✅ (Dada)** o **❌ (No Dada)**. Si marcás la cruz roja, estás obligado a escribir el motivo en la columna de 'Justificación'. Deslizá la tabla hacia la derecha para ver todas las horas.")
+            st.markdown("#### 🩺 Sábana de Enfermería (MAR 24hs) - Registro de Hoy")
+            st.caption("Doble clic en la hora para marcar ✅ (Dada) o ❌ (No Dada). Justifique obligatoriamente las omisiones.")
 
             if activas:
                 fecha_hoy = ahora().strftime("%d/%m/%Y")
                 admin_hoy = [a for a in st.session_state.get("administracion_med_db", []) 
                              if a["paciente"] == paciente_sel and a["fecha"] == fecha_hoy]
                 
-                # Definir columnas de horas (00 a 23)
                 horas_cols = [f"{i:02d}hs" for i in range(24)]
                 
-                # Construir los datos para la tabla
                 data_mar = []
                 for r in activas:
-                    # Parsear la fecha de inicio y fin para mostrarla
-                    try: f_ini = datetime.strptime(r["fecha"], "%d/%m/%Y %H:%M:%S")
-                    except: f_ini = datetime.strptime(r["fecha"], "%d/%m/%Y %H:%M")
-                    
-                    dias_dur = r.get("dias_duracion", 30)
-                    f_fin = f_ini + timedelta(days=dias_dur)
-                    
-                    # Extraer droga, vía y frecuencia separando por los "|"
                     partes = r['med'].split(" | ")
                     med_nombre = partes[0].strip()
-                    via = partes[1].replace("Vía: ", "").strip() if len(partes) > 1 else ""
                     frecuencia = partes[2].strip() if len(partes) > 2 else ""
                     
-                    # Sugerencia visual de horarios según frecuencia
                     sugerencia = ""
                     texto_frec_lower = frecuencia.lower()
                     if "4 horas" in texto_frec_lower: sugerencia = " ⏰(00-04-08-12-16-20)"
@@ -922,16 +943,12 @@ with tabs[menu.index("💊 Recetas")]:
                     elif "24 horas" in texto_frec_lower: sugerencia = " ⏰(08)"
                     elif "dosis" in texto_frec_lower: sugerencia = " ⏰(Única)"
                     
-                    # Armar la pauta súper completa y clara
-                    str_pauta_completa = f"{med_nombre} | {via} | {frecuencia} | Del {f_ini.strftime('%d/%m')} al {f_fin.strftime('%d/%m')}{sugerencia}"
+                    # En la tabla ponemos nombre corto + sugerencia, porque el detalle ya está arriba
+                    fila = {"Medicación": f"{med_nombre}{sugerencia}"}
                     
-                    fila = {"📋 Medicación y Pauta": str_pauta_completa}
-                    
-                    # Inicializar horas vacías (con un guion)
                     for h in horas_cols: fila[h] = "➖"
-                    fila["Justificación (Si se omite)"] = ""
+                    fila["Motivo Omisión"] = ""
                     
-                    # Rellenar con los datos guardados de hoy
                     for a in admin_hoy:
                         if a["med"] == med_nombre:
                             hora_corta = a["hora"].split(":")[0] + "hs"
@@ -939,24 +956,20 @@ with tabs[menu.index("💊 Recetas")]:
                                 if a["estado"] == "✅ Realizada": fila[hora_corta] = "✅"
                                 elif a["estado"] in ["❌ No realizada", "⚠️ Suspendida"]: 
                                     fila[hora_corta] = "❌"
-                                    fila["Justificación (Si se omite)"] = a["motivo"]
+                                    fila["Motivo Omisión"] = a["motivo"]
                     
                     data_mar.append(fila)
                 
                 df_mar = pd.DataFrame(data_mar)
                 
-                # Configurar la tabla interactiva
                 column_config = {
-                    # Al poner width="large", evitamos que se apriete el texto
-                    "📋 Medicación y Pauta": st.column_config.TextColumn("📋 Medicación, Pauta y Fechas", disabled=True, width="large"),
-                    "Justificación (Si se omite)": st.column_config.TextColumn("Justificación (Si se omite)", width="medium")
+                    "Medicación": st.column_config.TextColumn("Medicación y Sugerencia", disabled=True, width="medium"),
+                    "Motivo Omisión": st.column_config.TextColumn("Motivo Omisión (Obligatorio si ❌)", width="medium")
                 }
-                # Poner el menú desplegable en cada columna de hora
                 for h in horas_cols:
                     column_config[h] = st.column_config.SelectboxColumn(h, options=["➖", "✅", "❌"], width="small")
                 
                 with st.form("form_mar_24"):
-                    # Renderizamos la sábana gigante editable
                     edited_df = st.data_editor(
                         df_mar, 
                         column_config=column_config, 
@@ -967,30 +980,26 @@ with tabs[menu.index("💊 Recetas")]:
                     if st.form_submit_button("💾 Guardar Sábana del Día", width="stretch"):
                         error_justificacion = False
                         
-                        # 1. Validar que no haya cruces rojas sin justificación ANTES de guardar
                         for index, row in edited_df.iterrows():
-                            justif = str(row["Justificación (Si se omite)"])
+                            justif = str(row["Motivo Omisión"])
                             for h in horas_cols:
                                 if row[h] == "❌" and (not justif.strip() or justif in ["None", "nan"]):
                                     error_justificacion = True
-                                    med_err = str(row["📋 Medicación y Pauta"]).split(" |")[0].strip()
-                                    st.error(f"🚨 Faltó justificar por qué NO le diste {med_err} a las {h}.")
+                                    med_err = str(row["Medicación"]).split(" ⏰")[0].strip()
+                                    st.error(f"🚨 LEGAL: Debe justificar clínicamente por qué no administró {med_err} a las {h}.")
                         
                         if not error_justificacion:
-                            # Sacamos los registros viejos de hoy para reemplazarlos limpios
                             st.session_state["administracion_med_db"] = [
                                 a for a in st.session_state.get("administracion_med_db", []) 
                                 if not (a["paciente"] == paciente_sel and a["fecha"] == fecha_hoy)
                             ]
                             
-                            # Rescatamos los previos para no borrar la firma de otro enfermero que haya pasado antes
                             registros_previos = {(a["med"], a["hora"]): a for a in admin_hoy}
                             
                             nuevos_registros = []
                             for index, row in edited_df.iterrows():
-                                # Rescatamos la droga pura separando por el primer "|"
-                                med_puro = str(row["📋 Medicación y Pauta"]).split(" |")[0].strip()
-                                justif = str(row["Justificación (Si se omite)"])
+                                med_puro = str(row["Medicación"]).split(" ⏰")[0].strip()
+                                justif = str(row["Motivo Omisión"])
                                 if justif in ["None", "nan"]: justif = ""
                                 
                                 for h in horas_cols:
@@ -1000,12 +1009,12 @@ with tabs[menu.index("💊 Recetas")]:
                                     
                                     if valor == "✅":
                                         if key in registros_previos and registros_previos[key]["estado"] == "✅ Realizada":
-                                            nuevos_registros.append(registros_previos[key]) # Mantiene firma original
+                                            nuevos_registros.append(registros_previos[key]) 
                                         else:
                                             nuevos_registros.append({"paciente": paciente_sel, "med": med_puro, "fecha": fecha_hoy, "hora": hora_db, "estado": "✅ Realizada", "motivo": "", "firma": user["nombre"]})
                                     elif valor == "❌":
                                         if key in registros_previos and registros_previos[key]["estado"] in ["❌ No realizada", "⚠️ Suspendida"] and registros_previos[key]["motivo"] == justif:
-                                            nuevos_registros.append(registros_previos[key]) # Mantiene firma original
+                                            nuevos_registros.append(registros_previos[key]) 
                                         else:
                                             nuevos_registros.append({"paciente": paciente_sel, "med": med_puro, "fecha": fecha_hoy, "hora": hora_db, "estado": "❌ No realizada", "motivo": justif, "firma": user["nombre"]})
                                             
