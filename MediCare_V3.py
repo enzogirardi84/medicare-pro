@@ -41,73 +41,51 @@ VADEMECUM_BASE = sorted([
     "Amlodipina 10mg", "Amlodipina 5mg", "Amoxicilina 500mg", "Amoxicilina 875mg", "Amoxicilina+Clavulánico 875/125mg", 
     "Ampicilina 1g ampolla", "Ampicilina+Sulbactam 1.5g ampolla", "Aspirina (AAS) 100mg", "Atenolol 50mg", "Atorvastatina 10mg", "Atorvastatina 20mg", "Azitromicina 500mg",
     
-    # FARMACOLOGÍA: B
+    # FARMACOLOGÍA: B - C
     "Baclofeno 10mg", "Beclometasona aerosol", "Betametasona ampolla", "Betametasona crema", "Bicalutamida 50mg", 
     "Bicarbonato de Sodio 1/6 M ampolla", "Bisacodilo 5mg", "Bisoprolol 2.5mg", "Bisoprolol 5mg", "Bromhexina jarabe", 
     "Budesonida aerosol", "Bupivacaína ampolla",
-    
-    # FARMACOLOGÍA: C
     "Carbonato de Calcio 500mg", "Captopril 25mg", "Carbamazepina 200mg", "Carvedilol 12.5mg", "Carvedilol 25mg", "Carvedilol 6.25mg", 
     "Cefalexina 500mg", "Cefalotina 1g ampolla", "Cefotaxima 1g ampolla", "Ceftriaxona 1g ampolla", "Celecoxib 200mg", 
     "Cetirizina 10mg", "Cilostazol 100mg", "Ciprofloxacina 500mg", "Citalopram 20mg", "Claritromicina 500mg", "Clindamicina 300mg", "Clindamicina 600mg ampolla",
     "Clobetasol crema", "Clonazepam 0.5mg", "Clonazepam 2mg", "Clopidogrel 75mg", "Clorpromazina 25mg", "Colchicina 1mg", "Complejo B ampolla",
     
-    # FARMACOLOGÍA: D
+    # FARMACOLOGÍA: D - H
     "Dapagliflozina 10mg", "Desloratadina 5mg", "Dexametasona 8mg ampolla", "Dexametasona comprimido", "Diazepam 10mg ampolla", "Diazepam 5mg comprimido", 
     "Diclofenac 50mg", "Diclofenac 75mg ampolla", "Difenhidramina 50mg ampolla", "Digoxina 0.25mg", "Diltiazem 60mg", 
     "Dipirona 1g ampolla", "Dipirona 500mg comprimido", "Dobutamina ampolla", "Domperidona 10mg", "Dopamina ampolla", 
     "Doxiciclina 100mg", "Duloxetina 30mg",
-    
-    # FARMACOLOGÍA: E - F
-    "Empagliflozina 10mg", "Enalapril 10mg", "Enalapril 5mg", "Enoxaparina 40mg jeringa prellenada", "Enoxaparina 60mg jeringa prellenada", 
+    "Empagliflozina 10mg", "Enalapril 10mg", "Enalapril 5mg", "Enoxaparina 40mg jeringa", "Enoxaparina 60mg jeringa", 
     "Escitalopram 10mg", "Espironolactona 25mg", "Espironolactona 50mg", "Ezetimibe 10mg",
     "Famotidina 20mg", "Fentanilo ampolla", "Finasteride 5mg", "Fluconazol 150mg", "Fluoxetina 20mg", "Fluticasona aerosol", 
     "Furosemida 20mg ampolla", "Furosemida 40mg comprimido",
-    
-    # FARMACOLOGÍA: G - H
     "Gabapentina 300mg", "Gentamicina 80mg ampolla", "Glibenclamida 5mg", "Glimepirida 2mg", "Glucagón ampolla",
     "Haloperidol 5mg ampolla", "Heparina Sódica ampolla", "Hidroclorotiazida 25mg", "Hidrocortisona 100mg ampolla", "Hidrocortisona 500mg ampolla", 
     "Hierro (Sulfato Ferroso)", "Hioscina (Buscapina) 10mg", "Hioscina Compuesta ampolla", "Hioscina Simple ampolla", "Hidroxicloroquina 200mg",
     
-    # FARMACOLOGÍA: I - K
+    # FARMACOLOGÍA: I - Z
     "Ibuprofeno 400mg", "Ibuprofeno 600mg", "Ibuprofeno jarabe", "Imipenem 500mg ampolla", 
     "Insulina Aspart", "Insulina Corriente (Regular)", "Insulina Detemir", "Insulina Glargina", "Insulina Lispro", "Insulina NPH", 
     "Ipratropio aerosol", "Ipratropio gotas (Nebulización)", "Irbesartán 150mg", "Isosorbide dinitrato 10mg",
     "Ketamina ampolla", "Ketoconazol crema", "Ketorolac 10mg comprimido", "Ketorolac 30mg ampolla", "Ketorolac 60mg ampolla",
-    
-    # FARMACOLOGÍA: L
     "Labetalol ampolla", "Lactulón jarabe", "Lamotrigina 50mg", "Lansoprazol 30mg", "Levetiracetam 500mg", 
     "Levofloxacina 500mg", "Levomepromazina 25mg", "Levotiroxina 100mcg", "Levotiroxina 50mcg", "Levotiroxina 75mcg", 
     "Lidocaína 2% ampolla", "Lidocaína jalea", "Linagliptina 5mg", "Loperamida 2mg", "Loratadina 10mg", 
     "Lorazepam 1mg", "Lorazepam 2mg", "Losartán 50mg",
-    
-    # FARMACOLOGÍA: M
     "Magnesio (Sulfato) ampolla", "Mebendazol 200mg", "Meloxicam 15mg", "Meropenem 1g ampolla", "Metadona 10mg", 
     "Metformina 500mg", "Metformina 850mg", "Metildopa 500mg", "Metilprednisolona 500mg ampolla", "Metoclopramida (Reliveran) 10mg", 
     "Metoclopramida ampolla", "Metoprolol 50mg", "Metronidazol 500mg", "Metronidazol sachet 500ml", "Midazolam 15mg ampolla", 
     "Mirtazapina 30mg", "Montelukast 10mg", "Morfina 10mg ampolla", "Mupirocina ungüento",
-    
-    # FARMACOLOGÍA: N - O
     "Naloxona ampolla", "Naproxeno 500mg", "Neomicina crema", "Nifedipina 10mg", "Nimodipina 30mg", 
     "Nitrofurantoína 100mg", "Nitroglicerina ampolla", "Noradrenalina ampolla",
     "Olanzapina 10mg", "Omeprazol 20mg", "Omeprazol 40mg ampolla", "Ondansetrón 8mg ampolla", "Oxígeno en tubo",
-    
-    # FARMACOLOGÍA: P - Q
     "Pantoprazol 40mg", "Paracetamol 1g", "Paracetamol 500mg", "Paroxetina 20mg", "Penicilina G Benzatínica 2.400.000 UI", 
     "Piperacilina+Tazobactam 4.5g ampolla", "Potasio (Cloruro) ampolla", "Pramipexol 1mg", "Prasugrel 10mg", "Pravastatina 20mg", 
     "Prednisona 20mg", "Pregabalina 75mg", "Prometazina ampolla", "Propanolol 40mg", "Quetiapina 25mg", "Quetiapina 100mg",
-    
-    # FARMACOLOGÍA: R - S
-    "Ramipril 5mg", "Ranitidina 150mg", "Ranitidina ampolla", "Risperidona 2mg", "Ritonavir", 
-    "Rivaroxabán 15mg", "Rosuvastatina 10mg", "Rosuvastatina 20mg",
-    "Salbutamol aerosol", "Salbutamol gotas (Nebulización)", "Sertralina 50mg", "Sildenafil 50mg", 
-    "Simvastatina 20mg", "Sitagliptina 50mg", "Sodio (Cloruro al 20%) ampolla", "Sucralfato",
-    
-    # FARMACOLOGÍA: T - Z
-    "Tamsulosina 0.4mg", "Telmisartán 40mg", "Tetraciclina 250mg", "Tirotricina", "Tobramicina gotas", 
-    "Topiramato 50mg", "Tramadol 50mg", "Tramadol ampolla",
-    "Valaciclovir 500mg", "Valsartán 80mg", "Vancomicina 1g ampolla", "Venlafaxina 75mg", "Verapamilo 80mg", 
-    "Vitamina B12 ampolla", "Vitamina K ampolla",
+    "Ramipril 5mg", "Ranitidina 150mg", "Ranitidina ampolla", "Risperidona 2mg", "Ritonavir", "Rivaroxabán 15mg", "Rosuvastatina 10mg", "Rosuvastatina 20mg",
+    "Salbutamol aerosol", "Salbutamol gotas (Nebulización)", "Sertralina 50mg", "Sildenafil 50mg", "Simvastatina 20mg", "Sitagliptina 50mg", "Sodio (Cloruro al 20%) ampolla", "Sucralfato",
+    "Tamsulosina 0.4mg", "Telmisartán 40mg", "Tetraciclina 250mg", "Tirotricina", "Tobramicina gotas", "Topiramato 50mg", "Tramadol 50mg", "Tramadol ampolla",
+    "Valaciclovir 500mg", "Valsartán 80mg", "Vancomicina 1g ampolla", "Venlafaxina 75mg", "Verapamilo 80mg", "Vitamina B12 ampolla", "Vitamina K ampolla",
     "Zolpidem 10mg", "Zopiclona 7.5mg"
 ])
 
@@ -134,7 +112,7 @@ except ImportError:
     GEO_DISPONIBLE = False
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="MediCare Enterprise PRO V10.0", page_icon="⚕️", layout="wide")
+st.set_page_config(page_title="MediCare Enterprise PRO V9.9", page_icon="⚕️", layout="wide")
 st.markdown("<html lang='es' translate='no'>", unsafe_allow_html=True)
 
 # --- ZONA HORARIA ARGENTINA ---
@@ -166,100 +144,52 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# --- 🎨 DISEÑO VISUAL ADAPTATIVO AVANZADO (CSS ENTERPRISE DARK) ---
+# --- 🎨 DISEÑO VISUAL Y OPTIMIZACIÓN MÓVIL (CSS) ---
 page_bg_css = """
 <style>
-/* --- BASE DEL TEMA: Ricos Grises Oscuros --- */
-:root {
-    --primary-color: #60a5fa; /* Azul Moderno Enterprise */
-    --background-color: #111827; /* Gris muy oscuro base (Rich Dark) */
-    --secondary-background-color: #1f2937; /* Gris intermedio para Cards/Formularios */
-    --text-color: #f3f4f6; /* Blanco suave para no cansar */
-    --font-stack: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-}
+/* 1. Bloquear recargas accidentales en celulares (Pull-to-refresh) */
+body { overscroll-behavior-y: none; }
 
-/* Base de la App */
+/* 2. Aceleración de Hardware para textos más fluidos */
+* { text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
+
+/* 3. Fondo Adaptativo Premium */
 .stApp {
     background-color: var(--background-color);
-    background-image: radial-gradient(at top left, rgba(96, 165, 250, 0.07), transparent 70%);
-    color: var(--text-color);
-    font-family: var(--font-stack);
+    background-image: radial-gradient(circle at top, var(--secondary-background-color) 0%, transparent 80%);
 }
 
-/* --- DEFINICIÓN DE BLOQUES (Forms, Tablas, Métricas) --- */
-div[data-testid="stForm"], .stDataFrame, div[data-testid="stMetric"], .stAlert {
-    background-color: var(--secondary-background-color) !important;
-    border: 1px solid rgba(229, 231, 235, 0.08) !important; 
-    border-radius: 16px !important; 
-    padding: 25px !important;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2) !important;
-    margin-bottom: 20px;
+/* 4. Contenedores Ultra-Livianos para la GPU del celular */
+div[data-testid="stForm"] {
+    background-color: var(--secondary-background-color);
+    border: 1px solid rgba(150, 150, 150, 0.2);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); /* Sombra suave y ligera */
 }
 
-/* Estilo para los títulos (Subheaders) */
-.stHeader, h1, h2, h3 {
-    font-weight: 700 !important;
-    color: var(--text-color) !important;
-    letter-spacing: -0.5px;
+/* 5. Botones Optimizados para Dedos (Touch Targets grandes) */
+.stButton>button {
+    min-height: 48px; /* Más fáciles de tocar con el pulgar */
+    border-radius: 10px;
+    transition: transform 0.1s ease; /* Efecto rebote nativo */
 }
-h3 {
-    border-bottom: 2px solid var(--primary-color);
-    padding-bottom: 5px;
-    display: inline-block;
-    margin-bottom: 15px;
+.stButton>button:active {
+    transform: scale(0.95);
 }
 
-/* --- ESTILO DE INPUTS (Campos de Tipeo) --- */
-.stTextInput input, .stNumberInput input, .stSelectbox [data-baseweb="select"], .stTextArea textarea {
-    border-radius: 10px !important;
-    border: 1px solid rgba(229, 231, 235, 0.15) !important;
-    background-color: #111827 !important; 
-    color: var(--text-color) !important;
-    transition: all 0.2s ease;
-}
-.stTextInput input:focus, .stNumberInput input:focus, .stTextArea textarea:focus {
-    border-color: var(--primary-color) !important;
-    box-shadow: 0 0 0 1px var(--primary-color) !important;
-}
+/* Esconder flechitas de números */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
 
-/* --- ALERTAS (Alerta Roja, Success) --- */
-.stAlert {
-    border: none !important;
-}
-div[data-testid="stAlert"] { 
-    border-left: 5px solid #ef4444 !important; 
-}
-div[data-testid="stAlert"].stAlert[data-baseweb="alert"] { 
-    border-left: 5px solid #34d399 !important; 
-}
-
-/* --- BOTONES --- */
-.stButton > button {
-    border-radius: 10px !important;
-    border: none !important;
-    transition: transform 0.1s ease, background-color 0.2s ease;
-    font-weight: 600 !important;
-    margin-top: 10px;
-}
-.stButton > button:active {
-    transform: scale(0.98); 
-}
-
-/* BOTÓN WHATSAPP EG (Estilo Premium) */
+/* Botón de WhatsApp nativo */
 .wa-btn {
     display: block; width: 100%; text-align: center; background-color: #25D366; 
-    color: white !important; padding: 12px; border-radius: 12px; font-weight: bold; text-decoration: none;
-    margin: 15px 0; border: 1px solid transparent;
-    transition: all 0.3s;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+    color: white !important; padding: 12px; border-radius: 10px; font-weight: bold; text-decoration: none;
+    margin-top: 10px; margin-bottom: 10px;
 }
-.wa-btn:hover { background-color: #1c9d4b; box-shadow: 0 6px 8px rgba(0,0,0,0.2); }
-
-/* --- OCULTAR DECORACIÓN ESTÁNDAR --- */
-[data-testid="stDecoration"] {
-    background-image: none !important;
-    background-color: transparent !important;
-}
+.wa-btn:hover { background-color: #128C7E; }
 </style>
 """
 st.markdown(page_bg_css, unsafe_allow_html=True)
@@ -299,7 +229,7 @@ def guardar_datos():
         "indicaciones_db", "turnos_db", "evoluciones_db", "facturacion_db", "logs_db", 
         "balance_db", "pediatria_db", "fotos_heridas_db",
         "agenda_db", "checkin_db", "inventario_db", "consumos_db", "nomenclador_db", "firmas_tactiles_db",
-        "reportes_diarios_db", "estudios_db" # SE AGREGÓ ESTUDIOS A LA NUBE
+        "reportes_diarios_db"
     ]
     data = {k: st.session_state[k] for k in claves if k in st.session_state}
     try:
@@ -316,7 +246,7 @@ if "db_inicializada" not in st.session_state:
         "pacientes_db": [], "detalles_pacientes_db": {}, "vitales_db": [], "indicaciones_db": [], "turnos_db": [], 
         "evoluciones_db": [], "facturacion_db": [], "logs_db": [], "balance_db": [], "pediatria_db": [], "fotos_heridas_db": [],
         "agenda_db": [], "checkin_db": [], "inventario_db": [], "consumos_db": [], "nomenclador_db": [], "firmas_tactiles_db": [],
-        "reportes_diarios_db": [], "estudios_db": [] # SE AGREGÓ ESTUDIOS A LA BASE LOCAL
+        "reportes_diarios_db": []
     }
     if db:
         for k, v in db.items(): st.session_state[k] = v
@@ -331,7 +261,7 @@ if "logeado" not in st.session_state: st.session_state["logeado"] = False
 if not st.session_state["logeado"]:
     _, col, _ = st.columns([1,1.5,1])
     with col:
-        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V10.0</h2>", unsafe_allow_html=True)
+        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V9.9</h2>", unsafe_allow_html=True)
         tab_login, tab_recuperar = st.tabs(["🔑 Iniciar Sesión", "🆘 Olvidé mi Contraseña"])
         with tab_login:
             with st.form("login", clear_on_submit=True):
@@ -430,7 +360,7 @@ with st.sidebar:
     if st.button("Cerrar Sesión", width="stretch"): st.session_state["logeado"] = False; st.rerun()
 
 # --- MENU DINÁMICO ---
-menu = ["📍 Visitas y Agenda", "👤 Admisión", "📊 Clínica", "👶 Pediatría", "📝 Evolución", "📎 Estudios", "💉 Materiales", "💊 Recetas", "⚖️ Balance", "📦 Inventario", "💳 Caja", "📚 Historial", "🗄️ PDF"]
+menu = ["📍 Visitas y Agenda", "👤 Admisión", "📊 Clínica", "👶 Pediatría", "📝 Evolución", "💉 Materiales", "💊 Recetas", "⚖️ Balance", "📦 Inventario", "💳 Caja", "📚 Historial", "🗄️ PDF"]
 
 if rol in ["SuperAdmin", "Coordinador"]: 
     menu.insert(1, "📈 Dashboard") 
@@ -527,7 +457,7 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
                 st.caption("Próximas visitas agendadas para este paciente:")
                 st.dataframe(pd.DataFrame(agenda_mia).drop(columns=["empresa", "paciente"]).tail(3), use_container_width=True)
 
-# 2. DASHBOARD (SOLO VISIBLE PARA ADMIN/COORDINADOR)
+# 2. DASHBOARD
 if "📈 Dashboard" in menu:
     with tabs[menu.index("📈 Dashboard")]:
         st.markdown(f"<h3 style='color: #3b82f6;'>📈 Panel de Gestión - {mi_empresa}</h3>", unsafe_allow_html=True)
@@ -657,72 +587,7 @@ with tabs[menu.index("📝 Evolución")]:
                         st.session_state["fotos_heridas_db"].append({"paciente": paciente_sel, "fecha": fecha_n, "descripcion": desc_w, "base64_foto": base64_foto, "firma": user["nombre"]})
                     guardar_datos(); st.rerun()
 
-# 7. ESTUDIOS COMPLEMENTARIOS (NUEVO)
-with tabs[menu.index("📎 Estudios")]:
-    if paciente_sel:
-        st.subheader("📎 Cargar Estudio Complementario")
-        with st.form("form_estudios", clear_on_submit=True):
-            c_est1, c_est2 = st.columns([2, 1])
-            tipo_estudio = c_est1.text_input("Descripción del Estudio (Ej: Laboratorio Sangre, Rx Tórax, Epicrisis)")
-            fecha_estudio = c_est2.date_input("Fecha de realización del estudio")
-            
-            archivo_subido = st.file_uploader("Adjuntar Archivo (Soporta PDF o Imágenes)", type=['pdf', 'png', 'jpg', 'jpeg'])
-            
-            if st.form_submit_button("Guardar Estudio en Legajo", width="stretch"):
-                if tipo_estudio and archivo_subido:
-                    bytes_data = archivo_subido.getvalue()
-                    b64_encoded = base64.b64encode(bytes_data).decode('utf-8')
-                    extension = archivo_subido.name.split('.')[-1].lower()
-                    
-                    st.session_state["estudios_db"].append({
-                        "paciente": paciente_sel,
-                        "tipo": tipo_estudio.strip(),
-                        "fecha_realizacion": fecha_estudio.strftime("%d/%m/%Y"),
-                        "fecha_carga": ahora().strftime("%d/%m/%Y %H:%M"),
-                        "firma": user["nombre"],
-                        "archivo_b64": b64_encoded,
-                        "extension": extension
-                    })
-                    guardar_datos()
-                    st.success("✅ Estudio encriptado y guardado en la historia clínica del paciente.")
-                    st.rerun()
-                else:
-                    st.warning("⚠️ Debes ponerle un nombre al estudio y adjuntar un archivo válido.")
-
-        st.divider()
-        st.subheader("🗂️ Archivo Histórico de Estudios")
-        
-        estudios_pac = [e for e in st.session_state.get("estudios_db", []) if e.get("paciente") == paciente_sel]
-        
-        if estudios_pac:
-            filtro_estudio = st.text_input("🔍 Filtrar estudios (por nombre, fecha, etc.):")
-            if filtro_estudio:
-                estudios_pac = [e for e in estudios_pac if filtro_estudio.lower() in e['tipo'].lower() or filtro_estudio in e['fecha_realizacion']]
-            
-            if estudios_pac:
-                for i, est in enumerate(reversed(estudios_pac)):
-                    with st.expander(f"📄 {est['fecha_realizacion']} - {est['tipo']}", expanded=False):
-                        st.caption(f"Subido al sistema por {est['firma']} el {est.get('fecha_carga', '')}")
-                        archivo_bytes = base64.b64decode(est['archivo_b64'])
-                        mime_type = "application/pdf" if est['extension'] == 'pdf' else f"image/{est['extension']}"
-                        
-                        c_dl1, c_dl2 = st.columns([1, 3])
-                        c_dl1.download_button(
-                            label="📥 Descargar Archivo original",
-                            data=archivo_bytes,
-                            file_name=f"{est['tipo'].replace(' ', '_')}_{est['fecha_realizacion'].replace('/','-')}.{est['extension']}",
-                            mime=mime_type,
-                            key=f"dl_est_{est.get('fecha_carga', i)}_{i}"
-                        )
-                        
-                        if est['extension'] in ['jpg', 'jpeg', 'png']:
-                            c_dl2.image(archivo_bytes, caption=est['tipo'], use_container_width=True)
-            else:
-                st.info("No se encontraron estudios que coincidan con tu búsqueda.")
-        else:
-            st.info("El paciente no tiene estudios complementarios cargados aún.")
-
-# 8. MATERIALES Y DESCARTABLES
+# 7. MATERIALES Y DESCARTABLES
 with tabs[menu.index("💉 Materiales")]:
     if paciente_sel:
         st.subheader("Registro de Materiales Descartables")
@@ -754,10 +619,9 @@ with tabs[menu.index("💉 Materiales")]:
             st.caption("Últimos materiales registrados:")
             st.dataframe(pd.DataFrame(cons_paciente).drop(columns=["paciente", "empresa"], errors='ignore'), use_container_width=True)
 
-# 9. RECETAS 
+# 8. RECETAS (CON FRECUENCIA INCORPORADA)
 with tabs[menu.index("💊 Recetas")]:
     if paciente_sel:
-        st.subheader("✍️ Cargar Nueva Indicación Médica")
         with st.form("recet", clear_on_submit=True):
             c_rec1, c_rec2 = st.columns([2, 1])
             lista_vademecum_receta = ["-- Seleccionar del Vademécum --"] + VADEMECUM_BASE
@@ -774,52 +638,15 @@ with tabs[menu.index("💊 Recetas")]:
             
             f = c_rec5.number_input("Días", min_value=1, max_value=90, value=7)
             
-            st.markdown("##### 👨‍⚕️ Datos del Médico Prescriptor (Firma Legal)")
-            c_med1, c_med2 = st.columns(2)
-            doc_nombre = c_med1.text_input("Nombre y Apellido:", value=user["nombre"])
-            doc_mat = c_med2.text_input("Matrícula (Ej: MP 12345):", value=user.get("matricula", ""))
-            
             if st.form_submit_button("Cargar Terapéutica", width="stretch"):
                 med_final = med_manual.strip().title() if med_manual.strip() else med_vademecum
                 
                 if med_final and med_final != "-- Seleccionar del Vademécum --":
                     texto_receta = f"{med_final} | Vía: {p} | {frec} | Durante {f} días."
-                    firma_legal = f"{doc_nombre.strip()} (Mat: {doc_mat.strip()})"
-                    
-                    st.session_state["indicaciones_db"].append({
-                        "paciente": paciente_sel, 
-                        "med": texto_receta, 
-                        "fecha": ahora().strftime("%d/%m/%Y %H:%M"), 
-                        "firma": firma_legal
-                    })
+                    st.session_state["indicaciones_db"].append({"paciente": paciente_sel, "med": texto_receta, "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
                     guardar_datos(); st.rerun()
 
-        st.divider()
-        st.subheader("📋 Plan Terapéutico Activo (Modificar / Suspender)")
-        
-        ind_paciente = [i for i in st.session_state["indicaciones_db"] if i["paciente"] == paciente_sel]
-        
-        if ind_paciente:
-            df_ind = pd.DataFrame(ind_paciente)
-            st.dataframe(df_ind[["fecha", "med", "firma"]].rename(columns={"fecha": "Fecha", "med": "Indicación", "firma": "Médico Prescriptor"}), use_container_width=True)
-            
-            st.write("¿El médico modificó o suspendió alguna medicación?")
-            c_del1, c_del2 = st.columns([3, 1])
-            opciones_del = [f"[{i['fecha']}] {i['med']}" for i in ind_paciente]
-            ind_a_borrar = c_del1.selectbox("Seleccionar indicación para SUSPENDER:", opciones_del)
-            
-            if c_del2.button("🛑 Suspender Medicación", use_container_width=True):
-                for i in st.session_state["indicaciones_db"]:
-                    if i["paciente"] == paciente_sel and f"[{i['fecha']}] {i['med']}" == ind_a_borrar:
-                        st.session_state["indicaciones_db"].remove(i)
-                        break
-                guardar_datos()
-                st.success("✅ Medicación suspendida y eliminada del plan activo.")
-                st.rerun()
-        else:
-            st.info("El paciente no tiene medicación activa en este momento.")
-
-# 10. BALANCE HÍDRICO
+# 9. BALANCE HÍDRICO
 with tabs[menu.index("⚖️ Balance")]:
     if paciente_sel:
         with st.form("bal", clear_on_submit=True):
@@ -831,7 +658,7 @@ with tabs[menu.index("⚖️ Balance")]:
                 st.session_state["balance_db"].append({"paciente": paciente_sel, "ingresos": ting, "egresos": tegr, "balance": bal, "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
                 guardar_datos(); st.rerun()
 
-# 11. INVENTARIO 
+# 10. INVENTARIO 
 with tabs[menu.index("📦 Inventario")]:
     inv_mio = [i for i in st.session_state["inventario_db"] if i["empresa"] == mi_empresa]
     if inv_mio:
@@ -890,7 +717,7 @@ with tabs[menu.index("📦 Inventario")]:
             st.session_state["inventario_db"] = [i for i in st.session_state["inventario_db"] if not (i["item"] == del_item and i["empresa"] == mi_empresa)]
             guardar_datos(); st.rerun()
 
-# 12. CAJA
+# 11. CAJA
 with tabs[menu.index("💳 Caja")]:
     if paciente_sel:
         with st.form("caja_form", clear_on_submit=True):
@@ -923,7 +750,7 @@ with tabs[menu.index("💳 Caja")]:
             with pd.ExcelWriter(output, engine='openpyxl') as writer: df_caja_filtrada.drop(columns="empresa", errors='ignore').to_excel(writer, index=False, sheet_name='Caja_MediCare')
             st.download_button("📥 DESCARGAR RESULTADOS A EXCEL", data=output.getvalue(), file_name=f"Caja_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# 13. HISTORIAL COMPLETO 
+# 12. HISTORIAL COMPLETO (CONTENEDORES CON SCROLL MÓVIL)
 with tabs[menu.index("📚 Historial")]:
     if paciente_sel:
         estado_badge = "🗄️ [ARCHIVADO DE ALTA]" if st.session_state["detalles_pacientes_db"].get(paciente_sel, {}).get("estado") == "De Alta" else ""
@@ -949,7 +776,9 @@ with tabs[menu.index("📚 Historial")]:
         with st.expander("📝 Procedimientos y Evoluciones"):
             evs = [x for x in st.session_state["evoluciones_db"] if x["paciente"] == paciente_sel]
             if evs:
-                for e in reversed(evs[-limite:]): st.info(f"📅 **{e['fecha']}** | {e['firma']}\n\n{e['nota']}")
+                # Contenedor móvil con altura fija
+                with st.container(height=350):
+                    for e in reversed(evs[-limite:]): st.info(f"📅 **{e['fecha']}** | {e['firma']}\n\n{e['nota']}")
             else: st.write("No hay evoluciones médicas cargadas.")
             
         with st.expander("💉 Materiales Utilizados"):
@@ -960,9 +789,11 @@ with tabs[menu.index("📚 Historial")]:
         with st.expander("📸 Registro de Heridas"):
             fot_her = [x for x in st.session_state["fotos_heridas_db"] if x["paciente"] == paciente_sel]
             if fot_her:
-                for fh in reversed(fot_her[-limite:]):
-                    st.success(f"📅 **{fh['fecha']}** | {fh['firma']}\n\nDescripción: {fh['descripcion']}")
-                    st.image(base64.b64decode(fh['base64_foto']), caption=f"Herida: {fh['descripcion']}")
+                # Contenedor móvil con altura fija
+                with st.container(height=450):
+                    for fh in reversed(fot_her[-limite:]):
+                        st.success(f"📅 **{fh['fecha']}** | {fh['firma']}\n\nDescripción: {fh['descripcion']}")
+                        st.image(base64.b64decode(fh['base64_foto']), caption=f"Herida: {fh['descripcion']}")
             else: st.write("No hay registro fotográfico.")
             
         with st.expander("📊 Signos Vitales"):
@@ -986,10 +817,12 @@ with tabs[menu.index("📚 Historial")]:
         with st.expander("💊 Plan Terapéutico (Recetas)"):
             recs = [x for x in st.session_state["indicaciones_db"] if x["paciente"] == paciente_sel]
             if recs:
-                for r in reversed(recs[-limite:]): st.success(f"📌 **{r['fecha']}** | Indicado por: **{r['firma']}**\n\n{r['med']}")
+                # Contenedor móvil con altura fija
+                with st.container(height=350):
+                    for r in reversed(recs[-limite:]): st.success(f"📌 **{r['fecha']}** | Indicado por: **{r['firma']}**\n\n{r['med']}")
             else: st.write("No hay terapéutica indicada.")
 
-# 14. PDF 
+# 13. PDF 
 with tabs[menu.index("🗄️ PDF")]:
     if paciente_sel and FPDF_DISPONIBLE:
         def t(txt): return str(txt).replace('⚖️', '').replace('⚠️', '').replace('📌', '').replace('📅', '').replace('📸', '').replace('🗄️', '').encode('latin-1', 'replace').decode('latin-1')
@@ -1000,7 +833,7 @@ with tabs[menu.index("🗄️ PDF")]:
             pdf.line(21, 14, 21, 28); pdf.line(14, 21, 28, 21)
             emp_paciente = st.session_state["detalles_pacientes_db"].get(p, {}).get("empresa", mi_empresa)
             pdf.set_font("Arial", 'B', 16); pdf.set_xy(38, 14); pdf.cell(0, 10, t(emp_paciente), ln=True)
-            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V10.0)"), ln=True); pdf.ln(15)
+            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V9.9)"), ln=True); pdf.ln(15)
             
             det = st.session_state["detalles_pacientes_db"].get(p, {})
             estado_texto = " [ARCHIVADO/ALTA]" if det.get("estado") == "De Alta" else ""
@@ -1104,7 +937,7 @@ Asimismo, entiendo que los registros clinicos seran resguardados en formato digi
         st.download_button("📥 1. Generar Historia Clínica en PDF", crear_pdf_pro(paciente_sel), f"HC_{paciente_sel}.pdf", "application/pdf")
         st.download_button("📄 2. Descargar Consentimiento Informado Legal", crear_consentimiento_pdf(paciente_sel), f"Consentimiento_{paciente_sel}.pdf", "application/pdf")
 
-# 15. CIERRE DIARIO Y REPORTES DE STOCK (SOLO VISIBLE PARA ADMIN/COORDINADOR)
+# 14. CIERRE DIARIO Y REPORTES DE STOCK (SOLO VISIBLE PARA ADMIN/COORDINADOR)
 if "📑 Cierre Diario" in menu:
     with tabs[menu.index("📑 Cierre Diario")]:
         st.subheader("📑 Conciliación y Cierre Diario de Operaciones")
@@ -1215,7 +1048,7 @@ if "📑 Cierre Diario" in menu:
         else:
             st.write("Aún no hay reportes de cierre diario guardados.")
 
-# 16. EQUIPO Y SUSCRIPCIONES (SOLO VISIBLE PARA ADMIN/COORDINADOR)
+# 15. EQUIPO Y SUSCRIPCIONES (SOLO VISIBLE PARA ADMIN/COORDINADOR)
 if "⚙️ Mi Equipo" in menu:
     with tabs[menu.index("⚙️ Mi Equipo")]:
         st.subheader(f"Gestión de Personal - {mi_empresa}")
@@ -1241,7 +1074,7 @@ if "⚙️ Mi Equipo" in menu:
                 elif d.get("estado", "Activo") != "Activo" and c2.button("▶️ Reactivar", key=f"reac_{u}"): st.session_state["usuarios_db"][u]["estado"] = "Activo"; guardar_datos(); st.rerun()
             if c3.button("❌ Bajar", key=f"del_{u}"): del st.session_state["usuarios_db"][u]; guardar_datos(); st.rerun()
 
-# 17. AUDITORÍA (SOLO VISIBLE PARA ADMIN/COORDINADOR)
+# 16. AUDITORÍA (SOLO VISIBLE PARA ADMIN/COORDINADOR)
 if "🕵️ Auditoría" in menu:
     with tabs[menu.index("🕵️ Auditoría")]:
         st.subheader("Auditoría General de Movimientos")
@@ -1305,4 +1138,4 @@ if "🕵️ Auditoría" in menu:
         else:
             st.error("Librería FPDF no disponible. Instalar para generar reportes.")
 
-# --- FIN DEL SISTEMA MEDICARE PRO V10.0 ---
+# --- FIN DEL SISTEMA MEDICARE PRO V9.9 ---
