@@ -765,7 +765,7 @@ with tabs[menu.index("💉 Materiales")]:
             st.caption("Últimos materiales registrados:")
             st.dataframe(pd.DataFrame(cons_paciente).drop(columns=["paciente", "empresa"], errors='ignore'), use_container_width=True)
 
-# 8. RECETAS (CON GESTIÓN Y EDICIÓN DE PLAN TERAPÉUTICO)
+# 8. RECETAS (CON GESTIÓN Y ANTI-COLAPSO)
 with tabs[menu.index("💊 Recetas")]:
     if paciente_sel:
         st.subheader("Gestión del Plan Terapéutico")
@@ -790,25 +790,23 @@ with tabs[menu.index("💊 Recetas")]:
                 
                 if med_final and med_final != "-- Seleccionar del Vademécum --":
                     texto_receta = f"{med_final} | Vía: {p} | {frec} | Durante {f} días."
-                    # Agregamos segundos a la fecha para que cada registro sea único al modificar
                     st.session_state["indicaciones_db"].append({"paciente": paciente_sel, "med": texto_receta, "fecha": ahora().strftime("%d/%m/%Y %H:%M:%S"), "firma": user["nombre"]})
                     guardar_datos(); st.rerun()
 
-        # --- NUEVO: LISTADO Y GESTIÓN DE RECETAS ACTUALES ---
         recs_paciente = [r for r in st.session_state.get("indicaciones_db", []) if r["paciente"] == paciente_sel]
         
         if recs_paciente:
             st.divider()
             st.markdown("#### 📋 Plan Terapéutico Vigente")
             
-            # Mostrar las recetas en cajitas de información
-            for r in reversed(recs_paciente):
-                st.info(f"💊 **{r['fecha']}** | {r['med']} *(Por: {r.get('firma', 'S/D')})*")
+            # --- NUEVO: CAJA CON SCROLL (ANTI-COLAPSO) ---
+            with st.container(height=280):
+                for r in reversed(recs_paciente):
+                    st.info(f"💊 **{r['fecha']}** | {r['med']} *(Por: {r.get('firma', 'S/D')})*")
             
             st.markdown("#### ⚙️ Modificar o Suspender Indicación")
             c_ed1, c_ed2 = st.columns([3, 2])
             
-            # Armamos las opciones para que el usuario elija cuál modificar/borrar
             opciones_recetas = [f"[{r['fecha']}] {r['med']}" for r in recs_paciente]
             receta_seleccionada = c_ed1.selectbox("Seleccionar indicación a gestionar:", opciones_recetas)
             
@@ -816,7 +814,6 @@ with tabs[menu.index("💊 Recetas")]:
             
             nuevo_texto_receta = ""
             if accion_receta == "Editar indicación":
-                # Extraer el texto original para ponerlo de predeterminado en la caja de texto
                 texto_original = receta_seleccionada.split("] ")[1]
                 nuevo_texto_receta = st.text_input("Modificar detalle (Dosis, días, etc.):", value=texto_original)
             
