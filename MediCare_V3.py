@@ -755,9 +755,10 @@ with tabs[menu.index("💉 Materiales")]:
             st.caption("Últimos materiales registrados:")
             st.dataframe(pd.DataFrame(cons_paciente).drop(columns=["paciente", "empresa"], errors='ignore'), use_container_width=True)
 
-# 8. RECETAS 
+# 8. RECETAS (CON GESTIÓN Y EDICIÓN DE PLAN TERAPÉUTICO)
 with tabs[menu.index("💊 Recetas")]:
     if paciente_sel:
+        st.subheader("Gestión del Plan Terapéutico")
         with st.form("recet", clear_on_submit=True):
             c_rec1, c_rec2 = st.columns([2, 1])
             lista_vademecum_receta = ["-- Seleccionar del Vademécum --"] + VADEMECUM_BASE
@@ -774,13 +775,51 @@ with tabs[menu.index("💊 Recetas")]:
             
             f = c_rec5.number_input("Días", min_value=1, max_value=90, value=7)
             
-            if st.form_submit_button("Cargar Terapéutica", width="stretch"):
+            if st.form_submit_button("➕ Cargar Nueva Terapéutica", width="stretch"):
                 med_final = med_manual.strip().title() if med_manual.strip() else med_vademecum
                 
                 if med_final and med_final != "-- Seleccionar del Vademécum --":
                     texto_receta = f"{med_final} | Vía: {p} | {frec} | Durante {f} días."
-                    st.session_state["indicaciones_db"].append({"paciente": paciente_sel, "med": texto_receta, "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
+                    # Agregamos segundos a la fecha para que cada registro sea único al modificar
+                    st.session_state["indicaciones_db"].append({"paciente": paciente_sel, "med": texto_receta, "fecha": ahora().strftime("%d/%m/%Y %H:%M:%S"), "firma": user["nombre"]})
                     guardar_datos(); st.rerun()
+
+        # --- NUEVO: LISTADO Y GESTIÓN DE RECETAS ACTUALES ---
+        recs_paciente = [r for r in st.session_state.get("indicaciones_db", []) if r["paciente"] == paciente_sel]
+        
+        if recs_paciente:
+            st.divider()
+            st.markdown("#### 📋 Plan Terapéutico Vigente")
+            
+            # Mostrar las recetas en cajitas de información
+            for r in reversed(recs_paciente):
+                st.info(f"💊 **{r['fecha']}** | {r['med']} *(Por: {r.get('firma', 'S/D')})*")
+            
+            st.markdown("#### ⚙️ Modificar o Suspender Indicación")
+            c_ed1, c_ed2 = st.columns([3, 2])
+            
+            # Armamos las opciones para que el usuario elija cuál modificar/borrar
+            opciones_recetas = [f"[{r['fecha']}] {r['med']}" for r in recs_paciente]
+            receta_seleccionada = c_ed1.selectbox("Seleccionar indicación a gestionar:", opciones_recetas)
+            
+            accion_receta = c_ed2.selectbox("Acción a realizar:", ["Suspender / Eliminar", "Editar indicación"])
+            
+            nuevo_texto_receta = ""
+            if accion_receta == "Editar indicación":
+                # Extraer el texto original para ponerlo de predeterminado en la caja de texto
+                texto_original = receta_seleccionada.split("] ")[1]
+                nuevo_texto_receta = st.text_input("Modificar detalle (Dosis, días, etc.):", value=texto_original)
+            
+            if st.button("Aplicar Cambios en Terapéutica", use_container_width=True):
+                for r in st.session_state["indicaciones_db"]:
+                    if r["paciente"] == paciente_sel and f"[{r['fecha']}] {r['med']}" == receta_seleccionada:
+                        if accion_receta == "Suspender / Eliminar":
+                            st.session_state["indicaciones_db"].remove(r)
+                        elif accion_receta == "Editar indicación" and nuevo_texto_receta:
+                            r["med"] = nuevo_texto_receta
+                        break
+                guardar_datos()
+                st.rerun()
 
 # 9. BALANCE HÍDRICO
 with tabs[menu.index("⚖️ Balance")]:
