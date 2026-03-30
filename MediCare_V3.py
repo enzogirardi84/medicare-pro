@@ -14,9 +14,8 @@ import tempfile
 from PIL import Image
 import altair as alt
 
-# --- VADEMÉCUM GLOBAL MASIVO (MÁS DE 400 INSUMOS Y FÁRMACOS ORDENADOS) ---
+# --- VADEMÉCUM GLOBAL MASIVO ---
 VADEMECUM_BASE = sorted([
-    # DESCARTABLES, SUEROS E INSUMOS GENERALES
     "Abocath 14G", "Abocath 16G", "Abocath 18G", "Abocath 20G", "Abocath 22G", "Abocath 24G", 
     "Agua Bi-destilada ampolla 5ml", "Agua Oxigenada 10 vol", "Aguja 15/5", "Aguja 25/8", "Aguja 40/8", "Aguja 50/8",
     "Alcohol 70%", "Alcohol 96%", "Alcohol en gel", "Algodón paquete", "Apósito hidrocoloide", "Apósito transparente",
@@ -33,37 +32,25 @@ VADEMECUM_BASE = sorted([
     "Ringer Lactato 500ml", "Solución Fisiológica 0.9% 100ml", "Solución Fisiológica 0.9% 250ml", "Solución Fisiológica 0.9% 500ml", 
     "Sonda de Aspiración N° 10", "Sonda de Aspiración N° 14", "Sonda Foley N° 14 (2 vías)", "Sonda Foley N° 16 (2 vías)", "Sonda Foley N° 18 (2 vías)", "Sonda Foley N° 20 (3 vías)",
     "Tegaderm 10x12", "Tegaderm 6x7", "Tubo endotraqueal", "Venda de Cambric 10cm", "Venda elástica 10cm", "Venda elástica 15cm",
-
-    # FARMACOLOGÍA: A
     "Acenocumarol (Sintrom) 4mg", "Aciclovir 400mg", "Aciclovir crema", "Ácido Ascórbico (Vit C) 1g", "Ácido Fólico 5mg", "Ácido Tranexámico ampolla", "Ácido Valproico 500mg",
     "Adenosina 6mg ampolla", "Adrenalina (Epinefrina) 1mg ampolla", "Albendazol 400mg", "Alopurinol 100mg", "Alopurinol 300mg", 
     "Alprazolam 0.5mg", "Alprazolam 1mg", "Alprazolam 2mg", "Amiodarona 200mg", "Amiodarona 150mg ampolla", "Amitriptilina 25mg", 
     "Amlodipina 10mg", "Amlodipina 5mg", "Amoxicilina 500mg", "Amoxicilina 875mg", "Amoxicilina+Clavulánico 875/125mg", 
     "Ampicilina 1g ampolla", "Ampicilina+Sulbactam 1.5g ampolla", "Aspirina (AAS) 100mg", "Atenolol 50mg", "Atorvastatina 10mg", "Atorvastatina 20mg", "Azitromicina 500mg",
-    
-    # FARMACOLOGÍA: B - C
     "Baclofeno 10mg", "Beclometasona aerosol", "Betametasona ampolla", "Betametasona crema", "Bicalutamida 50mg", 
     "Bicarbonato de Sodio 1/6 M ampolla", "Bisacodilo 5mg", "Bisoprolol 2.5mg", "Bisoprolol 5mg", "Bromhexina jarabe", 
-    "Budesonida aerosol", "Bupivacaína ampolla",
-    "Carbonato de Calcio 500mg", "Captopril 25mg", "Carbamazepina 200mg", "Carvedilol 12.5mg", "Carvedilol 25mg", "Carvedilol 6.25mg", 
+    "Budesonida aerosol", "Bupivacaína ampolla", "Carbonato de Calcio 500mg", "Captopril 25mg", "Carbamazepina 200mg", "Carvedilol 12.5mg", "Carvedilol 25mg", "Carvedilol 6.25mg", 
     "Cefalexina 500mg", "Cefalotina 1g ampolla", "Cefotaxima 1g ampolla", "Ceftriaxona 1g ampolla", "Celecoxib 200mg", 
     "Cetirizina 10mg", "Cilostazol 100mg", "Ciprofloxacina 500mg", "Citalopram 20mg", "Claritromicina 500mg", "Clindamicina 300mg", "Clindamicina 600mg ampolla",
     "Clobetasol crema", "Clonazepam 0.5mg", "Clonazepam 2mg", "Clopidogrel 75mg", "Clorpromazina 25mg", "Colchicina 1mg", "Complejo B ampolla",
-    
-    # FARMACOLOGÍA: D - H
     "Dapagliflozina 10mg", "Desloratadina 5mg", "Dexametasona 8mg ampolla", "Dexametasona comprimido", "Diazepam 10mg ampolla", "Diazepam 5mg comprimido", 
     "Diclofenac 50mg", "Diclofenac 75mg ampolla", "Difenhidramina 50mg ampolla", "Digoxina 0.25mg", "Diltiazem 60mg", 
     "Dipirona 1g ampolla", "Dipirona 500mg comprimido", "Dobutamina ampolla", "Domperidona 10mg", "Dopamina ampolla", 
-    "Doxiciclina 100mg", "Duloxetina 30mg",
-    "Empagliflozina 10mg", "Enalapril 10mg", "Enalapril 5mg", "Enoxaparina 40mg jeringa", "Enoxaparina 60mg jeringa", 
-    "Escitalopram 10mg", "Espironolactona 25mg", "Espironolactona 50mg", "Ezetimibe 10mg",
-    "Famotidina 20mg", "Fentanilo ampolla", "Finasteride 5mg", "Fluconazol 150mg", "Fluoxetina 20mg", "Fluticasona aerosol", 
-    "Furosemida 20mg ampolla", "Furosemida 40mg comprimido",
-    "Gabapentina 300mg", "Gentamicina 80mg ampolla", "Glibenclamida 5mg", "Glimepirida 2mg", "Glucagón ampolla",
+    "Doxiciclina 100mg", "Duloxetina 30mg", "Empagliflozina 10mg", "Enalapril 10mg", "Enalapril 5mg", "Enoxaparina 40mg jeringa", "Enoxaparina 60mg jeringa", 
+    "Escitalopram 10mg", "Espironolactona 25mg", "Espironolactona 50mg", "Ezetimibe 10mg", "Famotidina 20mg", "Fentanilo ampolla", "Finasteride 5mg", "Fluconazol 150mg", "Fluoxetina 20mg", "Fluticasona aerosol", 
+    "Furosemida 20mg ampolla", "Furosemida 40mg comprimido", "Gabapentina 300mg", "Gentamicina 80mg ampolla", "Glibenclamida 5mg", "Glimepirida 2mg", "Glucagón ampolla",
     "Haloperidol 5mg ampolla", "Heparina Sódica ampolla", "Hidroclorotiazida 25mg", "Hidrocortisona 100mg ampolla", "Hidrocortisona 500mg ampolla", 
     "Hierro (Sulfato Ferroso)", "Hioscina (Buscapina) 10mg", "Hioscina Compuesta ampolla", "Hioscina Simple ampolla", "Hidroxicloroquina 200mg",
-    
-    # FARMACOLOGÍA: I - Z
     "Ibuprofeno 400mg", "Ibuprofeno 600mg", "Ibuprofeno jarabe", "Imipenem 500mg ampolla", 
     "Insulina Aspart", "Insulina Corriente (Regular)", "Insulina Detemir", "Insulina Glargina", "Insulina Lispro", "Insulina NPH", 
     "Ipratropio aerosol", "Ipratropio gotas (Nebulización)", "Irbesartán 150mg", "Isosorbide dinitrato 10mg",
@@ -71,14 +58,11 @@ VADEMECUM_BASE = sorted([
     "Labetalol ampolla", "Lactulón jarabe", "Lamotrigina 50mg", "Lansoprazol 30mg", "Levetiracetam 500mg", 
     "Levofloxacina 500mg", "Levomepromazina 25mg", "Levotiroxina 100mcg", "Levotiroxina 50mcg", "Levotiroxina 75mcg", 
     "Lidocaína 2% ampolla", "Lidocaína jalea", "Linagliptina 5mg", "Loperamida 2mg", "Loratadina 10mg", 
-    "Lorazepam 1mg", "Lorazepam 2mg", "Losartán 50mg",
-    "Magnesio (Sulfato) ampolla", "Mebendazol 200mg", "Meloxicam 15mg", "Meropenem 1g ampolla", "Metadona 10mg", 
+    "Lorazepam 1mg", "Lorazepam 2mg", "Losartán 50mg", "Magnesio (Sulfato) ampolla", "Mebendazol 200mg", "Meloxicam 15mg", "Meropenem 1g ampolla", "Metadona 10mg", 
     "Metformina 500mg", "Metformina 850mg", "Metildopa 500mg", "Metilprednisolona 500mg ampolla", "Metoclopramida (Reliveran) 10mg", 
     "Metoclopramida ampolla", "Metoprolol 50mg", "Metronidazol 500mg", "Metronidazol sachet 500ml", "Midazolam 15mg ampolla", 
-    "Mirtazapina 30mg", "Montelukast 10mg", "Morfina 10mg ampolla", "Mupirocina ungüento",
-    "Naloxona ampolla", "Naproxeno 500mg", "Neomicina crema", "Nifedipina 10mg", "Nimodipina 30mg", 
-    "Nitrofurantoína 100mg", "Nitroglicerina ampolla", "Noradrenalina ampolla",
-    "Olanzapina 10mg", "Omeprazol 20mg", "Omeprazol 40mg ampolla", "Ondansetrón 8mg ampolla", "Oxígeno en tubo",
+    "Mirtazapina 30mg", "Montelukast 10mg", "Morfina 10mg ampolla", "Mupirocina ungüento", "Naloxona ampolla", "Naproxeno 500mg", "Neomicina crema", "Nifedipina 10mg", "Nimodipina 30mg", 
+    "Nitrofurantoína 100mg", "Nitroglicerina ampolla", "Noradrenalina ampolla", "Olanzapina 10mg", "Omeprazol 20mg", "Omeprazol 40mg ampolla", "Ondansetrón 8mg ampolla", "Oxígeno en tubo",
     "Pantoprazol 40mg", "Paracetamol 1g", "Paracetamol 500mg", "Paroxetina 20mg", "Penicilina G Benzatínica 2.400.000 UI", 
     "Piperacilina+Tazobactam 4.5g ampolla", "Potasio (Cloruro) ampolla", "Pramipexol 1mg", "Prasugrel 10mg", "Pravastatina 20mg", 
     "Prednisona 20mg", "Pregabalina 75mg", "Prometazina ampolla", "Propanolol 40mg", "Quetiapina 25mg", "Quetiapina 100mg",
@@ -112,7 +96,7 @@ except ImportError:
     GEO_DISPONIBLE = False
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="MediCare Enterprise PRO V9.9", page_icon="⚕️", layout="wide")
+st.set_page_config(page_title="MediCare Enterprise PRO V9.10", page_icon="⚕️", layout="wide")
 st.markdown("<html lang='es' translate='no'>", unsafe_allow_html=True)
 
 # --- ZONA HORARIA ARGENTINA ---
@@ -120,7 +104,6 @@ ARG_TZ = pytz.timezone('America/Argentina/Buenos_Aires')
 def ahora():
     return datetime.now(ARG_TZ)
 
-# --- TRADUCTOR GPS A CALLE REAL ---
 def obtener_direccion_real(lat, lon):
     try:
         url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}&zoom=18&addressdetails=1"
@@ -144,52 +127,80 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# --- 🎨 DISEÑO VISUAL Y OPTIMIZACIÓN MÓVIL (CSS) ---
+# --- 🎨 DISEÑO VISUAL PREMIUM Y OPTIMIZACIÓN MÓVIL (CSS) ---
 page_bg_css = """
 <style>
-/* 1. Bloquear recargas accidentales en celulares (Pull-to-refresh) */
-body { overscroll-behavior-y: none; }
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap');
 
-/* 2. Aceleración de Hardware para textos más fluidos */
+html, body, [class*="css"] { font-family: 'Nunito', sans-serif !important; }
+body { overscroll-behavior-y: none; }
 * { text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
 
-/* 3. Fondo Adaptativo Premium */
 .stApp {
-    background-color: var(--background-color);
-    background-image: radial-gradient(circle at top, var(--secondary-background-color) 0%, transparent 80%);
+    background-color: #f8fafc;
+    background-image: radial-gradient(circle at top right, #e0f2fe 0%, transparent 60%),
+                      radial-gradient(circle at bottom left, #f3e8ff 0%, transparent 60%);
 }
 
-/* 4. Contenedores Ultra-Livianos para la GPU del celular */
-div[data-testid="stForm"] {
-    background-color: var(--secondary-background-color);
-    border: 1px solid rgba(150, 150, 150, 0.2);
-    border-radius: 12px;
+div[data-testid="stForm"], div[data-testid="stExpander"] {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 16px;
     padding: 20px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); /* Sombra suave y ligera */
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+    transition: transform 0.2s ease;
 }
 
-/* 5. Botones Optimizados para Dedos (Touch Targets grandes) */
 .stButton>button {
-    min-height: 48px; /* Más fáciles de tocar con el pulgar */
-    border-radius: 10px;
-    transition: transform 0.1s ease; /* Efecto rebote nativo */
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    min-height: 48px; 
+    border-radius: 12px;
+    border: none;
+    font-weight: 600;
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+    transition: all 0.2s ease;
+}
+.stButton>button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.4);
 }
 .stButton>button:active {
-    transform: scale(0.95);
+    transform: scale(0.96);
 }
 
-/* Esconder flechitas de números */
+div[data-testid="stMetric"] {
+    background-color: rgba(255,255,255,0.9);
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.04);
+    border-left: 5px solid #3b82f6; 
+}
+
+button[data-baseweb="tab"] {
+    border-radius: 8px 8px 0 0;
+    margin-right: 2px;
+}
+button[data-baseweb="tab"]:focus, button[data-baseweb="tab"]:active {
+    outline: none !important;
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+.wa-btn {
+    display: block; width: 100%; text-align: center; 
+    background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); 
+    color: white !important; padding: 14px; border-radius: 12px; font-weight: 800; text-decoration: none;
+    margin-top: 15px; margin-bottom: 15px;
+    box-shadow: 0 4px 10px rgba(37, 211, 102, 0.3);
+    transition: transform 0.2s ease;
+}
+.wa-btn:hover { transform: scale(1.02); }
+
 input[type=number]::-webkit-inner-spin-button, 
 input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 input[type=number] { -moz-appearance: textfield; }
-
-/* Botón de WhatsApp nativo */
-.wa-btn {
-    display: block; width: 100%; text-align: center; background-color: #25D366; 
-    color: white !important; padding: 12px; border-radius: 10px; font-weight: bold; text-decoration: none;
-    margin-top: 10px; margin-bottom: 10px;
-}
-.wa-btn:hover { background-color: #128C7E; }
 </style>
 """
 st.markdown(page_bg_css, unsafe_allow_html=True)
@@ -229,7 +240,7 @@ def guardar_datos():
         "indicaciones_db", "turnos_db", "evoluciones_db", "facturacion_db", "logs_db", 
         "balance_db", "pediatria_db", "fotos_heridas_db",
         "agenda_db", "checkin_db", "inventario_db", "consumos_db", "nomenclador_db", "firmas_tactiles_db",
-        "reportes_diarios_db"
+        "reportes_diarios_db", "estudios_db" # NUEVO: Base de datos de Estudios
     ]
     data = {k: st.session_state[k] for k in claves if k in st.session_state}
     try:
@@ -246,7 +257,7 @@ if "db_inicializada" not in st.session_state:
         "pacientes_db": [], "detalles_pacientes_db": {}, "vitales_db": [], "indicaciones_db": [], "turnos_db": [], 
         "evoluciones_db": [], "facturacion_db": [], "logs_db": [], "balance_db": [], "pediatria_db": [], "fotos_heridas_db": [],
         "agenda_db": [], "checkin_db": [], "inventario_db": [], "consumos_db": [], "nomenclador_db": [], "firmas_tactiles_db": [],
-        "reportes_diarios_db": []
+        "reportes_diarios_db": [], "estudios_db": [] # NUEVO
     }
     if db:
         for k, v in db.items(): st.session_state[k] = v
@@ -261,7 +272,7 @@ if "logeado" not in st.session_state: st.session_state["logeado"] = False
 if not st.session_state["logeado"]:
     _, col, _ = st.columns([1,1.5,1])
     with col:
-        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V9.9</h2>", unsafe_allow_html=True)
+        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V9.10</h2>", unsafe_allow_html=True)
         tab_login, tab_recuperar = st.tabs(["🔑 Iniciar Sesión", "🆘 Olvidé mi Contraseña"])
         with tab_login:
             with st.form("login", clear_on_submit=True):
@@ -360,7 +371,8 @@ with st.sidebar:
     if st.button("Cerrar Sesión", width="stretch"): st.session_state["logeado"] = False; st.rerun()
 
 # --- MENU DINÁMICO ---
-menu = ["📍 Visitas y Agenda", "👤 Admisión", "📊 Clínica", "👶 Pediatría", "📝 Evolución", "💉 Materiales", "💊 Recetas", "⚖️ Balance", "📦 Inventario", "💳 Caja", "📚 Historial", "🗄️ PDF"]
+# ¡NUEVO!: Se agregó la pestaña "🔬 Estudios"
+menu = ["📍 Visitas y Agenda", "👤 Admisión", "📊 Clínica", "👶 Pediatría", "📝 Evolución", "🔬 Estudios", "💉 Materiales", "💊 Recetas", "⚖️ Balance", "📦 Inventario", "💳 Caja", "📚 Historial", "🗄️ PDF"]
 
 if rol in ["SuperAdmin", "Coordinador"]: 
     menu.insert(1, "📈 Dashboard") 
@@ -587,6 +599,43 @@ with tabs[menu.index("📝 Evolución")]:
                         st.session_state["fotos_heridas_db"].append({"paciente": paciente_sel, "fecha": fecha_n, "descripcion": desc_w, "base64_foto": base64_foto, "firma": user["nombre"]})
                     guardar_datos(); st.rerun()
 
+# 6.5 ESTUDIOS COMPLEMENTARIOS (NUEVO MÓDULO)
+with tabs[menu.index("🔬 Estudios")]:
+    if paciente_sel:
+        st.subheader("Órdenes y Resultados de Estudios")
+        with st.form("form_estudios", clear_on_submit=True):
+            col_e1, col_e2 = st.columns([1, 2])
+            tipo_estudio = col_e1.selectbox("Tipo de Estudio", [
+                "Laboratorio (Sangre/Orina)", "Radiografía (Rx)", "Ecografía", 
+                "Electrocardiograma (ECG)", "Tomografía (TAC)", "Resonancia Magnética (RMN)", "Otro"
+            ])
+            detalle_estudio = col_e2.text_input("Detalle del Pedido o Resultado (Ej: Rx Tórax frente, Glucemia alta...)")
+            
+            with st.expander("📷 Adjuntar Foto del Estudio / Orden Médica", expanded=False):
+                foto_estudio = st.camera_input("Tomar foto del estudio")
+            
+            if st.form_submit_button("Guardar Estudio Clínico", width="stretch"):
+                img_b64 = base64.b64encode(foto_estudio.getvalue()).decode('utf-8') if foto_estudio else ""
+                st.session_state["estudios_db"].append({
+                    "paciente": paciente_sel,
+                    "fecha": ahora().strftime("%d/%m/%Y %H:%M"),
+                    "tipo": tipo_estudio,
+                    "detalle": detalle_estudio,
+                    "imagen": img_b64,
+                    "firma": user["nombre"]
+                })
+                guardar_datos(); st.success("Estudio guardado correctamente."); st.rerun()
+
+        estudios_pac = [e for e in st.session_state.get("estudios_db", []) if e["paciente"] == paciente_sel]
+        if estudios_pac:
+            st.divider()
+            st.markdown("#### Historial de Estudios")
+            with st.container(height=350):
+                for est in reversed(estudios_pac):
+                    st.info(f"🔬 **{est['tipo']}** | {est['fecha']} por {est['firma']}\n\nDetalle: {est['detalle']}")
+                    if est.get('imagen'):
+                        st.image(base64.b64decode(est['imagen']), caption="Documento Adjunto")
+
 # 7. MATERIALES Y DESCARTABLES
 with tabs[menu.index("💉 Materiales")]:
     if paciente_sel:
@@ -619,7 +668,7 @@ with tabs[menu.index("💉 Materiales")]:
             st.caption("Últimos materiales registrados:")
             st.dataframe(pd.DataFrame(cons_paciente).drop(columns=["paciente", "empresa"], errors='ignore'), use_container_width=True)
 
-# 8. RECETAS (CON FRECUENCIA INCORPORADA)
+# 8. RECETAS 
 with tabs[menu.index("💊 Recetas")]:
     if paciente_sel:
         with st.form("recet", clear_on_submit=True):
@@ -750,7 +799,7 @@ with tabs[menu.index("💳 Caja")]:
             with pd.ExcelWriter(output, engine='openpyxl') as writer: df_caja_filtrada.drop(columns="empresa", errors='ignore').to_excel(writer, index=False, sheet_name='Caja_MediCare')
             st.download_button("📥 DESCARGAR RESULTADOS A EXCEL", data=output.getvalue(), file_name=f"Caja_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# 12. HISTORIAL COMPLETO (CONTENEDORES CON SCROLL MÓVIL)
+# 12. HISTORIAL COMPLETO 
 with tabs[menu.index("📚 Historial")]:
     if paciente_sel:
         estado_badge = "🗄️ [ARCHIVADO DE ALTA]" if st.session_state["detalles_pacientes_db"].get(paciente_sel, {}).get("estado") == "De Alta" else ""
@@ -776,10 +825,20 @@ with tabs[menu.index("📚 Historial")]:
         with st.expander("📝 Procedimientos y Evoluciones"):
             evs = [x for x in st.session_state["evoluciones_db"] if x["paciente"] == paciente_sel]
             if evs:
-                # Contenedor móvil con altura fija
                 with st.container(height=350):
                     for e in reversed(evs[-limite:]): st.info(f"📅 **{e['fecha']}** | {e['firma']}\n\n{e['nota']}")
             else: st.write("No hay evoluciones médicas cargadas.")
+
+        # NUEVO: EXPANSOR DE ESTUDIOS COMPLEMENTARIOS
+        with st.expander("🔬 Estudios Complementarios"):
+            estudios = [x for x in st.session_state.get("estudios_db", []) if x["paciente"] == paciente_sel]
+            if estudios:
+                with st.container(height=350):
+                    for est in reversed(estudios[-limite:]): 
+                        st.info(f"🔬 **{est['tipo']}** | {est['fecha']} por {est['firma']}\n\nDetalle: {est['detalle']}")
+                        if est.get('imagen'):
+                            st.image(base64.b64decode(est['imagen']), caption="Documento Adjunto")
+            else: st.write("No hay estudios complementarios registrados.")
             
         with st.expander("💉 Materiales Utilizados"):
             cons = [x for x in st.session_state["consumos_db"] if x["paciente"] == paciente_sel]
@@ -789,7 +848,6 @@ with tabs[menu.index("📚 Historial")]:
         with st.expander("📸 Registro de Heridas"):
             fot_her = [x for x in st.session_state["fotos_heridas_db"] if x["paciente"] == paciente_sel]
             if fot_her:
-                # Contenedor móvil con altura fija
                 with st.container(height=450):
                     for fh in reversed(fot_her[-limite:]):
                         st.success(f"📅 **{fh['fecha']}** | {fh['firma']}\n\nDescripción: {fh['descripcion']}")
@@ -817,7 +875,6 @@ with tabs[menu.index("📚 Historial")]:
         with st.expander("💊 Plan Terapéutico (Recetas)"):
             recs = [x for x in st.session_state["indicaciones_db"] if x["paciente"] == paciente_sel]
             if recs:
-                # Contenedor móvil con altura fija
                 with st.container(height=350):
                     for r in reversed(recs[-limite:]): st.success(f"📌 **{r['fecha']}** | Indicado por: **{r['firma']}**\n\n{r['med']}")
             else: st.write("No hay terapéutica indicada.")
@@ -825,7 +882,7 @@ with tabs[menu.index("📚 Historial")]:
 # 13. PDF 
 with tabs[menu.index("🗄️ PDF")]:
     if paciente_sel and FPDF_DISPONIBLE:
-        def t(txt): return str(txt).replace('⚖️', '').replace('⚠️', '').replace('📌', '').replace('📅', '').replace('📸', '').replace('🗄️', '').encode('latin-1', 'replace').decode('latin-1')
+        def t(txt): return str(txt).replace('⚖️', '').replace('⚠️', '').replace('📌', '').replace('📅', '').replace('📸', '').replace('🗄️', '').replace('🔬', '').encode('latin-1', 'replace').decode('latin-1')
 
         def crear_pdf_pro(p):
             pdf = FPDF(); pdf.add_page()
@@ -833,7 +890,7 @@ with tabs[menu.index("🗄️ PDF")]:
             pdf.line(21, 14, 21, 28); pdf.line(14, 21, 28, 21)
             emp_paciente = st.session_state["detalles_pacientes_db"].get(p, {}).get("empresa", mi_empresa)
             pdf.set_font("Arial", 'B', 16); pdf.set_xy(38, 14); pdf.cell(0, 10, t(emp_paciente), ln=True)
-            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V9.9)"), ln=True); pdf.ln(15)
+            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V9.10)"), ln=True); pdf.ln(15)
             
             det = st.session_state["detalles_pacientes_db"].get(p, {})
             estado_texto = " [ARCHIVADO/ALTA]" if det.get("estado") == "De Alta" else ""
@@ -859,6 +916,16 @@ with tabs[menu.index("🗄️ PDF")]:
                 for ev in evs:
                     pdf.set_font("Arial", 'B', 8); pdf.cell(0, 5, t(f"[{ev.get('fecha','')}] - Firma: {ev.get('firma','')}"), ln=True)
                     pdf.set_font("Arial", '', 9); pdf.multi_cell(0, 5, t(ev.get('nota','')), 'L'); pdf.ln(2)
+
+            # NUEVO: IMPRIMIR ESTUDIOS COMPLEMENTARIOS EN PDF
+            estudios_pdf = [x for x in st.session_state.get("estudios_db", []) if x["paciente"] == p]
+            if estudios_pdf:
+                pdf.set_font("Arial", 'B', 10); pdf.cell(0, 8, t("ESTUDIOS COMPLEMENTARIOS:"), ln=True)
+                for est in estudios_pdf:
+                    pdf.set_font("Arial", 'B', 8); pdf.cell(0, 5, t(f"[{est.get('fecha','')}] {est.get('tipo','')} - Firma: {est.get('firma','')}"), ln=True)
+                    if est.get('detalle'):
+                        pdf.set_font("Arial", '', 9); pdf.multi_cell(0, 5, t(est.get('detalle','')), 'L')
+                pdf.ln(4)
 
             cons = [x for x in st.session_state["consumos_db"] if x["paciente"] == p]
             if cons:
@@ -1138,4 +1205,4 @@ if "🕵️ Auditoría" in menu:
         else:
             st.error("Librería FPDF no disponible. Instalar para generar reportes.")
 
-# --- FIN DEL SISTEMA MEDICARE PRO V9.9 ---
+# --- FIN DEL SISTEMA MEDICARE PRO V9.10 ---
