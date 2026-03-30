@@ -581,32 +581,71 @@ with tabs[menu.index("📊 Clínica")]:
                 df_vits = pd.DataFrame(vits).drop(columns=["paciente"], errors='ignore')
                 st.dataframe(df_vits.iloc[::-1], use_container_width=True, hide_index=True)
 
-# 5. PEDIATRÍA 
+# 5. PEDIATRÍA (CON GRÁFICOS Y TABLA ANTI-COLAPSO)
 with tabs[menu.index("👶 Pediatría")]:
     if paciente_sel:
         det = st.session_state["detalles_pacientes_db"].get(paciente_sel, {})
         se = det.get("sexo", "F"); f_n_str = det.get("fnac", "01/01/2000")
-        f_n = pd.to_datetime(f_n_str, format="%d/%m/%Y")
+        f_n = pd.to_datetime(f_n_str, format="%d/%m/%Y", errors='coerce')
+        if pd.isna(f_n): f_n = datetime(2000, 1, 1)
         eda_meses = round((ahora().replace(tzinfo=None) - f_n).days / 30.4375, 1)
+        
         with st.form("pedia", clear_on_submit=True):
             col_a, col_b = st.columns(2)
             pes = col_a.number_input("Peso Actual (kg)", min_value=0.0, format="%.2f")
             tal = col_b.number_input("Talla Actual (cm)", min_value=0.0, format="%.2f")
             pc = col_a.number_input("Périm. Cefálico (cm)", min_value=0.0, format="%.2f")
             desc = col_b.text_input("Descripción / Nota")
-            if st.form_submit_button("Guardar Control", width="stretch"):
+            
+            if st.form_submit_button("Guardar Control Pediátrico", width="stretch"):
                 imc = round(pes / ((tal/100)**2), 2) if tal > 0 else 0
                 percentil_sug = ""
                 if se == "F": percentil_sug = "⚖️ P3 - Bajo Peso" if imc < 14 else "⚖️ P50 - Peso Normal" if imc < 18 else "⚠️ P97 - Sobrepeso"
                 else: percentil_sug = "⚖️ P3 - Bajo Peso" if imc < 14.5 else "⚖️ P50 - Peso Normal" if imc < 18.5 else "⚠️ P97 - Sobrepeso"
-                st.session_state["pediatria_db"].append({"paciente": paciente_sel, "fecha": ahora().strftime("%d/%m/%Y"), "edad_meses": eda_meses, "peso": pes, "talla": tal, "pc": pc, "imc": imc, "percentil_sug": percentil_sug, "firma": user["nombre"]})
+                
+                st.session_state["pediatria_db"].append({
+                    "paciente": paciente_sel, 
+                    "fecha": ahora().strftime("%d/%m/%Y %H:%M"), 
+                    "edad_meses": eda_meses, 
+                    "peso": pes, 
+                    "talla": tal, 
+                    "pc": pc, 
+                    "imc": imc, 
+                    "percentil_sug": percentil_sug, 
+                    "nota": desc,
+                    "firma": user["nombre"]
+                })
                 guardar_datos(); st.rerun()
+                
         ped = [x for x in st.session_state["pediatria_db"] if x["paciente"] == paciente_sel]
         if ped:
+            st.divider()
+            st.markdown("#### 📈 Curvas de Crecimiento")
             df_g = pd.DataFrame(ped).set_index("fecha")
             c1, c2 = st.columns(2)
             if "peso" in df_g.columns: c1.line_chart(df_g["peso"], color="#3b82f6")
             if "talla" in df_g.columns: c2.line_chart(df_g["talla"], color="#10b981")
+            
+            st.markdown("#### 📋 Historial de Controles Pediátricos")
+            # --- SISTEMA ANTI-COLAPSO ---
+            with st.container(height=250):
+                df_ped = pd.DataFrame(ped).drop(columns=["paciente"], errors='ignore')
+                
+                # Renombramos las columnas para que queden súper prolijas en pantalla
+                df_ped = df_ped.rename(columns={
+                    "fecha": "Fecha", 
+                    "edad_meses": "Edad (Meses)", 
+                    "peso": "Peso (kg)", 
+                    "talla": "Talla (cm)", 
+                    "pc": "Périm. Cef. (cm)", 
+                    "imc": "IMC", 
+                    "percentil_sug": "Percentil Sugerido",
+                    "nota": "Notas",
+                    "firma": "Profesional"
+                })
+                
+                # Damos vuelta la tabla para ver el último control arriba de todo (.iloc[::-1])
+                st.dataframe(df_ped.iloc[::-1], use_container_width=True, hide_index=True)
 
 # 6. EVOLUCIÓN
 with tabs[menu.index("📝 Evolución")]:
