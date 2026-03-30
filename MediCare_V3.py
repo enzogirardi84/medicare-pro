@@ -886,7 +886,7 @@ with tabs[menu.index("💊 Recetas")]:
             # --- NUEVO: SÁBANA DE ENFERMERÍA (MAR) 24 HORAS ---
             st.divider()
             st.markdown("#### 🩺 Sábana de Enfermería (MAR 24hs)")
-            st.info("💡 **Instrucciones:** En la tabla, hacé doble clic en la hora correspondiente para cambiar a **✅ (Dada)** o **❌ (No Dada)**. Si marcás la cruz roja, estás obligado a escribir el motivo en la columna de 'Justificación'.")
+            st.info("💡 **Instrucciones:** En la tabla, hacé doble clic en la hora correspondiente para cambiar a **✅ (Dada)** o **❌ (No Dada)**. Si marcás la cruz roja, estás obligado a escribir el motivo en la columna de 'Justificación'. Deslizá la tabla hacia la derecha para ver todas las horas.")
 
             if activas:
                 fecha_hoy = ahora().strftime("%d/%m/%Y")
@@ -899,18 +899,33 @@ with tabs[menu.index("💊 Recetas")]:
                 # Construir los datos para la tabla
                 data_mar = []
                 for r in activas:
-                    med_nombre = r['med'].split(" |")[0].strip()
-                    texto_frecuencia = r['med'].lower()
+                    # Parsear la fecha de inicio y fin para mostrarla
+                    try: f_ini = datetime.strptime(r["fecha"], "%d/%m/%Y %H:%M:%S")
+                    except: f_ini = datetime.strptime(r["fecha"], "%d/%m/%Y %H:%M")
                     
-                    # Sugerencia visual automática para el enfermero
+                    dias_dur = r.get("dias_duracion", 30)
+                    f_fin = f_ini + timedelta(days=dias_dur)
+                    
+                    # Extraer droga, vía y frecuencia separando por los "|"
+                    partes = r['med'].split(" | ")
+                    med_nombre = partes[0].strip()
+                    via = partes[1].replace("Vía: ", "").strip() if len(partes) > 1 else ""
+                    frecuencia = partes[2].strip() if len(partes) > 2 else ""
+                    
+                    # Sugerencia visual de horarios según frecuencia
                     sugerencia = ""
-                    if "cada 4 horas" in texto_frecuencia: sugerencia = " (00-04-08-12-16-20)"
-                    elif "cada 6 horas" in texto_frecuencia: sugerencia = " (00-06-12-18)"
-                    elif "cada 8 horas" in texto_frecuencia: sugerencia = " (00-08-16)"
-                    elif "cada 12 horas" in texto_frecuencia: sugerencia = " (08-20)"
-                    elif "cada 24 horas" in texto_frecuencia: sugerencia = " (08)"
+                    texto_frec_lower = frecuencia.lower()
+                    if "4 horas" in texto_frec_lower: sugerencia = " ⏰(00-04-08-12-16-20)"
+                    elif "6 horas" in texto_frec_lower: sugerencia = " ⏰(00-06-12-18)"
+                    elif "8 horas" in texto_frec_lower: sugerencia = " ⏰(00-08-16)"
+                    elif "12 horas" in texto_frec_lower: sugerencia = " ⏰(08-20)"
+                    elif "24 horas" in texto_frec_lower: sugerencia = " ⏰(08)"
+                    elif "dosis" in texto_frec_lower: sugerencia = " ⏰(Única)"
                     
-                    fila = {"Medicación Indicada": f"{med_nombre}{sugerencia}"}
+                    # Armar la pauta súper completa y clara
+                    str_pauta_completa = f"{med_nombre} | {via} | {frecuencia} | Del {f_ini.strftime('%d/%m')} al {f_fin.strftime('%d/%m')}{sugerencia}"
+                    
+                    fila = {"📋 Medicación y Pauta": str_pauta_completa}
                     
                     # Inicializar horas vacías (con un guion)
                     for h in horas_cols: fila[h] = "➖"
@@ -932,7 +947,8 @@ with tabs[menu.index("💊 Recetas")]:
                 
                 # Configurar la tabla interactiva
                 column_config = {
-                    "Medicación Indicada": st.column_config.TextColumn("Medicación Indicada", disabled=True, width="medium"),
+                    # Al poner width="large", evitamos que se apriete el texto
+                    "📋 Medicación y Pauta": st.column_config.TextColumn("📋 Medicación, Pauta y Fechas", disabled=True, width="large"),
                     "Justificación (Si se omite)": st.column_config.TextColumn("Justificación (Si se omite)", width="medium")
                 }
                 # Poner el menú desplegable en cada columna de hora
@@ -957,7 +973,7 @@ with tabs[menu.index("💊 Recetas")]:
                             for h in horas_cols:
                                 if row[h] == "❌" and (not justif.strip() or justif in ["None", "nan"]):
                                     error_justificacion = True
-                                    med_err = str(row["Medicación Indicada"]).split(" (")[0].strip()
+                                    med_err = str(row["📋 Medicación y Pauta"]).split(" |")[0].strip()
                                     st.error(f"🚨 Faltó justificar por qué NO le diste {med_err} a las {h}.")
                         
                         if not error_justificacion:
@@ -972,7 +988,8 @@ with tabs[menu.index("💊 Recetas")]:
                             
                             nuevos_registros = []
                             for index, row in edited_df.iterrows():
-                                med_puro = str(row["Medicación Indicada"]).split(" (")[0].strip()
+                                # Rescatamos la droga pura separando por el primer "|"
+                                med_puro = str(row["📋 Medicación y Pauta"]).split(" |")[0].strip()
                                 justif = str(row["Justificación (Si se omite)"])
                                 if justif in ["None", "nan"]: justif = ""
                                 
@@ -987,7 +1004,7 @@ with tabs[menu.index("💊 Recetas")]:
                                         else:
                                             nuevos_registros.append({"paciente": paciente_sel, "med": med_puro, "fecha": fecha_hoy, "hora": hora_db, "estado": "✅ Realizada", "motivo": "", "firma": user["nombre"]})
                                     elif valor == "❌":
-                                        if key in registros_previos and registros_previos[key]["estado"] == "❌ No realizada" and registros_previos[key]["motivo"] == justif:
+                                        if key in registros_previos and registros_previos[key]["estado"] in ["❌ No realizada", "⚠️ Suspendida"] and registros_previos[key]["motivo"] == justif:
                                             nuevos_registros.append(registros_previos[key]) # Mantiene firma original
                                         else:
                                             nuevos_registros.append({"paciente": paciente_sel, "med": med_puro, "fecha": fecha_hoy, "hora": hora_db, "estado": "❌ No realizada", "motivo": justif, "firma": user["nombre"]})
