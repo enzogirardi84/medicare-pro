@@ -14,6 +14,41 @@ import tempfile
 from PIL import Image
 import altair as alt
 
+# --- VADEMÉCUM GLOBAL ORDENADO (INSUMOS Y FARMACOLOGÍA) ---
+VADEMECUM_BASE = sorted([
+    # DESCARTABLES E INSUMOS
+    "Agua Oxigenada 10 vol", "Alcohol 70%", "Alcohol en gel", "Aguja 25/8", "Aguja 40/8", "Aguja 50/8",
+    "Bolsa colectora de orina", "Catéter Intravenoso 18G", "Catéter Intravenoso 20G", 
+    "Catéter Intravenoso 22G", "Catéter Intravenoso 24G", "Cinta adhesiva de tela", 
+    "Cinta hipoalergénica", "Clorhexidina", "Dextrosa 5% 500ml", "Gasas 10x10", "Gasas 5x5", 
+    "Guantes de examinación", "Guantes estériles", "Jeringa 1ml", "Jeringa 3ml", "Jeringa 5ml", 
+    "Jeringa 10ml", "Jeringa 20ml", "Jeringa 50ml", "Llave de 3 vías", "Macrogotero", "Microgotero", 
+    "Pañales para adultos", "Perfuss", "Povidona Yodada", "Ringer Lactato 500ml", 
+    "Solución Fisiológica 100ml", "Solución Fisiológica 500ml", "Sonda de Aspiración", 
+    "Sonda Foley N° 14", "Sonda Foley N° 16", "Sonda Nasogástrica K108", "Sonda Nasogástrica K110", 
+    "Tegaderm", "Venda elástica 10cm", "Venda elástica 15cm",
+    
+    # FARMACOLOGÍA GENERAL
+    "Alprazolam 1mg", "Amiodarona 200mg", "Amlodipina 5mg", "Amoxicilina 500mg", 
+    "Amoxicilina+Clavulánico 875/125mg", "Aspirina (AAS) 100mg", "Atenolol 50mg", 
+    "Azitromicina 500mg", "Betametasona ampolla", "Bisoprolol 5mg", "Budesonida aerosol", 
+    "Carvedilol 6.25mg", "Cefalexina 500mg", "Ceftriaxona 1g ampolla", "Ciprofloxacina 500mg", 
+    "Clindamicina 300mg", "Clonazepam 1mg", "Clopidogrel 75mg", "Desloratadina 5mg", 
+    "Dexametasona 8mg ampolla", "Diazepam 5mg", "Diclofenac 50mg", "Diclofenac 75mg ampolla", 
+    "Difenhidramina 50mg", "Dipirona ampolla", "Domperidona 10mg", "Enalapril 10mg", 
+    "Espironolactona 25mg", "Fluoxetina 20mg", "Furosemida 40mg", "Furosemida ampolla", 
+    "Haloperidol 5mg", "Hidrocortisona 100mg", "Hioscina (Buscapina) 10mg", "Hioscina ampolla", 
+    "Ibuprofeno 400mg", "Ibuprofeno 600mg", "Insulina Corriente", "Insulina Glargina", "Insulina NPH", 
+    "Ipratropio aerosol", "Ketorolac 10mg", "Ketorolac 30mg ampolla", "Lactulón jarabe", 
+    "Levofloxacina 500mg", "Levotiroxina 100mcg", "Lidocaína ampolla", "Lidocaína jalea", 
+    "Loperamida 2mg", "Loratadina 10mg", "Lorazepam 1mg", "Losartán 50mg", "Meloxicam 15mg", 
+    "Metformina 500mg", "Metformina 850mg", "Metoclopramida (Reliveran) 10mg", "Metoclopramida ampolla", 
+    "Morfina 10mg ampolla", "Naproxeno 500mg", "Omeprazol 20mg", "Ondansetrón 8mg", 
+    "Pantoprazol 40mg", "Paracetamol 1g", "Paracetamol 500mg", "Penicilina G Benzatínica", 
+    "Pregabalina 75mg", "Prednisona 20mg", "Quetiapina 25mg", "Salbutamol aerosol", "Sertralina 50mg", 
+    "Tramadol 50mg", "Valsartán 80mg"
+])
+
 # --- 1. CONFIGURACIÓN DE LIBRERÍAS ---
 FPDF_DISPONIBLE = False
 try:
@@ -37,7 +72,7 @@ except ImportError:
     GEO_DISPONIBLE = False
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="MediCare Enterprise PRO V9.6", page_icon="⚕️", layout="wide")
+st.set_page_config(page_title="MediCare Enterprise PRO V9.7", page_icon="⚕️", layout="wide")
 st.markdown("<html lang='es' translate='no'>", unsafe_allow_html=True)
 
 # --- ZONA HORARIA ARGENTINA ---
@@ -163,7 +198,7 @@ if "logeado" not in st.session_state: st.session_state["logeado"] = False
 if not st.session_state["logeado"]:
     _, col, _ = st.columns([1,1.5,1])
     with col:
-        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V9.6</h2>", unsafe_allow_html=True)
+        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V9.7</h2>", unsafe_allow_html=True)
         tab_login, tab_recuperar = st.tabs(["🔑 Iniciar Sesión", "🆘 Olvidé mi Contraseña"])
         with tab_login:
             with st.form("login", clear_on_submit=True):
@@ -359,7 +394,7 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
                 st.caption("Próximas visitas agendadas para este paciente:")
                 st.dataframe(pd.DataFrame(agenda_mia).drop(columns=["empresa", "paciente"]).tail(3), use_container_width=True)
 
-# 2. DASHBOARD (SOLO VISIBLE PARA ADMIN/COORDINADOR)
+# 2. DASHBOARD
 if "📈 Dashboard" in menu:
     with tabs[menu.index("📈 Dashboard")]:
         st.markdown(f"<h3 style='color: #3b82f6;'>📈 Panel de Gestión - {mi_empresa}</h3>", unsafe_allow_html=True)
@@ -521,17 +556,27 @@ with tabs[menu.index("💉 Materiales")]:
             st.caption("Últimos materiales registrados:")
             st.dataframe(pd.DataFrame(cons_paciente).drop(columns=["paciente", "empresa"], errors='ignore'), use_container_width=True)
 
-# 8. RECETAS
+# 8. RECETAS (CON VADEMÉCUM INTEGRADO)
 with tabs[menu.index("💊 Recetas")]:
     if paciente_sel:
         with st.form("recet", clear_on_submit=True):
-            d = st.text_input("Medicamento")
+            c_rec1, c_rec2 = st.columns([2, 1])
+            lista_vademecum_receta = ["-- Seleccionar del Vademécum --"] + VADEMECUM_BASE
+            
+            med_vademecum = c_rec1.selectbox("1. Medicamento / Vademécum Oficial:", lista_vademecum_receta)
+            med_manual = c_rec2.text_input("O 2. Cargar Manualmente:")
+            
+            c_rec3, c_rec4 = st.columns(2)
             lista_vias = ["Oral", "Endovenosa (EV)", "Intramuscular (IM)", "Subcutánea (SC)", "Sublingual", "Tópica", "Inhalatoria", "Oftálmica", "Ótica", "Nasal", "Rectal", "Vaginal"]
-            p = st.selectbox("Vía de Administración", lista_vias)
-            f = st.number_input("Días de tratamiento", 1, 30, 7)
+            p = c_rec3.selectbox("Vía de Administración", lista_vias)
+            f = c_rec4.number_input("Días de tratamiento", 1, 30, 7)
+            
             if st.form_submit_button("Cargar Terapéutica", width="stretch"):
-                st.session_state["indicaciones_db"].append({"paciente": paciente_sel, "med": f"{d} vía {p} por {f} días.", "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
-                guardar_datos(); st.rerun()
+                med_final = med_manual.strip().title() if med_manual.strip() else med_vademecum
+                
+                if med_final and med_final != "-- Seleccionar del Vademécum --":
+                    st.session_state["indicaciones_db"].append({"paciente": paciente_sel, "med": f"{med_final} vía {p} por {f} días.", "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
+                    guardar_datos(); st.rerun()
 
 # 9. BALANCE HÍDRICO
 with tabs[menu.index("⚖️ Balance")]:
@@ -545,7 +590,7 @@ with tabs[menu.index("⚖️ Balance")]:
                 st.session_state["balance_db"].append({"paciente": paciente_sel, "ingresos": ting, "egresos": tegr, "balance": bal, "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
                 guardar_datos(); st.rerun()
 
-# 10. INVENTARIO (CON EDICIÓN DIRECTA)
+# 10. INVENTARIO (CON VADEMÉCUM INTEGRADO)
 with tabs[menu.index("📦 Inventario")]:
     inv_mio = [i for i in st.session_state["inventario_db"] if i["empresa"] == mi_empresa]
     if inv_mio:
@@ -556,29 +601,20 @@ with tabs[menu.index("📦 Inventario")]:
                 st.warning(f"⚠️ {item['item']}: Quedan solo **{item['stock']}** unidades.")
             st.divider()
 
-    # ZONA 1: AGREGAR O SUMAR STOCK
     with st.form("form_inv", clear_on_submit=True):
         st.markdown("#### ➕ Ingreso de Mercadería (Suma al stock existente)")
         c1, c2, c3 = st.columns([2, 2, 1])
         
-        lista_base_bruta = [
-            "Gasas 10x10", "Gasas 5x5", "Jeringa 10ml", "Jeringa 5ml", "Jeringa 3ml", 
-            "Aguja 40/8", "Aguja 25/8", "Guantes descartables", "Solución Fisiológica 500ml", 
-            "Cinta hipoalergénica", "Alcohol 70%", "Povidona Yodada", "Keterolak 30mg ampolla", 
-            "Diclofenac 75mg ampolla", "Dexametasona 8mg ampolla", "Reliveran ampolla", 
-            "Dipirona ampolla", "Agua Oxigenada 10 vol", "Catéter Intravenoso", "Sonda Foley", 
-            "Sonda Nasogástrica", "Llave de 3 vías", "Venda elástica", "Tegaderm", "Lidocaína ampolla"
-        ]
-        lista_base = ["-- Elegir del Catálogo --"] + sorted(lista_base_bruta)
+        lista_base_inv = ["-- Seleccionar del Vademécum --"] + VADEMECUM_BASE
         
-        item_sel = c1.selectbox("1. Catálogo Frecuente:", lista_base)
+        item_sel = c1.selectbox("1. Catálogo Frecuente:", lista_base_inv)
         nuevo_item_manual = c2.text_input("O 2. Escribir Insumo Nuevo:")
         cantidad_ini = c3.number_input("Cantidad", min_value=1, value=10)
         
         if st.form_submit_button("Sumar Stock", width="stretch"):
             item_final = nuevo_item_manual.strip().title() if nuevo_item_manual.strip() else item_sel
             
-            if item_final and item_final != "-- Elegir del Catálogo --":
+            if item_final and item_final != "-- Seleccionar del Vademécum --":
                 encontrado = False
                 for i in st.session_state["inventario_db"]:
                     if i["item"].lower() == item_final.lower() and i["empresa"] == mi_empresa:
@@ -589,7 +625,6 @@ with tabs[menu.index("📦 Inventario")]:
                 
     st.divider()
     
-    # ZONA 2: GESTIÓN Y EDICIÓN DEL STOCK ACTUAL
     if inv_mio: 
         st.markdown("#### 📋 Stock Actual en Farmacia")
         st.dataframe(pd.DataFrame(inv_mio).drop(columns="empresa"), use_container_width=True)
@@ -724,7 +759,7 @@ with tabs[menu.index("🗄️ PDF")]:
             pdf.line(21, 14, 21, 28); pdf.line(14, 21, 28, 21)
             emp_paciente = st.session_state["detalles_pacientes_db"].get(p, {}).get("empresa", mi_empresa)
             pdf.set_font("Arial", 'B', 16); pdf.set_xy(38, 14); pdf.cell(0, 10, t(emp_paciente), ln=True)
-            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V9.6)"), ln=True); pdf.ln(15)
+            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V9.7)"), ln=True); pdf.ln(15)
             
             det = st.session_state["detalles_pacientes_db"].get(p, {})
             estado_texto = " [ARCHIVADO/ALTA]" if det.get("estado") == "De Alta" else ""
@@ -780,7 +815,7 @@ with tabs[menu.index("🗄️ PDF")]:
                         img_data = base64.b64decode(ultima_firma)
                         with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
                             tmp.write(img_data); tmp_path = tmp.name
-                        pdf.image(tmp_path, x=130, y=y_firma - 15, w=40)
+                        pdf.image(tmp_path, x=85, y=y_firma - 15, w=40)
                         os.remove(tmp_path)
                     except Exception as e: pass
 
@@ -1029,4 +1064,4 @@ if "🕵️ Auditoría" in menu:
         else:
             st.error("Librería FPDF no disponible. Instalar para generar reportes.")
 
-# --- FIN DEL SISTEMA MEDICARE PRO V9.6 ---
+# --- FIN DEL SISTEMA MEDICARE PRO V9.7 ---
