@@ -36,7 +36,7 @@ except ImportError:
     GEO_DISPONIBLE = False
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="MediCare Enterprise PRO V9.3", page_icon="⚕️", layout="wide")
+st.set_page_config(page_title="MediCare Enterprise PRO V9.4", page_icon="⚕️", layout="wide")
 st.markdown("<html lang='es' translate='no'>", unsafe_allow_html=True)
 
 # --- ZONA HORARIA ARGENTINA ---
@@ -130,7 +130,7 @@ def guardar_datos():
         "indicaciones_db", "turnos_db", "evoluciones_db", "facturacion_db", "logs_db", 
         "balance_db", "pediatria_db", "fotos_heridas_db",
         "agenda_db", "checkin_db", "inventario_db", "consumos_db", "nomenclador_db", "firmas_tactiles_db",
-        "reportes_diarios_db" # NUEVO: Guardado de cierres diarios en BD
+        "reportes_diarios_db"
     ]
     data = {k: st.session_state[k] for k in claves if k in st.session_state}
     try:
@@ -147,7 +147,7 @@ if "db_inicializada" not in st.session_state:
         "pacientes_db": [], "detalles_pacientes_db": {}, "vitales_db": [], "indicaciones_db": [], "turnos_db": [], 
         "evoluciones_db": [], "facturacion_db": [], "logs_db": [], "balance_db": [], "pediatria_db": [], "fotos_heridas_db": [],
         "agenda_db": [], "checkin_db": [], "inventario_db": [], "consumos_db": [], "nomenclador_db": [], "firmas_tactiles_db": [],
-        "reportes_diarios_db": [] # NUEVO
+        "reportes_diarios_db": []
     }
     if db:
         for k, v in db.items(): st.session_state[k] = v
@@ -162,7 +162,7 @@ if "logeado" not in st.session_state: st.session_state["logeado"] = False
 if not st.session_state["logeado"]:
     _, col, _ = st.columns([1,1.5,1])
     with col:
-        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V9.3</h2>", unsafe_allow_html=True)
+        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V9.4</h2>", unsafe_allow_html=True)
         tab_login, tab_recuperar = st.tabs(["🔑 Iniciar Sesión", "🆘 Olvidé mi Contraseña"])
         with tab_login:
             with st.form("login", clear_on_submit=True):
@@ -263,7 +263,7 @@ with st.sidebar:
 # --- MENU DINÁMICO ---
 menu = ["📍 Visitas y Agenda", "📈 Dashboard", "👤 Admisión", "📊 Clínica", "👶 Pediatría", "📝 Evolución", "💉 Materiales", "💊 Recetas", "⚖️ Balance", "📦 Inventario", "💳 Caja", "📚 Historial", "🗄️ PDF"]
 if rol in ["SuperAdmin", "Coordinador"]: 
-    menu.append("📑 Cierre Diario") # NUEVA PESTAÑA SÚPER IMPORTANTE
+    menu.append("📑 Cierre Diario")
     menu.append("⚙️ Mi Equipo")
 if rol == "SuperAdmin": 
     menu.append("🕵️ Auditoría")
@@ -497,7 +497,6 @@ with tabs[menu.index("💉 Materiales")]:
                                 st.warning(f"⚠️ Stock insuficiente. El stock de {insumo_sel} quedará negativo.")
                                 i["stock"] -= cant_usada
                             break
-                    # NUEVO: Guardamos la "empresa" en el consumo para el reporte diario
                     st.session_state["consumos_db"].append({"paciente": paciente_sel, "insumo": insumo_sel, "cantidad": cant_usada, "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"], "empresa": mi_empresa})
                     guardar_datos(); st.success(f"✅ {cant_usada}x {insumo_sel} registrado y descontado del stock."); st.rerun()
                     
@@ -531,7 +530,7 @@ with tabs[menu.index("⚖️ Balance")]:
                 st.session_state["balance_db"].append({"paciente": paciente_sel, "ingresos": ting, "egresos": tegr, "balance": bal, "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
                 guardar_datos(); st.rerun()
 
-# 10. INVENTARIO (LISTA EXTENDIDA Y ORDENADA ALFABÉTICAMENTE)
+# 10. INVENTARIO (CARGA SÚPER RÁPIDA Y A LA VISTA)
 with tabs[menu.index("📦 Inventario")]:
     inv_mio = [i for i in st.session_state["inventario_db"] if i["empresa"] == mi_empresa]
     if inv_mio:
@@ -543,9 +542,9 @@ with tabs[menu.index("📦 Inventario")]:
             st.divider()
 
     with st.form("form_inv", clear_on_submit=True):
-        c1, c2 = st.columns([3, 1])
+        st.write("Agregá insumos rápido. Podés elegir uno de la lista frecuente **O** escribir uno nuevo al lado:")
+        c1, c2, c3 = st.columns([2, 2, 1])
         
-        # Lista Inteligente Expandida y Ordenada
         lista_base_bruta = [
             "Gasas 10x10", "Gasas 5x5", "Jeringa 10ml", "Jeringa 5ml", "Jeringa 3ml", 
             "Aguja 40/8", "Aguja 25/8", "Guantes descartables", "Solución Fisiológica 500ml", 
@@ -554,20 +553,18 @@ with tabs[menu.index("📦 Inventario")]:
             "Dipirona ampolla", "Agua Oxigenada 10 vol", "Catéter Intravenoso", "Sonda Foley", 
             "Sonda Nasogástrica", "Llave de 3 vías", "Venda elástica", "Tegaderm", "Lidocaína ampolla"
         ]
-        lista_base = sorted(lista_base_bruta) + ["-- Otro (Cargar Manualmente) --"]
+        lista_base = ["-- Elegir del Catálogo --"] + sorted(lista_base_bruta)
         
-        item_sel = c1.selectbox("Seleccionar Insumo / Medicación Básica:", lista_base)
-        
-        nuevo_item_manual = ""
-        if item_sel == "-- Otro (Cargar Manualmente) --":
-            nuevo_item_manual = c1.text_input("Escribir nombre del insumo particular:")
-            
-        cantidad_ini = c2.number_input("Cantidad a sumar al stock", min_value=1, value=10)
+        # Opciones Lado a Lado
+        item_sel = c1.selectbox("1. Catálogo Frecuente:", lista_base)
+        nuevo_item_manual = c2.text_input("O 2. Escribir Insumo Nuevo:")
+        cantidad_ini = c3.number_input("Cantidad", min_value=1, value=10)
         
         if st.form_submit_button("Actualizar Stock", width="stretch"):
-            item_final = nuevo_item_manual.strip().title() if item_sel == "-- Otro (Cargar Manualmente) --" else item_sel
+            # Lógica: Si el usuario escribe algo en la caja, eso mata al catálogo.
+            item_final = nuevo_item_manual.strip().title() if nuevo_item_manual.strip() else item_sel
             
-            if item_final:
+            if item_final and item_final != "-- Elegir del Catálogo --":
                 encontrado = False
                 for i in st.session_state["inventario_db"]:
                     if i["item"].lower() == item_final.lower() and i["empresa"] == mi_empresa:
@@ -695,7 +692,7 @@ with tabs[menu.index("🗄️ PDF")]:
             pdf.line(21, 14, 21, 28); pdf.line(14, 21, 28, 21)
             emp_paciente = st.session_state["detalles_pacientes_db"].get(p, {}).get("empresa", mi_empresa)
             pdf.set_font("Arial", 'B', 16); pdf.set_xy(38, 14); pdf.cell(0, 10, t(emp_paciente), ln=True)
-            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V9.3)"), ln=True); pdf.ln(15)
+            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V9.4)"), ln=True); pdf.ln(15)
             
             det = st.session_state["detalles_pacientes_db"].get(p, {})
             estado_texto = " [ARCHIVADO/ALTA]" if det.get("estado") == "De Alta" else ""
@@ -799,7 +796,7 @@ Asimismo, entiendo que los registros clinicos seran resguardados en formato digi
         st.download_button("📥 1. Generar Historia Clínica en PDF", crear_pdf_pro(paciente_sel), f"HC_{paciente_sel}.pdf", "application/pdf")
         st.download_button("📄 2. Descargar Consentimiento Informado Legal", crear_consentimiento_pdf(paciente_sel), f"Consentimiento_{paciente_sel}.pdf", "application/pdf")
 
-# 14. CIERRE DIARIO Y REPORTES DE STOCK (NUEVO SÚPER MÓDULO)
+# 14. CIERRE DIARIO Y REPORTES DE STOCK
 if "📑 Cierre Diario" in menu:
     with tabs[menu.index("📑 Cierre Diario")]:
         st.subheader("📑 Conciliación y Cierre Diario de Operaciones")
@@ -809,11 +806,8 @@ if "📑 Cierre Diario" in menu:
         fecha_reporte = c1_rep.date_input("Filtrar por Fecha:")
         fecha_str = fecha_reporte.strftime("%d/%m/%Y")
         
-        # Filtrar consumos
         consumos_dia = [c for c in st.session_state.get("consumos_db", []) if c.get("fecha", "").startswith(fecha_str) and c.get("empresa", mi_empresa) == mi_empresa]
-        # Filtrar facturacion
         facturacion_dia = [f for f in st.session_state.get("facturacion_db", []) if f.get("fecha", "") == fecha_str and f.get("empresa", "") == mi_empresa]
-        # Stock actual
         stock_actual = [i for i in st.session_state.get("inventario_db", []) if i.get("empresa", "") == mi_empresa]
 
         with st.expander(f"📦 1. Insumos Consumidos el {fecha_str}", expanded=True):
@@ -851,7 +845,6 @@ if "📑 Cierre Diario" in menu:
                 pdf.cell(0, 8, t(f"Fecha Auditada: {fecha_str} | Generado por: {user['nombre']} a las {ahora().strftime('%H:%M')} hs"), ln=True, align='C')
                 pdf.ln(5)
 
-                # SECCIÓN 1
                 pdf.set_fill_color(220, 220, 220)
                 pdf.set_font("Arial", 'B', 11)
                 pdf.cell(0, 8, t("1. INSUMOS CONSUMIDOS EN EL DIA"), 1, 1, 'L', True)
@@ -863,7 +856,6 @@ if "📑 Cierre Diario" in menu:
                         pdf.cell(0, 6, t(f" > {c['cantidad']}x {c['insumo']} | Paciente: {c['paciente']} | Usado por: {c.get('firma','')} a las {c.get('fecha','').split(' ')[-1]} hs"), ln=True)
                 pdf.ln(5)
 
-                # SECCIÓN 2
                 pdf.set_font("Arial", 'B', 11)
                 pdf.cell(0, 8, t("2. PROCEDIMIENTOS Y CAJA DEL DIA"), 1, 1, 'L', True)
                 pdf.set_font("Arial", '', 9)
@@ -878,7 +870,6 @@ if "📑 Cierre Diario" in menu:
                     pdf.cell(0, 8, t(f"TOTAL FACTURADO DEL DIA: ${total_f}"), ln=True)
                 pdf.ln(5)
 
-                # SECCIÓN 3
                 pdf.set_font("Arial", 'B', 11)
                 pdf.cell(0, 8, t("3. BALANCE DE STOCK EN FARMACIA (AL CIERRE)"), 1, 1, 'L', True)
                 pdf.set_font("Arial", '', 9)
@@ -1006,4 +997,4 @@ if "🕵️ Auditoría" in menu:
         else:
             st.error("Librería FPDF no disponible. Instalar para generar reportes.")
 
-# --- FIN DEL SISTEMA MEDICARE PRO V9.3 ---
+# --- FIN DEL SISTEMA MEDICARE PRO V9.4 ---
