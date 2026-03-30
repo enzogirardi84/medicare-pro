@@ -630,7 +630,7 @@ with tabs[menu.index("📝 Evolución")]:
                         st.session_state["fotos_heridas_db"].append({"paciente": paciente_sel, "fecha": fecha_n, "descripcion": desc_w, "base64_foto": base64_foto, "firma": user["nombre"]})
                     guardar_datos(); st.rerun()
 
-# 6.5 ESTUDIOS COMPLEMENTARIOS (CON UPLOAD DE ARCHIVOS Y ANTI-COLAPSO)
+# 6.5 ESTUDIOS COMPLEMENTARIOS (CON UPLOAD Y CARPETAS INTELIGENTES)
 with tabs[menu.index("🔬 Estudios")]:
     if paciente_sel:
         st.subheader("Órdenes y Resultados de Estudios")
@@ -642,7 +642,6 @@ with tabs[menu.index("🔬 Estudios")]:
             ])
             detalle_estudio = col_e2.text_input("Detalle del Pedido o Resultado (Ej: Rx Tórax frente...)")
             
-            # --- NUEVO: UPLOADER MEJORADO PARA GALERÍA Y PDF ---
             st.markdown("##### 📎 Adjuntar Documento (Opcional)")
             archivo_subido = st.file_uploader("Subir archivo, foto de galería o PDF", type=["png", "jpg", "jpeg", "pdf"])
             
@@ -652,8 +651,6 @@ with tabs[menu.index("🔬 Estudios")]:
             if st.form_submit_button("Guardar Estudio Clínico", width="stretch"):
                 img_b64 = ""
                 ext = ""
-                
-                # Lógica Inteligente: Prioriza el archivo de galería/pdf si hay ambos
                 if archivo_subido is not None:
                     img_b64 = base64.b64encode(archivo_subido.getvalue()).decode('utf-8')
                     ext = archivo_subido.name.split('.')[-1].lower()
@@ -663,7 +660,7 @@ with tabs[menu.index("🔬 Estudios")]:
 
                 st.session_state["estudios_db"].append({
                     "paciente": paciente_sel,
-                    "fecha": ahora().strftime("%d/%m/%Y %H:%M:%S"), # Segundos para evitar errores de sistema
+                    "fecha": ahora().strftime("%d/%m/%Y %H:%M:%S"),
                     "tipo": tipo_estudio,
                     "detalle": detalle_estudio,
                     "imagen": img_b64,
@@ -671,6 +668,33 @@ with tabs[menu.index("🔬 Estudios")]:
                     "firma": user["nombre"]
                 })
                 guardar_datos(); st.success("✅ Estudio guardado correctamente."); st.rerun()
+
+        estudios_pac = [e for e in st.session_state.get("estudios_db", []) if e["paciente"] == paciente_sel]
+        if estudios_pac:
+            st.divider()
+            st.markdown("#### 📁 Archivo de Estudios del Paciente")
+            limite_est = st.selectbox("Mostrar últimos:", [10, 20, 50, "Todos"], key="lim_estudios_tab")
+            estudios_mostrar = estudios_pac if limite_est == "Todos" else estudios_pac[-int(limite_est):]
+            
+            # Cajita anti-colapso con scroll
+            with st.container(height=500):
+                for idx, est in enumerate(reversed(estudios_mostrar)):
+                    # Diseño de Carpeta/Tarjeta individual
+                    with st.container(border=True):
+                        st.markdown(f"**📅 Fecha:** {est['fecha']} | 👨‍⚕️ **Profesional:** {est['firma']}")
+                        st.markdown(f"**🔬 Estudio:** {est['tipo']}")
+                        st.markdown(f"**📝 Detalle:** {est.get('detalle', 'Sin detalle')}")
+                        
+                        if est.get('imagen'):
+                            try:
+                                img_bytes = base64.b64decode(est['imagen'])
+                                # LÓGICA INTELIGENTE: Si detecta que es PDF, arma botón. Si no, muestra foto.
+                                if img_bytes.startswith(b'%PDF') or est.get('extension') == 'pdf':
+                                    st.download_button("📥 Descargar PDF Adjunto", data=img_bytes, file_name=f"Estudio_{est['fecha'][:10].replace('/','-')}.pdf", mime="application/pdf", key=f"dl_pdf_tab_{idx}_{est['fecha']}")
+                                else:
+                                    st.image(img_bytes, caption="Documento Adjunto", use_container_width=True)
+                            except Exception:
+                                st.error("⚠️ Archivo corrupto o no reconocido.")
 
         # --- NUEVO: SISTEMA ANTI-COLAPSO PARA EL HISTORIAL DE ESTUDIOS ---
         estudios_pac = [e for e in st.session_state.get("estudios_db", []) if e["paciente"] == paciente_sel]
@@ -892,15 +916,26 @@ with tabs[menu.index("📚 Historial")]:
                     for e in reversed(evs[-limite:]): st.info(f"📅 **{e['fecha']}** | {e['firma']}\n\n{e['nota']}")
             else: st.write("No hay evoluciones médicas cargadas.")
 
-        # NUEVO: HISTORIAL DE ESTUDIOS COMPLEMENTARIOS
+        # NUEVO: HISTORIAL DE ESTUDIOS COMPLEMENTARIOS (CON CARPETAS Y REPARACIÓN PDF)
         with st.expander("🔬 Estudios Complementarios"):
             estudios = [x for x in st.session_state.get("estudios_db", []) if x["paciente"] == paciente_sel]
             if estudios:
                 with st.container(height=350):
-                    for est in reversed(estudios[-limite:]): 
-                        st.info(f"🔬 **{est['tipo']}** | {est['fecha']} por {est['firma']}\n\nDetalle: {est['detalle']}")
-                        if est.get('imagen'):
-                            st.image(base64.b64decode(est['imagen']), caption="Documento Adjunto")
+                    for idx, est in enumerate(reversed(estudios[-limite:])): 
+                        # Diseño de Carpeta/Tarjeta individual
+                        with st.container(border=True):
+                            st.markdown(f"**📁 {est['fecha']} - {est['tipo']}** (Por {est['firma']})")
+                            st.markdown(f"*{est['detalle']}*")
+                            
+                            if est.get('imagen'):
+                                try:
+                                    img_bytes = base64.b64decode(est['imagen'])
+                                    if img_bytes.startswith(b'%PDF') or est.get('extension') == 'pdf':
+                                        st.download_button("📥 Descargar PDF", data=img_bytes, file_name=f"Estudio.pdf", mime="application/pdf", key=f"dl_pdf_hist_{idx}_{est['fecha']}")
+                                    else:
+                                        st.image(img_bytes, caption="Documento Adjunto", use_container_width=True)
+                                except Exception:
+                                    st.error("⚠️ Error al leer archivo adjunto.")
             else: st.write("No hay estudios complementarios registrados.")
             
         with st.expander("💉 Materiales Utilizados"):
