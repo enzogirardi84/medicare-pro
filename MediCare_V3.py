@@ -555,6 +555,7 @@ with tabs[menu.index("📊 Clínica")]:
             u = vits[-1]; c1, c2, c3, c4, c5, c6 = st.columns(6)
             c1.metric("T.A.", u.get("TA", "-")); c2.metric("F.C.", f"{u.get('FC', '-')} lpm"); c3.metric("F.R.", f"{u.get('FR', '-')} rpm")
             c4.metric("SatO2", f"{u.get('Sat', '-')}%"); c5.metric("Temp", f"{u.get('Temp', '-')} °C"); c6.metric("HGT", u.get("HGT", "-"))
+        
         with st.form("vitales_f", clear_on_submit=True):
             ta = st.text_input("Tensión Arterial (TA)", "120/80")
             col_signos = st.columns(5)
@@ -570,6 +571,15 @@ with tabs[menu.index("📊 Clínica")]:
                 if sat < 90: st.error(f"🚨 ALERTA ROJA: Desaturación crítica (SatO2: {sat}%)."); alerta_disparada = True
                 if temp > 38.0: st.warning(f"⚠️ ALERTA AMARILLA: Paciente febril (Temp: {temp}°C)."); alerta_disparada = True
                 if not alerta_disparada: st.rerun()
+
+        # --- NUEVO: HISTORIAL ANTI-COLAPSO EN LA MISMA PESTAÑA ---
+        if vits:
+            st.divider()
+            st.markdown("#### 📋 Historial de Signos Vitales (Tendencia)")
+            with st.container(height=250):
+                # Armamos un dataframe rápido sin la columna 'paciente' y lo damos vuelta para ver el más nuevo arriba
+                df_vits = pd.DataFrame(vits).drop(columns=["paciente"], errors='ignore')
+                st.dataframe(df_vits.iloc[::-1], use_container_width=True, hide_index=True)
 
 # 5. PEDIATRÍA 
 with tabs[menu.index("👶 Pediatría")]:
