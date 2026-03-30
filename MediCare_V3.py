@@ -825,17 +825,30 @@ with tabs[menu.index("💊 Recetas")]:
             
             f = c_rec5.number_input("Días de Tratamiento", min_value=1, max_value=90, value=7)
             
+            # --- NUEVO: CARGA DE MÉDICO PRESCRIPTOR ---
+            st.markdown("##### 👨‍⚕️ Transcripción de Receta Papel (Opcional)")
+            c_doc1, c_doc2 = st.columns(2)
+            med_doc = c_doc1.text_input("Nombre del Médico Prescriptor (Si dejó receta física)")
+            mat_doc = c_doc2.text_input("Matrícula (MP / MN)")
+            
             if st.form_submit_button("➕ Cargar Nueva Terapéutica", width="stretch"):
                 med_final = med_manual.strip().title() if med_manual.strip() else med_vademecum
                 
                 if med_final and med_final != "-- Seleccionar del Vademécum --":
                     texto_receta = f"{med_final} | Vía: {p} | {frec} | Durante {f} días."
+                    
+                    # Lógica de trazabilidad legal compartida
+                    if med_doc.strip():
+                        firma_guardar = f"Dr/a. {med_doc.strip()} (Mat: {mat_doc.strip()}) [Cargado por: {user['nombre']}]"
+                    else:
+                        firma_guardar = user["nombre"]
+                        
                     st.session_state["indicaciones_db"].append({
                         "paciente": paciente_sel, 
                         "med": texto_receta, 
                         "fecha": ahora().strftime("%d/%m/%Y %H:%M:%S"), 
                         "dias_duracion": f, 
-                        "firma": user["nombre"]
+                        "firma": firma_guardar
                     })
                     guardar_datos(); st.rerun()
 
@@ -885,6 +898,7 @@ with tabs[menu.index("💊 Recetas")]:
                     med_nombre = partes[0].strip()
                     via = partes[1].replace("Vía: ", "").strip() if len(partes) > 1 else ""
                     frecuencia = partes[2].strip() if len(partes) > 2 else ""
+                    firma_prescriptor = r.get('firma', 'S/D')
 
                     admins_esta_med = [a for a in todas_admins if a["med"] == med_nombre and a["estado"] == "✅ Realizada"]
                     if admins_esta_med:
@@ -901,6 +915,7 @@ with tabs[menu.index("💊 Recetas")]:
 **💊 {med_nombre}**
 * **Pauta:** {via} | {frecuencia}
 * **Período Indicado:** Del {f_ini.strftime('%d/%m/%Y')} al {f_fin.strftime('%d/%m/%Y')} (Duración: {dias_dur} días)
+* **Indicado por:** {firma_prescriptor}
 * {texto_ultima}
                     """)
             else:
@@ -962,22 +977,18 @@ with tabs[menu.index("💊 Recetas")]:
                     c_med, c_hora = st.columns([2, 1])
                     med_sel = c_med.selectbox("1. Medicación a registrar:", meds_activas_nombres)
                     
-                    # Generamos horas en punto para la carga rápida
                     opciones_hora = [f"{i:02d}:00" for i in range(24)]
                     hora_actual_str = f"{ahora().hour:02d}:00"
                     idx_hora = opciones_hora.index(hora_actual_str) if hora_actual_str in opciones_hora else 0
                     
                     hora_sel = c_hora.selectbox("2. Hora de la dosis:", opciones_hora, index=idx_hora)
-                    
                     estado_sel = st.radio("3. Estado de la aplicación:", ["✅ Realizada", "❌ No realizada / Suspendida"], horizontal=True)
-                    
                     justificacion = st.text_input("4. Justificación Clínica (OBLIGATORIA si marca ❌ No realizada):", placeholder="Ej: Paciente hipotenso, falta de stock, etc.")
                     
                     if st.form_submit_button("💾 Guardar Registro", width="stretch"):
                         if "❌" in estado_sel and not justificacion.strip():
                             st.error("🚨 LEGAL: Es obligatorio justificar clínicamente por qué no se administró la dosis en esa hora.")
                         else:
-                            # Eliminamos el registro previo de ESA hora para ESA droga (por si se equivocaron y corrigen)
                             st.session_state["administracion_med_db"] = [
                                 a for a in st.session_state["administracion_med_db"]
                                 if not (a["paciente"] == paciente_sel and a["fecha"] == fecha_hoy and a["med"] == med_sel and a["hora"] == hora_sel)
