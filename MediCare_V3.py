@@ -834,7 +834,7 @@ with tabs[menu.index("💊 Recetas")]:
                         "paciente": paciente_sel, 
                         "med": texto_receta, 
                         "fecha": ahora().strftime("%d/%m/%Y %H:%M:%S"), 
-                        "dias_duracion": f, # NUEVO: El sistema memoriza el número exacto de días
+                        "dias_duracion": f, 
                         "firma": user["nombre"]
                     })
                     guardar_datos(); st.rerun()
@@ -849,19 +849,16 @@ with tabs[menu.index("💊 Recetas")]:
             ahora_naive = ahora().replace(tzinfo=None)
 
             for r in recs_paciente:
-                # 1. Leer la fecha en la que se indicó
                 try:
                     fecha_inicio = datetime.strptime(r["fecha"], "%d/%m/%Y %H:%M:%S")
                 except ValueError:
-                    fecha_inicio = datetime.strptime(r["fecha"], "%d/%m/%Y %H:%M") # Respaldo para recetas viejas
+                    fecha_inicio = datetime.strptime(r["fecha"], "%d/%m/%Y %H:%M")
 
-                # 2. Leer cuántos días duraba
                 dias = r.get("dias_duracion")
-                if dias is None: # Si es una receta vieja cargada antes de esta actualización, intenta adivinarlo del texto
+                if dias is None: 
                     match = re.search(r'Durante (\d+) días', r["med"])
                     dias = int(match.group(1)) if match else 30 
 
-                # 3. Calcular la fecha final y comparar
                 fecha_fin = fecha_inicio + timedelta(days=dias)
 
                 if ahora_naive > fecha_fin:
@@ -880,68 +877,126 @@ with tabs[menu.index("💊 Recetas")]:
             else:
                 st.info("✅ El paciente no tiene medicación activa indicada en este momento.")
 
-            # --- PANEL DE MEDICACIÓN FINALIZADA (OCULTO POR DEFECTO) ---
+            # --- PANEL DE MEDICACIÓN FINALIZADA ---
             if finalizadas:
                 with st.expander("🔴 Tratamientos Finalizados / Vencidos"):
                     for r in reversed(finalizadas):
                         st.error(f"❌ **FINALIZADO** | Iniciado: {r['fecha'][:10]} | {r['med']} *(Por: {r.get('firma', 'S/D')})*")
 
-            # --- NUEVO: REGISTRO DE ADMINISTRACIÓN DE ENFERMERÍA ---
+            # --- NUEVO: SÁBANA DE ENFERMERÍA (MAR) 24 HORAS ---
             st.divider()
-            st.markdown("#### 🩺 Control Diario de Enfermería (MAR)")
-            
+            st.markdown("#### 🩺 Sábana de Enfermería (MAR 24hs)")
+            st.info("💡 **Instrucciones:** En la tabla, hacé doble clic en la hora correspondiente para cambiar a **✅ (Dada)** o **❌ (No Dada)**. Si marcás la cruz roja, estás obligado a escribir el motivo en la columna de 'Justificación'.")
+
             if activas:
-                with st.form("form_admin_med", clear_on_submit=True):
-                    st.caption("Registrar aplicación de medicación:")
-                    
-                    # 1. Lista desplegable con la medicación activa del paciente
-                    meds_activas_list = [r['med'] for r in activas]
-                    med_sel = st.selectbox("Seleccionar Medicación Indicada", meds_activas_list)
-
-                    # 2. Hora y Estado
-                    c_h, c_est = st.columns([1, 2])
-                    hora_admin = c_h.time_input("Hora", value=ahora().time())
-                    estado_admin = c_est.selectbox("Estado de la aplicación", ["✅ Realizada", "❌ No realizada", "⚠️ Suspendida"])
-
-                    # 3. Justificación (Motivo)
-                    motivo = st.text_input("Justificación clínica (Obligatorio si no se realiza o se suspende, ej: Paciente hipotenso):")
-
-                    if st.form_submit_button("Registrar en Planilla", width="stretch"):
-                        # Validación: Si no la hizo, tiene que justificar sí o sí.
-                        if estado_admin != "✅ Realizada" and not motivo.strip():
-                            st.error("🚨 Debes especificar el motivo clínico por el cual no se administró o se suspendió la medicación.")
-                        else:
-                            st.session_state["administracion_med_db"].append({
-                                "paciente": paciente_sel,
-                                "med": med_sel.split(" |")[0], # Guardamos solo el nombre para que la tabla no sea gigante
-                                "fecha": ahora().strftime("%d/%m/%Y"),
-                                "hora": hora_admin.strftime("%H:%M"),
-                                "estado": estado_admin,
-                                "motivo": motivo.strip(),
-                                "firma": user["nombre"]
-                            })
-                            guardar_datos()
-                            st.success("✅ Administración registrada exitosamente.")
-                            st.rerun()
-
-                # --- TABLA DE CONTROL DEL DÍA ---
-                st.markdown("##### 📅 Planilla de Aplicaciones de Hoy")
                 fecha_hoy = ahora().strftime("%d/%m/%Y")
-                
-                # Filtramos las aplicaciones de este paciente en el día de hoy
                 admin_hoy = [a for a in st.session_state.get("administracion_med_db", []) 
                              if a["paciente"] == paciente_sel and a["fecha"] == fecha_hoy]
-
-                if admin_hoy:
-                    df_admin = pd.DataFrame(admin_hoy)
-                    # Ordenamos para mostrar y renombramos columnas para prolijidad
-                    df_admin = df_admin[["hora", "med", "estado", "motivo", "firma"]]
-                    df_admin.columns = ["Hora", "Fármaco", "Estado", "Justificación", "Enfermero/a"]
+                
+                # Definir columnas de horas (00 a 23)
+                horas_cols = [f"{i:02d}hs" for i in range(24)]
+                
+                # Construir los datos para la tabla
+                data_mar = []
+                for r in activas:
+                    med_nombre = r['med'].split(" |")[0].strip()
+                    texto_frecuencia = r['med'].lower()
                     
-                    # Mostrar la tabla. Los emojis de "estado" harán de semáforo visual (verde, rojo, amarillo)
-                    st.dataframe(df_admin.sort_values(by="Hora", ascending=False), use_container_width=True, hide_index=True)
-                else:
-                    st.info("Aún no se registraron aplicaciones de medicación en el día de la fecha.")
+                    # Sugerencia visual automática para el enfermero
+                    sugerencia = ""
+                    if "cada 4 horas" in texto_frecuencia: sugerencia = " (00-04-08-12-16-20)"
+                    elif "cada 6 horas" in texto_frecuencia: sugerencia = " (00-06-12-18)"
+                    elif "cada 8 horas" in texto_frecuencia: sugerencia = " (00-08-16)"
+                    elif "cada 12 horas" in texto_frecuencia: sugerencia = " (08-20)"
+                    elif "cada 24 horas" in texto_frecuencia: sugerencia = " (08)"
+                    
+                    fila = {"Medicación Indicada": f"{med_nombre}{sugerencia}"}
+                    
+                    # Inicializar horas vacías (con un guion)
+                    for h in horas_cols: fila[h] = "➖"
+                    fila["Justificación (Si se omite)"] = ""
+                    
+                    # Rellenar con los datos guardados de hoy
+                    for a in admin_hoy:
+                        if a["med"] == med_nombre:
+                            hora_corta = a["hora"].split(":")[0] + "hs"
+                            if hora_corta in horas_cols:
+                                if a["estado"] == "✅ Realizada": fila[hora_corta] = "✅"
+                                elif a["estado"] in ["❌ No realizada", "⚠️ Suspendida"]: 
+                                    fila[hora_corta] = "❌"
+                                    fila["Justificación (Si se omite)"] = a["motivo"]
+                    
+                    data_mar.append(fila)
+                
+                df_mar = pd.DataFrame(data_mar)
+                
+                # Configurar la tabla interactiva
+                column_config = {
+                    "Medicación Indicada": st.column_config.TextColumn("Medicación Indicada", disabled=True, width="medium"),
+                    "Justificación (Si se omite)": st.column_config.TextColumn("Justificación (Si se omite)", width="medium")
+                }
+                # Poner el menú desplegable en cada columna de hora
+                for h in horas_cols:
+                    column_config[h] = st.column_config.SelectboxColumn(h, options=["➖", "✅", "❌"], width="small")
+                
+                with st.form("form_mar_24"):
+                    # Renderizamos la sábana gigante editable
+                    edited_df = st.data_editor(
+                        df_mar, 
+                        column_config=column_config, 
+                        hide_index=True, 
+                        use_container_width=True
+                    )
+                    
+                    if st.form_submit_button("💾 Guardar Sábana del Día", width="stretch"):
+                        error_justificacion = False
+                        
+                        # 1. Validar que no haya cruces rojas sin justificación ANTES de guardar
+                        for index, row in edited_df.iterrows():
+                            justif = str(row["Justificación (Si se omite)"])
+                            for h in horas_cols:
+                                if row[h] == "❌" and (not justif.strip() or justif in ["None", "nan"]):
+                                    error_justificacion = True
+                                    med_err = str(row["Medicación Indicada"]).split(" (")[0].strip()
+                                    st.error(f"🚨 Faltó justificar por qué NO le diste {med_err} a las {h}.")
+                        
+                        if not error_justificacion:
+                            # Sacamos los registros viejos de hoy para reemplazarlos limpios
+                            st.session_state["administracion_med_db"] = [
+                                a for a in st.session_state.get("administracion_med_db", []) 
+                                if not (a["paciente"] == paciente_sel and a["fecha"] == fecha_hoy)
+                            ]
+                            
+                            # Rescatamos los previos para no borrar la firma de otro enfermero que haya pasado antes
+                            registros_previos = {(a["med"], a["hora"]): a for a in admin_hoy}
+                            
+                            nuevos_registros = []
+                            for index, row in edited_df.iterrows():
+                                med_puro = str(row["Medicación Indicada"]).split(" (")[0].strip()
+                                justif = str(row["Justificación (Si se omite)"])
+                                if justif in ["None", "nan"]: justif = ""
+                                
+                                for h in horas_cols:
+                                    valor = row[h]
+                                    hora_db = h.replace("hs", ":00")
+                                    key = (med_puro, hora_db)
+                                    
+                                    if valor == "✅":
+                                        if key in registros_previos and registros_previos[key]["estado"] == "✅ Realizada":
+                                            nuevos_registros.append(registros_previos[key]) # Mantiene firma original
+                                        else:
+                                            nuevos_registros.append({"paciente": paciente_sel, "med": med_puro, "fecha": fecha_hoy, "hora": hora_db, "estado": "✅ Realizada", "motivo": "", "firma": user["nombre"]})
+                                    elif valor == "❌":
+                                        if key in registros_previos and registros_previos[key]["estado"] == "❌ No realizada" and registros_previos[key]["motivo"] == justif:
+                                            nuevos_registros.append(registros_previos[key]) # Mantiene firma original
+                                        else:
+                                            nuevos_registros.append({"paciente": paciente_sel, "med": med_puro, "fecha": fecha_hoy, "hora": hora_db, "estado": "❌ No realizada", "motivo": justif, "firma": user["nombre"]})
+                                            
+                            st.session_state["administracion_med_db"].extend(nuevos_registros)
+                            guardar_datos()
+                            st.success("✅ Sábana de medicación actualizada correctamente.")
+                            st.rerun()
+
             else:
                 st.warning("El paciente no tiene medicación activa para administrar.")
 
