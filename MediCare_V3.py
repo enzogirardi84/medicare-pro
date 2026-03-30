@@ -927,7 +927,8 @@ if "⚙️ Mi Equipo" in menu:
         for u, d in list({k: v for k, v in st.session_state["usuarios_db"].items() if v["empresa"] == mi_empresa or rol == "SuperAdmin"}.items()):
             if u == "admin": continue
             c1, c2, c3 = st.columns([3, 1, 1])
-            c1.write(f"🏢 {d['empresa']} | 👤 {d['nombre']} | Login: `{u}` | PIN: `{d.get('pin', 'S/D')}` | Estado: **{d.get('estado', 'Activo')}**")
+            # ACÁ SE AGREGÓ EL ROL EN LA PANTALLA 👇
+            c1.write(f"🏢 {d['empresa']} | 👤 **{d['nombre']}** *(Rol: {d.get('rol', 'Operativo')})* | Login: `{u}` | PIN: `{d.get('pin', 'S/D')}` | Estado: **{d.get('estado', 'Activo')}**")
             if rol == "SuperAdmin":
                 if d.get("estado", "Activo") == "Activo" and c2.button("⏸️ Suspender", key=f"susp_{u}"): st.session_state["usuarios_db"][u]["estado"] = "Bloqueado"; guardar_datos(); st.rerun()
                 elif d.get("estado", "Activo") != "Activo" and c2.button("▶️ Reactivar", key=f"reac_{u}"): st.session_state["usuarios_db"][u]["estado"] = "Activo"; guardar_datos(); st.rerun()
