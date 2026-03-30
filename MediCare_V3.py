@@ -127,33 +127,99 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# --- 🎨 DISEÑO VISUAL CLÁSICO Y ADAPTATIVO (CSS) ---
-# Se mantiene el bloqueo de pull-to-refresh para optimización móvil, pero se usa el diseño nativo de Streamlit.
+# --- 🎨 DISEÑO VISUAL ENTERPRISE (PREMIUM & OPTIMIZADO) ---
 page_bg_css = """
 <style>
-/* Bloquear recargas accidentales en celulares (Pull-to-refresh) */
-body { overscroll-behavior-y: none; }
+/* 1. Fuente moderna y profesional (Inter) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
+html, body, [class*="css"] {
+    font-family: 'Inter', sans-serif !important;
+}
+
+/* Bloqueo de recarga en celulares (Pull-to-refresh) */
+body { overscroll-behavior-y: none; }
+* { text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
+
+/* 2. Fondo fluido */
 .stApp {
     background-color: var(--background-color);
-    background-image: radial-gradient(circle at top, var(--secondary-background-color) 0%, transparent 80%);
 }
+
+/* 3. Estilo "Tarjetas Flotantes" para Formularios */
 div[data-testid="stForm"] {
     background-color: var(--secondary-background-color);
-    border: 1px solid rgba(150, 150, 150, 0.2);
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(150, 150, 150, 0.15);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
 }
+div[data-testid="stForm"]:hover {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    border-color: rgba(150, 150, 150, 0.3);
+}
+
+/* 4. Botones Primarios 3D */
+.stButton>button {
+    background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+    color: white !important;
+    border: none;
+    min-height: 48px; 
+    border-radius: 12px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    transition: all 0.2s ease-in-out;
+}
+.stButton>button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+}
+.stButton>button:active {
+    transform: scale(0.96);
+}
+
+/* 5. Cajas de Signos Vitales (Métricas) */
+div[data-testid="stMetric"] {
+    background-color: var(--secondary-background-color);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid rgba(150, 150, 150, 0.1);
+    border-left: 4px solid #3b82f6;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+/* 6. Expansores (Acordeones de Historial) */
+div[data-testid="stExpander"] {
+    border-radius: 12px;
+    border: 1px solid rgba(150, 150, 150, 0.15);
+    background-color: var(--secondary-background-color);
+    overflow: hidden;
+}
+div[data-testid="stExpander"] details summary {
+    font-weight: 600;
+    padding: 10px;
+}
+
+/* 7. Botón de WhatsApp Premium */
+.wa-btn {
+    display: block; width: 100%; text-align: center; 
+    background: linear-gradient(135deg, #128C7E 0%, #25D366 100%); 
+    color: white !important; padding: 14px; border-radius: 12px; font-weight: 700; text-decoration: none;
+    margin-top: 10px; margin-bottom: 10px;
+    box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+    transition: all 0.2s ease;
+}
+.wa-btn:hover { 
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(37, 211, 102, 0.4);
+}
+
+/* Ocultar flechas numéricas */
 input[type=number]::-webkit-inner-spin-button, 
 input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 input[type=number] { -moz-appearance: textfield; }
-.wa-btn {
-    display: block; width: 100%; text-align: center; background-color: #25D366; 
-    color: white !important; padding: 10px; border-radius: 8px; font-weight: bold; text-decoration: none;
-    margin-top: 10px; margin-bottom: 10px;
-}
-.wa-btn:hover { background-color: #128C7E; }
 </style>
 """
 st.markdown(page_bg_css, unsafe_allow_html=True)
