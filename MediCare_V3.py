@@ -804,7 +804,7 @@ with tabs[menu.index("💉 Materiales")]:
             st.caption("Últimos materiales registrados:")
             st.dataframe(pd.DataFrame(cons_paciente).drop(columns=["paciente", "empresa"], errors='ignore'), use_container_width=True)
 
-# 8. RECETAS (CON GESTIÓN Y ANTI-COLAPSO)
+# 8. RECETAS (CON VENCIMIENTO AUTOMÁTICO Y GESTIÓN)
 with tabs[menu.index("💊 Recetas")]:
     if paciente_sel:
         st.subheader("Gestión del Plan Terapéutico")
@@ -829,21 +829,64 @@ with tabs[menu.index("💊 Recetas")]:
                 
                 if med_final and med_final != "-- Seleccionar del Vademécum --":
                     texto_receta = f"{med_final} | Vía: {p} | {frec} | Durante {f} días."
-                    st.session_state["indicaciones_db"].append({"paciente": paciente_sel, "med": texto_receta, "fecha": ahora().strftime("%d/%m/%Y %H:%M:%S"), "firma": user["nombre"]})
+                    st.session_state["indicaciones_db"].append({
+                        "paciente": paciente_sel, 
+                        "med": texto_receta, 
+                        "fecha": ahora().strftime("%d/%m/%Y %H:%M:%S"), 
+                        "dias_duracion": f, # NUEVO: El sistema memoriza el número exacto de días
+                        "firma": user["nombre"]
+                    })
                     guardar_datos(); st.rerun()
 
+        # --- LÓGICA DE VENCIMIENTO AUTOMÁTICO ---
         recs_paciente = [r for r in st.session_state.get("indicaciones_db", []) if r["paciente"] == paciente_sel]
         
         if recs_paciente:
+            import re
+            activas = []
+            finalizadas = []
+            ahora_naive = ahora().replace(tzinfo=None)
+
+            for r in recs_paciente:
+                # 1. Leer la fecha en la que se indicó
+                try:
+                    fecha_inicio = datetime.strptime(r["fecha"], "%d/%m/%Y %H:%M:%S")
+                except ValueError:
+                    fecha_inicio = datetime.strptime(r["fecha"], "%d/%m/%Y %H:%M") # Respaldo para recetas viejas
+
+                # 2. Leer cuántos días duraba
+                dias = r.get("dias_duracion")
+                if dias is None: # Si es una receta vieja cargada antes de esta actualización, intenta adivinarlo del texto
+                    match = re.search(r'Durante (\d+) días', r["med"])
+                    dias = int(match.group(1)) if match else 30 
+
+                # 3. Calcular la fecha final y comparar
+                fecha_fin = fecha_inicio + timedelta(days=dias)
+
+                if ahora_naive > fecha_fin:
+                    finalizadas.append(r)
+                else:
+                    activas.append(r)
+
             st.divider()
-            st.markdown("#### 📋 Plan Terapéutico Vigente")
             
-            # --- NUEVO: CAJA CON SCROLL (ANTI-COLAPSO) ---
-            with st.container(height=280):
-                for r in reversed(recs_paciente):
-                    st.info(f"💊 **{r['fecha']}** | {r['med']} *(Por: {r.get('firma', 'S/D')})*")
+            # --- PANEL DE MEDICACIÓN VIGENTE ---
+            st.markdown("#### 🟢 Plan Terapéutico VIGENTE")
+            if activas:
+                with st.container(height=280):
+                    for r in reversed(activas):
+                        st.success(f"💊 **{r['fecha']}** | {r['med']} *(Por: {r.get('firma', 'S/D')})*")
+            else:
+                st.info("✅ El paciente no tiene medicación activa indicada en este momento.")
+
+            # --- PANEL DE MEDICACIÓN FINALIZADA (OCULTO POR DEFECTO) ---
+            if finalizadas:
+                with st.expander("🔴 Tratamientos Finalizados / Vencidos"):
+                    for r in reversed(finalizadas):
+                        st.error(f"❌ **FINALIZADO** | Iniciado: {r['fecha'][:10]} | {r['med']} *(Por: {r.get('firma', 'S/D')})*")
             
-            st.markdown("#### ⚙️ Modificar o Suspender Indicación")
+            st.divider()
+            st.markdown("#### ⚙️ Modificar o Suspender Manualmente")
             c_ed1, c_ed2 = st.columns([3, 2])
             
             opciones_recetas = [f"[{r['fecha']}] {r['med']}" for r in recs_paciente]
