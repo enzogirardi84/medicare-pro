@@ -12,7 +12,7 @@ import time
 import os
 import tempfile
 from PIL import Image
-import altair as alt # NUEVA LIBRERÍA PARA GRÁFICOS PREMIUM
+import altair as alt
 
 # --- 1. CONFIGURACIÓN DE LIBRERÍAS ---
 FPDF_DISPONIBLE = False
@@ -37,7 +37,7 @@ except ImportError:
     GEO_DISPONIBLE = False
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="MediCare Enterprise PRO V9.5", page_icon="⚕️", layout="wide")
+st.set_page_config(page_title="MediCare Enterprise PRO V9.6", page_icon="⚕️", layout="wide")
 st.markdown("<html lang='es' translate='no'>", unsafe_allow_html=True)
 
 # --- ZONA HORARIA ARGENTINA ---
@@ -163,7 +163,7 @@ if "logeado" not in st.session_state: st.session_state["logeado"] = False
 if not st.session_state["logeado"]:
     _, col, _ = st.columns([1,1.5,1])
     with col:
-        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V9.5</h2>", unsafe_allow_html=True)
+        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V9.6</h2>", unsafe_allow_html=True)
         tab_login, tab_recuperar = st.tabs(["🔑 Iniciar Sesión", "🆘 Olvidé mi Contraseña"])
         with tab_login:
             with st.form("login", clear_on_submit=True):
@@ -261,13 +261,11 @@ with st.sidebar:
     st.divider()
     if st.button("Cerrar Sesión", width="stretch"): st.session_state["logeado"] = False; st.rerun()
 
-# --- MENU DINÁMICO Y RESTRINGIDO ---
-# El usuario Operativo SOLO ve las pestañas de trabajo clínico.
+# --- MENU DINÁMICO ---
 menu = ["📍 Visitas y Agenda", "👤 Admisión", "📊 Clínica", "👶 Pediatría", "📝 Evolución", "💉 Materiales", "💊 Recetas", "⚖️ Balance", "📦 Inventario", "💳 Caja", "📚 Historial", "🗄️ PDF"]
 
-# El Coordinador y el SuperAdmin ven TODO (Dashboard, Cierre, Equipo y Auditoría)
 if rol in ["SuperAdmin", "Coordinador"]: 
-    menu.insert(1, "📈 Dashboard") # Lo pone segundo en la lista
+    menu.insert(1, "📈 Dashboard") 
     menu.append("📑 Cierre Diario")
     menu.append("⚙️ Mi Equipo")
     menu.append("🕵️ Auditoría")
@@ -379,16 +377,12 @@ if "📈 Dashboard" in menu:
                     perf_enf = df_evs_s["firma"].value_counts().reset_index()
                     perf_enf.columns = ["Profesional", "Visitas"]
                     
-                    # --- GRÁFICO PREMIUM (ALTAIR) FINO Y REDONDEADO ---
                     chart = alt.Chart(perf_enf).mark_bar(
-                        size=35, # Hace las barras mucho más finas
-                        color='#3b82f6', # Color Enterprise
-                        cornerRadiusTopLeft=5, 
-                        cornerRadiusTopRight=5
+                        size=35, color='#3b82f6', cornerRadiusTopLeft=5, cornerRadiusTopRight=5
                     ).encode(
                         x=alt.X('Profesional:N', sort='-y', title='Profesional / Enfermero'),
                         y=alt.Y('Visitas:Q', title='Cantidad de Visitas Semanales', axis=alt.Axis(tickMinStep=1)),
-                        tooltip=['Profesional', 'Visitas'] # Globito al pasar el mouse
+                        tooltip=['Profesional', 'Visitas']
                     ).properties(height=350)
                     
                     st.altair_chart(chart, use_container_width=True)
@@ -551,7 +545,7 @@ with tabs[menu.index("⚖️ Balance")]:
                 st.session_state["balance_db"].append({"paciente": paciente_sel, "ingresos": ting, "egresos": tegr, "balance": bal, "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
                 guardar_datos(); st.rerun()
 
-# 10. INVENTARIO
+# 10. INVENTARIO (CON EDICIÓN DIRECTA)
 with tabs[menu.index("📦 Inventario")]:
     inv_mio = [i for i in st.session_state["inventario_db"] if i["empresa"] == mi_empresa]
     if inv_mio:
@@ -562,8 +556,9 @@ with tabs[menu.index("📦 Inventario")]:
                 st.warning(f"⚠️ {item['item']}: Quedan solo **{item['stock']}** unidades.")
             st.divider()
 
+    # ZONA 1: AGREGAR O SUMAR STOCK
     with st.form("form_inv", clear_on_submit=True):
-        st.write("Agregá insumos rápido. Podés elegir uno de la lista frecuente **O** escribir uno nuevo al lado:")
+        st.markdown("#### ➕ Ingreso de Mercadería (Suma al stock existente)")
         c1, c2, c3 = st.columns([2, 2, 1])
         
         lista_base_bruta = [
@@ -580,7 +575,7 @@ with tabs[menu.index("📦 Inventario")]:
         nuevo_item_manual = c2.text_input("O 2. Escribir Insumo Nuevo:")
         cantidad_ini = c3.number_input("Cantidad", min_value=1, value=10)
         
-        if st.form_submit_button("Actualizar Stock", width="stretch"):
+        if st.form_submit_button("Sumar Stock", width="stretch"):
             item_final = nuevo_item_manual.strip().title() if nuevo_item_manual.strip() else item_sel
             
             if item_final and item_final != "-- Elegir del Catálogo --":
@@ -593,11 +588,29 @@ with tabs[menu.index("📦 Inventario")]:
                 guardar_datos(); st.rerun()
                 
     st.divider()
+    
+    # ZONA 2: GESTIÓN Y EDICIÓN DEL STOCK ACTUAL
     if inv_mio: 
+        st.markdown("#### 📋 Stock Actual en Farmacia")
         st.dataframe(pd.DataFrame(inv_mio).drop(columns="empresa"), use_container_width=True)
+        
+        st.markdown("#### ⚙️ Ajuste Manual y Corrección")
+        c_ed1, c_ed2, c_ed3 = st.columns([2, 1, 1])
+        item_a_editar = c_ed1.selectbox("Seleccionar Insumo a corregir:", [i["item"] for i in inv_mio], key="edit_sel")
+        
+        nuevo_stock_total = c_ed2.number_input("Declarar Stock Real Exacto:", min_value=0, value=0, key="new_stock")
+        
+        if c_ed3.button("✏️ Fijar Nuevo Stock", use_container_width=True):
+            for i in st.session_state["inventario_db"]:
+                if i["item"] == item_a_editar and i["empresa"] == mi_empresa:
+                    i["stock"] = nuevo_stock_total
+                    break
+            guardar_datos(); st.rerun()
+
+        st.divider()
         col_del1, col_del2 = st.columns([3,1])
-        del_item = col_del1.selectbox("Seleccionar insumo a eliminar", [i["item"] for i in inv_mio])
-        if col_del2.button("Eliminar Insumo", use_container_width=True):
+        del_item = col_del1.selectbox("Seleccionar insumo a eliminar por completo del sistema:", [i["item"] for i in inv_mio], key="del_sel2")
+        if col_del2.button("🗑️ Eliminar Insumo Definitivamente", use_container_width=True):
             st.session_state["inventario_db"] = [i for i in st.session_state["inventario_db"] if not (i["item"] == del_item and i["empresa"] == mi_empresa)]
             guardar_datos(); st.rerun()
 
@@ -711,7 +724,7 @@ with tabs[menu.index("🗄️ PDF")]:
             pdf.line(21, 14, 21, 28); pdf.line(14, 21, 28, 21)
             emp_paciente = st.session_state["detalles_pacientes_db"].get(p, {}).get("empresa", mi_empresa)
             pdf.set_font("Arial", 'B', 16); pdf.set_xy(38, 14); pdf.cell(0, 10, t(emp_paciente), ln=True)
-            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V9.5)"), ln=True); pdf.ln(15)
+            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V9.6)"), ln=True); pdf.ln(15)
             
             det = st.session_state["detalles_pacientes_db"].get(p, {})
             estado_texto = " [ARCHIVADO/ALTA]" if det.get("estado") == "De Alta" else ""
@@ -1016,4 +1029,4 @@ if "🕵️ Auditoría" in menu:
         else:
             st.error("Librería FPDF no disponible. Instalar para generar reportes.")
 
-# --- FIN DEL SISTEMA MEDICARE PRO V9.5 ---
+# --- FIN DEL SISTEMA MEDICARE PRO V9.6 ---
