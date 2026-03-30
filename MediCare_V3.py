@@ -746,33 +746,6 @@ with tabs[menu.index("🔬 Estudios")]:
                             except Exception:
                                 st.error("⚠️ Archivo corrupto o no reconocido.")
 
-        # --- NUEVO: SISTEMA ANTI-COLAPSO PARA EL HISTORIAL DE ESTUDIOS ---
-        estudios_pac = [e for e in st.session_state.get("estudios_db", []) if e["paciente"] == paciente_sel]
-        if estudios_pac:
-            st.divider()
-            st.markdown("#### Historial de Estudios")
-            
-            # Filtro rápido
-            limite_est = st.selectbox("Mostrar últimos:", [10, 20, 50, "Todos"], key="lim_estudios")
-            if limite_est != "Todos":
-                estudios_mostrar = estudios_pac[-int(limite_est):]
-            else:
-                estudios_mostrar = estudios_pac
-                
-            # Cajita con Scroll (Anti-Colapso)
-            with st.container(height=450):
-                for idx, est in enumerate(reversed(estudios_mostrar)):
-                    st.info(f"🔬 **{est['tipo']}** | {est['fecha']} por {est['firma']}\n\nDetalle: {est.get('detalle', '')}")
-                    
-                    if est.get('imagen'):
-                        if est.get('extension') == 'pdf':
-                            # Si es PDF, arma un botón de descarga
-                            pdf_bytes = base64.b64decode(est['imagen'])
-                            st.download_button("📥 Descargar PDF Adjunto", data=pdf_bytes, file_name=f"Estudio_{est['fecha'].replace('/','-').replace(':','')}.pdf", mime="application/pdf", key=f"dl_est_{idx}_{est['fecha']}")
-                        else:
-                            # Si es imagen, la muestra en pantalla
-                            st.image(base64.b64decode(est['imagen']), caption="Imagen Adjunta", use_column_width=True)
-
 # 7. MATERIALES Y DESCARTABLES
 with tabs[menu.index("💉 Materiales")]:
     if paciente_sel:
