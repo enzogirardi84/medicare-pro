@@ -1081,14 +1081,85 @@ with tabs[menu.index("💊 Recetas")]:
 # 9. BALANCE HÍDRICO
 with tabs[menu.index("⚖️ Balance")]:
     if paciente_sel:
+        st.subheader("⚖️ Balance Hídrico Estricto")
+        
         with st.form("bal", clear_on_submit=True):
+            # Fila de metadatos (Fecha, Hora, Turno)
+            col_meta1, col_meta2, col_meta3 = st.columns(3)
+            fecha_bal = col_meta1.date_input("Fecha de control", value=ahora().date())
+            hora_bal = col_meta2.time_input("Hora exacta", value=ahora().time())
+            turno = col_meta3.selectbox("Turno de Guardia", ["Mañana (06 a 14hs)", "Tarde (14 a 22hs)", "Noche (22 a 06hs)"])
+            
+            st.divider()
             c1, c2 = st.columns(2)
-            c1.markdown("#### Ingresos (ml)"); i1 = c1.number_input("Oral", 0, step=100); i2 = c1.number_input("Parenteral", 0, step=100)
-            c2.markdown("#### Egresos (ml)"); e1 = c2.number_input("Orina", 0, step=100); e2 = c2.number_input("Drenajes", 0, step=100); e3 = c2.number_input("Pérdidas Insensibles", 0, step=100)
-            if st.form_submit_button("Calcular Shift", width="stretch"):
-                ting = i1+i2; tegr = e1+e2+e3; bal = ting-tegr
-                st.session_state["balance_db"].append({"paciente": paciente_sel, "ingresos": ting, "egresos": tegr, "balance": bal, "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
-                guardar_datos(); st.rerun()
+            c1.markdown("#### 🟢 Ingresos (ml)")
+            i1 = c1.number_input("Oral / Enteral", 0, step=50)
+            i2 = c1.number_input("Parenteral (Sachets, Medicación)", 0, step=50)
+            
+            c2.markdown("#### 🔴 Egresos (ml)")
+            e1 = c2.number_input("Diuresis (Orina)", 0, step=50)
+            e2 = c2.number_input("Drenajes / Sondas", 0, step=50)
+            e3 = c2.number_input("Pérdidas Insensibles / Catarsis", 0, step=50)
+            
+            if st.form_submit_button("Guardar Balance y Calcular Shift", width="stretch"):
+                ting = i1 + i2
+                tegr = e1 + e2 + e3
+                bal = ting - tegr
+                
+                # Guardamos la fecha combinada para compatibilidad y los datos nuevos desglosados
+                fecha_str_combinada = f"{fecha_bal.strftime('%d/%m/%Y')} {hora_bal.strftime('%H:%M')}"
+                
+                st.session_state["balance_db"].append({
+                    "paciente": paciente_sel, 
+                    "turno": turno,
+                    "i_oral": i1, "i_par": i2,
+                    "e_orina": e1, "e_dren": e2, "e_perd": e3,
+                    "ingresos": ting, 
+                    "egresos": tegr, 
+                    "balance": bal, 
+                    "fecha": fecha_str_combinada,
+                    "firma": user["nombre"]
+                })
+                guardar_datos()
+                st.success(f"✅ Balance registrado con éxito. Resultado del Shift: {bal} ml")
+                st.rerun()
+
+        # --- HISTORIAL ANTI-COLAPSO DE BALANCE ---
+        blp = [x for x in st.session_state["balance_db"] if x["paciente"] == paciente_sel]
+        if blp:
+            st.divider()
+            st.markdown("#### 📋 Historial de Balances Hídricos")
+            
+            with st.container(height=350):
+                df_bal = pd.DataFrame(blp)
+                
+                # Parche de compatibilidad por si tenés balances viejos guardados sin la palabra "turno"
+                if "turno" not in df_bal.columns: 
+                    df_bal["turno"] = "S/D"
+                    
+                # Formateo visual de los datos
+                df_bal["Ingresos"] = df_bal["ingresos"].astype(str) + " ml"
+                df_bal["Egresos"] = df_bal["egresos"].astype(str) + " ml"
+                
+                # Lógica visual para el balance (Positivo, Negativo o Neutro)
+                df_bal["Shift (Resultado)"] = df_bal["balance"].apply(
+                    lambda x: f"🟢 +{x} ml" if float(x) > 0 else (f"🔴 {x} ml" if float(x) < 0 else "⚖️ 0 ml")
+                )
+                
+                # Seleccionamos las columnas para la tabla
+                columnas_mostrar = ["fecha", "turno", "Ingresos", "Egresos", "Shift (Resultado)", "firma"]
+                
+                # Filtramos para evitar errores con base de datos antigua
+                columnas_reales = [c for c in columnas_mostrar if c in df_bal.columns]
+                
+                df_mostrar = df_bal[columnas_reales].rename(columns={
+                    "fecha": "Fecha y Hora", 
+                    "turno": "Turno", 
+                    "firma": "Enfermero/a"
+                })
+                
+                # Mostramos la tabla invertida (último registro arriba)
+                st.dataframe(df_mostrar.iloc[::-1], use_container_width=True, hide_index=True)
 
 # 10. INVENTARIO 
 with tabs[menu.index("📦 Inventario")]:
