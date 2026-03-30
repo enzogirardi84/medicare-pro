@@ -12,6 +12,7 @@ import time
 import os
 import tempfile
 from PIL import Image
+import altair as alt # NUEVA LIBRERÍA PARA GRÁFICOS PREMIUM
 
 # --- 1. CONFIGURACIÓN DE LIBRERÍAS ---
 FPDF_DISPONIBLE = False
@@ -36,7 +37,7 @@ except ImportError:
     GEO_DISPONIBLE = False
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="MediCare Enterprise PRO V9.4", page_icon="⚕️", layout="wide")
+st.set_page_config(page_title="MediCare Enterprise PRO V9.5", page_icon="⚕️", layout="wide")
 st.markdown("<html lang='es' translate='no'>", unsafe_allow_html=True)
 
 # --- ZONA HORARIA ARGENTINA ---
@@ -162,7 +163,7 @@ if "logeado" not in st.session_state: st.session_state["logeado"] = False
 if not st.session_state["logeado"]:
     _, col, _ = st.columns([1,1.5,1])
     with col:
-        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V9.4</h2>", unsafe_allow_html=True)
+        st.markdown("<br><h2 style='text-align:center; color:#3b82f6;'>MediCare Enterprise PRO V9.5</h2>", unsafe_allow_html=True)
         tab_login, tab_recuperar = st.tabs(["🔑 Iniciar Sesión", "🆘 Olvidé mi Contraseña"])
         with tab_login:
             with st.form("login", clear_on_submit=True):
@@ -260,13 +261,17 @@ with st.sidebar:
     st.divider()
     if st.button("Cerrar Sesión", width="stretch"): st.session_state["logeado"] = False; st.rerun()
 
-# --- MENU DINÁMICO ---
-menu = ["📍 Visitas y Agenda", "📈 Dashboard", "👤 Admisión", "📊 Clínica", "👶 Pediatría", "📝 Evolución", "💉 Materiales", "💊 Recetas", "⚖️ Balance", "📦 Inventario", "💳 Caja", "📚 Historial", "🗄️ PDF"]
+# --- MENU DINÁMICO Y RESTRINGIDO ---
+# El usuario Operativo SOLO ve las pestañas de trabajo clínico.
+menu = ["📍 Visitas y Agenda", "👤 Admisión", "📊 Clínica", "👶 Pediatría", "📝 Evolución", "💉 Materiales", "💊 Recetas", "⚖️ Balance", "📦 Inventario", "💳 Caja", "📚 Historial", "🗄️ PDF"]
+
+# El Coordinador y el SuperAdmin ven TODO (Dashboard, Cierre, Equipo y Auditoría)
 if rol in ["SuperAdmin", "Coordinador"]: 
+    menu.insert(1, "📈 Dashboard") # Lo pone segundo en la lista
     menu.append("📑 Cierre Diario")
     menu.append("⚙️ Mi Equipo")
-if rol == "SuperAdmin": 
     menu.append("🕵️ Auditoría")
+
 tabs = st.tabs(menu)
 
 # 1. VISITAS Y AGENDA UNIFICADA
@@ -356,23 +361,39 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
                 st.caption("Próximas visitas agendadas para este paciente:")
                 st.dataframe(pd.DataFrame(agenda_mia).drop(columns=["empresa", "paciente"]).tail(3), use_container_width=True)
 
-# 2. DASHBOARD
-with tabs[menu.index("📈 Dashboard")]:
-    st.markdown(f"<h3 style='color: #3b82f6;'>📈 Panel de Gestión - {mi_empresa}</h3>", unsafe_allow_html=True)
-    if not st.session_state["pacientes_db"]: st.warning("No hay pacientes cargados.")
-    else:
-        df_evs = pd.DataFrame(st.session_state["evoluciones_db"])
-        if not df_evs.empty:
-            df_evs["fecha_c"] = pd.to_datetime(df_evs["fecha"], format="%d/%m/%Y %H:%M")
-            hace_una_semana = (ahora() - timedelta(days=7)).replace(tzinfo=None)
-            if rol == "Coordinador":
-                pacs_mi_empresa = [p for p in st.session_state["detalles_pacientes_db"] if st.session_state["detalles_pacientes_db"][p]['empresa'] == mi_empresa]
-                df_evs = df_evs[df_evs['paciente'].isin(pacs_mi_empresa)]
-            df_evs_s = df_evs[df_evs["fecha_c"] > hace_una_semana]
-            if not df_evs_s.empty:
-                perf_enf = df_evs_s["firma"].value_counts().reset_index()
-                perf_enf.columns = ["Profesional", "Visitas"]
-                st.bar_chart(perf_enf.set_index("Profesional")["Visitas"], color="#3b82f6")
+# 2. DASHBOARD (SOLO VISIBLE PARA ADMIN/COORDINADOR)
+if "📈 Dashboard" in menu:
+    with tabs[menu.index("📈 Dashboard")]:
+        st.markdown(f"<h3 style='color: #3b82f6;'>📈 Panel de Gestión - {mi_empresa}</h3>", unsafe_allow_html=True)
+        if not st.session_state["pacientes_db"]: st.warning("No hay pacientes cargados.")
+        else:
+            df_evs = pd.DataFrame(st.session_state["evoluciones_db"])
+            if not df_evs.empty:
+                df_evs["fecha_c"] = pd.to_datetime(df_evs["fecha"], format="%d/%m/%Y %H:%M")
+                hace_una_semana = (ahora() - timedelta(days=7)).replace(tzinfo=None)
+                if rol == "Coordinador":
+                    pacs_mi_empresa = [p for p in st.session_state["detalles_pacientes_db"] if st.session_state["detalles_pacientes_db"][p]['empresa'] == mi_empresa]
+                    df_evs = df_evs[df_evs['paciente'].isin(pacs_mi_empresa)]
+                df_evs_s = df_evs[df_evs["fecha_c"] > hace_una_semana]
+                if not df_evs_s.empty:
+                    perf_enf = df_evs_s["firma"].value_counts().reset_index()
+                    perf_enf.columns = ["Profesional", "Visitas"]
+                    
+                    # --- GRÁFICO PREMIUM (ALTAIR) FINO Y REDONDEADO ---
+                    chart = alt.Chart(perf_enf).mark_bar(
+                        size=35, # Hace las barras mucho más finas
+                        color='#3b82f6', # Color Enterprise
+                        cornerRadiusTopLeft=5, 
+                        cornerRadiusTopRight=5
+                    ).encode(
+                        x=alt.X('Profesional:N', sort='-y', title='Profesional / Enfermero'),
+                        y=alt.Y('Visitas:Q', title='Cantidad de Visitas Semanales', axis=alt.Axis(tickMinStep=1)),
+                        tooltip=['Profesional', 'Visitas'] # Globito al pasar el mouse
+                    ).properties(height=350)
+                    
+                    st.altair_chart(chart, use_container_width=True)
+                else:
+                    st.info("No hay visitas registradas en los últimos 7 días.")
 
 # 3. ADMISIÓN 
 with tabs[menu.index("👤 Admisión")]:
@@ -530,7 +551,7 @@ with tabs[menu.index("⚖️ Balance")]:
                 st.session_state["balance_db"].append({"paciente": paciente_sel, "ingresos": ting, "egresos": tegr, "balance": bal, "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
                 guardar_datos(); st.rerun()
 
-# 10. INVENTARIO (CARGA SÚPER RÁPIDA Y A LA VISTA)
+# 10. INVENTARIO
 with tabs[menu.index("📦 Inventario")]:
     inv_mio = [i for i in st.session_state["inventario_db"] if i["empresa"] == mi_empresa]
     if inv_mio:
@@ -555,13 +576,11 @@ with tabs[menu.index("📦 Inventario")]:
         ]
         lista_base = ["-- Elegir del Catálogo --"] + sorted(lista_base_bruta)
         
-        # Opciones Lado a Lado
         item_sel = c1.selectbox("1. Catálogo Frecuente:", lista_base)
         nuevo_item_manual = c2.text_input("O 2. Escribir Insumo Nuevo:")
         cantidad_ini = c3.number_input("Cantidad", min_value=1, value=10)
         
         if st.form_submit_button("Actualizar Stock", width="stretch"):
-            # Lógica: Si el usuario escribe algo en la caja, eso mata al catálogo.
             item_final = nuevo_item_manual.strip().title() if nuevo_item_manual.strip() else item_sel
             
             if item_final and item_final != "-- Elegir del Catálogo --":
@@ -692,7 +711,7 @@ with tabs[menu.index("🗄️ PDF")]:
             pdf.line(21, 14, 21, 28); pdf.line(14, 21, 28, 21)
             emp_paciente = st.session_state["detalles_pacientes_db"].get(p, {}).get("empresa", mi_empresa)
             pdf.set_font("Arial", 'B', 16); pdf.set_xy(38, 14); pdf.cell(0, 10, t(emp_paciente), ln=True)
-            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V9.4)"), ln=True); pdf.ln(15)
+            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V9.5)"), ln=True); pdf.ln(15)
             
             det = st.session_state["detalles_pacientes_db"].get(p, {})
             estado_texto = " [ARCHIVADO/ALTA]" if det.get("estado") == "De Alta" else ""
@@ -796,7 +815,7 @@ Asimismo, entiendo que los registros clinicos seran resguardados en formato digi
         st.download_button("📥 1. Generar Historia Clínica en PDF", crear_pdf_pro(paciente_sel), f"HC_{paciente_sel}.pdf", "application/pdf")
         st.download_button("📄 2. Descargar Consentimiento Informado Legal", crear_consentimiento_pdf(paciente_sel), f"Consentimiento_{paciente_sel}.pdf", "application/pdf")
 
-# 14. CIERRE DIARIO Y REPORTES DE STOCK
+# 14. CIERRE DIARIO Y REPORTES DE STOCK (SOLO VISIBLE PARA ADMIN/COORDINADOR)
 if "📑 Cierre Diario" in menu:
     with tabs[menu.index("📑 Cierre Diario")]:
         st.subheader("📑 Conciliación y Cierre Diario de Operaciones")
@@ -907,7 +926,7 @@ if "📑 Cierre Diario" in menu:
         else:
             st.write("Aún no hay reportes de cierre diario guardados.")
 
-# 15. EQUIPO Y SUSCRIPCIONES
+# 15. EQUIPO Y SUSCRIPCIONES (SOLO VISIBLE PARA ADMIN/COORDINADOR)
 if "⚙️ Mi Equipo" in menu:
     with tabs[menu.index("⚙️ Mi Equipo")]:
         st.subheader(f"Gestión de Personal - {mi_empresa}")
@@ -927,14 +946,13 @@ if "⚙️ Mi Equipo" in menu:
         for u, d in list({k: v for k, v in st.session_state["usuarios_db"].items() if v["empresa"] == mi_empresa or rol == "SuperAdmin"}.items()):
             if u == "admin": continue
             c1, c2, c3 = st.columns([3, 1, 1])
-            # ACÁ SE AGREGÓ EL ROL EN LA PANTALLA 👇
             c1.write(f"🏢 {d['empresa']} | 👤 **{d['nombre']}** *(Rol: {d.get('rol', 'Operativo')})* | Login: `{u}` | PIN: `{d.get('pin', 'S/D')}` | Estado: **{d.get('estado', 'Activo')}**")
             if rol == "SuperAdmin":
                 if d.get("estado", "Activo") == "Activo" and c2.button("⏸️ Suspender", key=f"susp_{u}"): st.session_state["usuarios_db"][u]["estado"] = "Bloqueado"; guardar_datos(); st.rerun()
                 elif d.get("estado", "Activo") != "Activo" and c2.button("▶️ Reactivar", key=f"reac_{u}"): st.session_state["usuarios_db"][u]["estado"] = "Activo"; guardar_datos(); st.rerun()
             if c3.button("❌ Bajar", key=f"del_{u}"): del st.session_state["usuarios_db"][u]; guardar_datos(); st.rerun()
 
-# 16. AUDITORÍA (CON FILTROS GLOBALES)
+# 16. AUDITORÍA (SOLO VISIBLE PARA ADMIN/COORDINADOR)
 if "🕵️ Auditoría" in menu:
     with tabs[menu.index("🕵️ Auditoría")]:
         st.subheader("Auditoría General de Movimientos")
@@ -998,4 +1016,4 @@ if "🕵️ Auditoría" in menu:
         else:
             st.error("Librería FPDF no disponible. Instalar para generar reportes.")
 
-# --- FIN DEL SISTEMA MEDICARE PRO V9.4 ---
+# --- FIN DEL SISTEMA MEDICARE PRO V9.5 ---
