@@ -618,9 +618,10 @@ with tabs[menu.index("💉 Materiales")]:
             st.caption("Últimos materiales registrados:")
             st.dataframe(pd.DataFrame(cons_paciente).drop(columns=["paciente", "empresa"], errors='ignore'), use_container_width=True)
 
-# 8. RECETAS (CON VADEMÉCUM MASIVO Y FRECUENCIA)
+# 8. RECETAS (PLAN TERAPÉUTICO Y MODIFICACIONES)
 with tabs[menu.index("💊 Recetas")]:
     if paciente_sel:
+        st.subheader("✍️ Cargar Nueva Indicación Médica")
         with st.form("recet", clear_on_submit=True):
             c_rec1, c_rec2 = st.columns([2, 1])
             lista_vademecum_receta = ["-- Seleccionar del Vademécum --"] + VADEMECUM_BASE
@@ -628,24 +629,60 @@ with tabs[menu.index("💊 Recetas")]:
             med_vademecum = c_rec1.selectbox("1. Medicamento / Vademécum Oficial:", lista_vademecum_receta)
             med_manual = c_rec2.text_input("O 2. Cargar Manualmente:")
             
-            # Dividimos en 3 columnas para agregar la frecuencia
             c_rec3, c_rec4, c_rec5 = st.columns([2, 2, 1])
             lista_vias = ["Oral", "Endovenosa (EV)", "Intramuscular (IM)", "Subcutánea (SC)", "Sublingual", "Tópica", "Inhalatoria", "Oftálmica", "Ótica", "Nasal", "Rectal", "Vaginal"]
             p = c_rec3.selectbox("Vía de Administración", lista_vias)
             
             lista_frecuencias = ["Cada 4 horas", "Cada 6 horas", "Cada 8 horas", "Cada 12 horas", "Cada 24 horas", "Dosis única", "Según necesidad (SOS)"]
-            frec = c_rec4.selectbox("Frecuencia (Horario)", lista_frecuencias, index=2) # Viene "Cada 8 horas" por defecto
+            frec = c_rec4.selectbox("Frecuencia (Horario)", lista_frecuencias, index=2)
             
             f = c_rec5.number_input("Días", min_value=1, max_value=90, value=7)
+            
+            st.markdown("##### 👨‍⚕️ Datos del Médico Prescriptor (Firma Legal)")
+            c_med1, c_med2 = st.columns(2)
+            # Trae tus datos por defecto, pero se pueden borrar y cambiar por los del médico real
+            doc_nombre = c_med1.text_input("Nombre y Apellido:", value=user["nombre"])
+            doc_mat = c_med2.text_input("Matrícula (Ej: MP 12345):", value=user.get("matricula", ""))
             
             if st.form_submit_button("Cargar Terapéutica", width="stretch"):
                 med_final = med_manual.strip().title() if med_manual.strip() else med_vademecum
                 
                 if med_final and med_final != "-- Seleccionar del Vademécum --":
-                    # Armamos el texto completo para el PDF
                     texto_receta = f"{med_final} | Vía: {p} | {frec} | Durante {f} días."
-                    st.session_state["indicaciones_db"].append({"paciente": paciente_sel, "med": texto_receta, "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"]})
+                    firma_legal = f"{doc_nombre.strip()} (Mat: {doc_mat.strip()})"
+                    
+                    st.session_state["indicaciones_db"].append({
+                        "paciente": paciente_sel, 
+                        "med": texto_receta, 
+                        "fecha": ahora().strftime("%d/%m/%Y %H:%M"), 
+                        "firma": firma_legal
+                    })
                     guardar_datos(); st.rerun()
+
+        st.divider()
+        st.subheader("📋 Plan Terapéutico Activo (Modificar / Suspender)")
+        
+        ind_paciente = [i for i in st.session_state["indicaciones_db"] if i["paciente"] == paciente_sel]
+        
+        if ind_paciente:
+            df_ind = pd.DataFrame(ind_paciente)
+            st.dataframe(df_ind[["fecha", "med", "firma"]].rename(columns={"fecha": "Fecha", "med": "Indicación", "firma": "Médico Prescriptor"}), use_container_width=True)
+            
+            st.write("¿El médico modificó o suspendió alguna medicación?")
+            c_del1, c_del2 = st.columns([3, 1])
+            opciones_del = [f"[{i['fecha']}] {i['med']}" for i in ind_paciente]
+            ind_a_borrar = c_del1.selectbox("Seleccionar indicación para SUSPENDER:", opciones_del)
+            
+            if c_del2.button("🛑 Suspender Medicación", use_container_width=True):
+                for i in st.session_state["indicaciones_db"]:
+                    if i["paciente"] == paciente_sel and f"[{i['fecha']}] {i['med']}" == ind_a_borrar:
+                        st.session_state["indicaciones_db"].remove(i)
+                        break
+                guardar_datos()
+                st.success("✅ Medicación suspendida y eliminada del plan activo.")
+                st.rerun()
+        else:
+            st.info("El paciente no tiene medicación activa en este momento.")
 
 # 9. BALANCE HÍDRICO
 with tabs[menu.index("⚖️ Balance")]:
