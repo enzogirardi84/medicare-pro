@@ -421,36 +421,49 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
                 st.caption("Próximas visitas agendadas para este paciente:")
                 st.dataframe(pd.DataFrame(agenda_mia).drop(columns=["empresa", "paciente"]).tail(3), use_container_width=True)
 
-# 2. DASHBOARD
+# 2. DASHBOARD (AHORA MIDE FICHADAS REALES POR GPS)
 if "📈 Dashboard" in menu:
     with tabs[menu.index("📈 Dashboard")]:
         st.markdown(f"<h3 style='color: #3b82f6;'>📈 Panel de Gestión - {mi_empresa}</h3>", unsafe_allow_html=True)
-        if not st.session_state["pacientes_db"]: st.warning("No hay pacientes cargados.")
+        if not st.session_state["pacientes_db"]: 
+            st.warning("No hay pacientes cargados.")
         else:
-            df_evs = pd.DataFrame(st.session_state["evoluciones_db"])
-            if not df_evs.empty:
-                df_evs["fecha_c"] = pd.to_datetime(df_evs["fecha"], format="%d/%m/%Y %H:%M")
-                hace_una_semana = (ahora() - timedelta(days=7)).replace(tzinfo=None)
-                if rol == "Coordinador":
-                    pacs_mi_empresa = [p for p in st.session_state["detalles_pacientes_db"] if st.session_state["detalles_pacientes_db"][p]['empresa'] == mi_empresa]
-                    df_evs = df_evs[df_evs['paciente'].isin(pacs_mi_empresa)]
-                df_evs_s = df_evs[df_evs["fecha_c"] > hace_una_semana]
-                if not df_evs_s.empty:
-                    perf_enf = df_evs_s["firma"].value_counts().reset_index()
-                    perf_enf.columns = ["Profesional", "Visitas"]
+            df_visitas = pd.DataFrame(st.session_state.get("checkin_db", []))
+            
+            if not df_visitas.empty:
+                # Filtramos solo para contar las "LLEGADAS" reales al domicilio
+                df_llegadas = df_visitas[df_visitas["tipo"].str.contains("LLEGADA", na=False)].copy()
+                
+                if not df_llegadas.empty:
+                    # Convertimos la fecha exacta con segundos a formato entendible por el gráfico
+                    df_llegadas["fecha_c"] = pd.to_datetime(df_llegadas["fecha_hora"], format="%d/%m/%Y %H:%M:%S", errors='coerce')
+                    hace_una_semana = (ahora() - timedelta(days=7)).replace(tzinfo=None)
                     
-                    chart = alt.Chart(perf_enf).mark_bar(
-                        size=35, color='#3b82f6', cornerRadiusTopLeft=5, cornerRadiusTopRight=5
-                    ).encode(
-                        x=alt.X('Profesional:N', sort='-y', title='Profesional / Enfermero'),
-                        y=alt.Y('Visitas:Q', title='Cantidad de Visitas Semanales', axis=alt.Axis(tickMinStep=1)),
-                        tooltip=['Profesional', 'Visitas']
-                    ).properties(height=350)
+                    if rol == "Coordinador":
+                        df_llegadas = df_llegadas[df_llegadas['empresa'] == mi_empresa]
+                        
+                    # Filtramos los últimos 7 días
+                    df_visitas_s = df_llegadas[df_llegadas["fecha_c"] > hace_una_semana]
                     
-                    st.altair_chart(chart, use_container_width=True)
+                    if not df_visitas_s.empty:
+                        perf_enf = df_visitas_s["profesional"].value_counts().reset_index()
+                        perf_enf.columns = ["Profesional", "Visitas Reales"]
+                        
+                        chart = alt.Chart(perf_enf).mark_bar(
+                            size=35, color='#3b82f6', cornerRadiusTopLeft=5, cornerRadiusTopRight=5
+                        ).encode(
+                            x=alt.X('Profesional:N', sort='-y', title='Profesional / Enfermero'),
+                            y=alt.Y('Visitas Reales:Q', title='Cantidad de Fichadas GPS (7 días)', axis=alt.Axis(tickMinStep=1)),
+                            tooltip=['Profesional', 'Visitas Reales']
+                        ).properties(height=350)
+                        
+                        st.altair_chart(chart, use_container_width=True)
+                    else:
+                        st.info("No hay fichadas de GPS (Llegadas) en los últimos 7 días.")
                 else:
-                    st.info("No hay visitas registradas en los últimos 7 días.")
-
+                    st.info("Aún no se han registrado ingresos (GPS) en los domicilios.")
+            else:
+                st.info("El sistema está listo para empezar a registrar visitas.")
 # 3. ADMISIÓN 
 with tabs[menu.index("👤 Admisión")]:
     with st.form("adm_form", clear_on_submit=True):
