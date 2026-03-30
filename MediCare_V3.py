@@ -826,9 +826,10 @@ with tabs[menu.index("💊 Recetas")]:
             f = c_rec5.number_input("Días de Tratamiento", min_value=1, max_value=90, value=7)
             
             # --- NUEVO: CARGA DE MÉDICO PRESCRIPTOR ---
+            st.divider()
             st.markdown("##### 👨‍⚕️ Transcripción de Receta Papel (Opcional)")
             c_doc1, c_doc2 = st.columns(2)
-            med_doc = c_doc1.text_input("Nombre del Médico Prescriptor (Si dejó receta física)")
+            med_doc = c_doc1.text_input("Nombre y Apellido del Médico Prescriptor")
             mat_doc = c_doc2.text_input("Matrícula (MP / MN)")
             
             if st.form_submit_button("➕ Cargar Nueva Terapéutica", width="stretch"):
@@ -837,7 +838,6 @@ with tabs[menu.index("💊 Recetas")]:
                 if med_final and med_final != "-- Seleccionar del Vademécum --":
                     texto_receta = f"{med_final} | Vía: {p} | {frec} | Durante {f} días."
                     
-                    # Lógica de trazabilidad legal compartida
                     if med_doc.strip():
                         firma_guardar = f"Dr/a. {med_doc.strip()} (Mat: {mat_doc.strip()}) [Cargado por: {user['nombre']}]"
                     else:
@@ -850,7 +850,8 @@ with tabs[menu.index("💊 Recetas")]:
                         "dias_duracion": f, 
                         "firma": firma_guardar
                     })
-                    guardar_datos(); st.rerun()
+                    guardar_datos()
+                    st.rerun()
 
         # --- LÓGICA DE VENCIMIENTO AUTOMÁTICO Y EXTRACCIÓN DE DATOS ---
         recs_paciente = [r for r in st.session_state.get("indicaciones_db", []) if r["paciente"] == paciente_sel]
@@ -885,7 +886,7 @@ with tabs[menu.index("💊 Recetas")]:
             st.markdown("#### 🟢 Plan Terapéutico VIGENTE y Trazabilidad")
             st.info("⚠️ **LEGAL:** Revisar detenidamente la pauta médica y la última dosis registrada antes de administrar para evitar errores de medicación.")
 
-            todas_admins = [a for a in st.session_state.get("administracion_med_db", []) if a["paciente"] == paciente_sel]
+            todas_admins = [a for a in st.session_state.get("administracion_med_db", []) if a.get("paciente") == paciente_sel]
 
             if activas:
                 for r in reversed(activas):
@@ -900,7 +901,7 @@ with tabs[menu.index("💊 Recetas")]:
                     frecuencia = partes[2].strip() if len(partes) > 2 else ""
                     firma_prescriptor = r.get('firma', 'S/D')
 
-                    admins_esta_med = [a for a in todas_admins if a["med"] == med_nombre and a["estado"] == "✅ Realizada"]
+                    admins_esta_med = [a for a in todas_admins if a.get("med") == med_nombre and "✅" in str(a.get("estado", ""))]
                     if admins_esta_med:
                         def get_dt(a):
                             try: return datetime.strptime(f"{a['fecha']} {a['hora']}", "%d/%m/%Y %H:%M")
@@ -927,7 +928,7 @@ with tabs[menu.index("💊 Recetas")]:
                     for r in reversed(finalizadas):
                         st.error(f"❌ **FINALIZADO** | Iniciado: {r['fecha'][:10]} | {r['med']} *(Por: {r.get('firma', 'S/D')})*")
 
-            # --- NUEVO: SÁBANA VISUAL DE ENFERMERÍA (MAR) 24 HORAS ---
+            # --- SÁBANA VISUAL DE ENFERMERÍA (MAR) 24 HORAS ---
             st.divider()
             st.markdown("#### 🩺 Sábana de Enfermería (MAR 24hs) - Visor de Hoy")
             st.caption("Resumen visual del día. Use el **Panel de Registro** más abajo para anotar las aplicaciones.")
@@ -935,7 +936,7 @@ with tabs[menu.index("💊 Recetas")]:
             if activas:
                 fecha_hoy = ahora().strftime("%d/%m/%Y")
                 admin_hoy = [a for a in st.session_state.get("administracion_med_db", []) 
-                             if a["paciente"] == paciente_sel and a["fecha"] == fecha_hoy]
+                             if a.get("paciente") == paciente_sel and a.get("fecha") == fecha_hoy]
                 
                 horas_cols = [f"{i:02d}hs" for i in range(24)]
                 
@@ -959,11 +960,12 @@ with tabs[menu.index("💊 Recetas")]:
                     for h in horas_cols: fila[h] = "➖"
                     
                     for a in admin_hoy:
-                        if a["med"] == med_nombre:
-                            hora_corta = a["hora"].split(":")[0] + "hs"
+                        if a.get("med") == med_nombre:
+                            hora_corta = a.get("hora", "").split(":")[0] + "hs"
                             if hora_corta in horas_cols:
-                                if a["estado"] == "✅ Realizada": fila[hora_corta] = "✅"
-                                elif a["estado"] in ["❌ No realizada", "⚠️ Suspendida"]: fila[hora_corta] = "❌"
+                                estado_str = str(a.get("estado", ""))
+                                if "✅" in estado_str: fila[hora_corta] = "✅"
+                                elif "❌" in estado_str or "⚠️" in estado_str: fila[hora_corta] = "❌"
                     
                     data_mar.append(fila)
                 
@@ -989,9 +991,14 @@ with tabs[menu.index("💊 Recetas")]:
                         if "❌" in estado_sel and not justificacion.strip():
                             st.error("🚨 LEGAL: Es obligatorio justificar clínicamente por qué no se administró la dosis en esa hora.")
                         else:
+                            # Previene KeyError inicializando si no existe en la caché
+                            if "administracion_med_db" not in st.session_state:
+                                st.session_state["administracion_med_db"] = []
+                                
+                            # Filtro seguro para reemplazar la dosis de esa hora
                             st.session_state["administracion_med_db"] = [
-                                a for a in st.session_state["administracion_med_db"]
-                                if not (a["paciente"] == paciente_sel and a["fecha"] == fecha_hoy and a["med"] == med_sel and a["hora"] == hora_sel)
+                                a for a in st.session_state.get("administracion_med_db", [])
+                                if not (a.get("paciente") == paciente_sel and a.get("fecha") == fecha_hoy and a.get("med") == med_sel and a.get("hora") == hora_sel)
                             ]
                             
                             st.session_state["administracion_med_db"].append({
@@ -1008,11 +1015,11 @@ with tabs[menu.index("💊 Recetas")]:
                             st.rerun()
 
                 # --- RESUMEN DE OMISIONES DEL DÍA ---
-                omisiones_hoy = [a for a in admin_hoy if "❌" in a["estado"]]
+                omisiones_hoy = [a for a in admin_hoy if "❌" in str(a.get("estado", ""))]
                 if omisiones_hoy:
                     st.markdown("##### ⚠️ Dosis Omitidas o Suspendidas Hoy")
                     for o in omisiones_hoy:
-                        st.error(f"**{o['hora']}hs | {o['med']}** ➔ *{o['motivo']}* (Auditoría: {o['firma']})")
+                        st.error(f"**{o.get('hora', '')}hs | {o.get('med', '')}** ➔ *{o.get('motivo', '')}* (Auditoría: {o.get('firma', '')})")
 
             else:
                 st.warning("El paciente no tiene medicación activa para administrar.")
@@ -1027,7 +1034,7 @@ with tabs[menu.index("💊 Recetas")]:
                 fecha_consulta_str = fecha_consulta.strftime("%d/%m/%Y")
 
                 admin_hist = [a for a in st.session_state.get("administracion_med_db", [])
-                              if a["paciente"] == paciente_sel and a["fecha"] == fecha_consulta_str]
+                              if a.get("paciente") == paciente_sel and a.get("fecha") == fecha_consulta_str]
 
                 if admin_hist:
                     df_hist = pd.DataFrame(admin_hist)
@@ -1038,7 +1045,8 @@ with tabs[menu.index("💊 Recetas")]:
                 else:
                     st.info(f"No hay registros de medicación cargados para el día {fecha_consulta_str}.")
 
-            # --- MODIFICAR O SUSPENDER ---
+        # --- MODIFICAR O SUSPENDER MANUALMENTE ---
+        if recs_paciente:
             st.divider()
             st.markdown("#### ⚙️ Modificar o Suspender Manualmente")
             c_ed1, c_ed2 = st.columns([3, 2])
@@ -1049,11 +1057,11 @@ with tabs[menu.index("💊 Recetas")]:
             accion_receta = c_ed2.selectbox("Acción a realizar:", ["Suspender / Eliminar", "Editar indicación"])
             
             nuevo_texto_receta = ""
-            if accion_receta == "Editar indicación":
+            if accion_receta == "Editar indicación" and receta_seleccionada:
                 texto_original = receta_seleccionada.split("] ")[1]
                 nuevo_texto_receta = st.text_input("Modificar detalle (Dosis, días, etc.):", value=texto_original)
             
-            if st.button("Aplicar Cambios en Terapéutica", use_container_width=True):
+            if st.button("Aplicar Cambios en Terapéutica", use_container_width=True) and receta_seleccionada:
                 for r in st.session_state["indicaciones_db"]:
                     if r["paciente"] == paciente_sel and f"[{r['fecha']}] {r['med']}" == receta_seleccionada:
                         if accion_receta == "Suspender / Eliminar":
