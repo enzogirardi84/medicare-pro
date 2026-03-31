@@ -1760,18 +1760,18 @@ if "🕵️ Auditoría" in menu:
         else:
             st.error("Librería FPDF no disponible. Instalar para generar reportes.")
             
-# 14. TELEMEDICINA (JITSI EMBEBIDO CON PERMISOS Y FIX PARA CELULARES)
+# 14. TELEMEDICINA (JITSI EMBEBIDO + BOTÓN PARA MÓVILES)
 with tabs[menu.index("📹 Telemedicina")]:
     if paciente_sel:
         st.subheader("📹 Teleconsulta en Vivo")
-        st.info("💡 **Instrucciones:** Al ingresar, el navegador te pedirá permiso para usar la cámara y el micrófono. ¡Aceptalos para iniciar la videollamada!")
+        st.info("💡 **Instrucciones:** Si estás en PC, aceptá los permisos en el cuadro de abajo. Si estás en celular, usá el botón azul para abrir a pantalla completa.")
 
         # Generar un ID de sala único y seguro (Ej: MediCare-JuanPerez-31032026)
         nombre_limpio = "".join(e for e in paciente_sel if e.isalnum())
         fecha_hoy = ahora().strftime('%d%m%Y')
         sala_id = f"MediCare-{nombre_limpio}-{fecha_hoy}"
         
-        # NUEVO: URL con el FIX para que no pida descargar la app en celulares
+        # URL con el FIX para que no pida descargar la app en celulares
         jitsi_url = f"https://meet.jit.si/{sala_id}#config.disableDeepLinking=true"
 
         c_vid1, c_vid2 = st.columns([2, 1])
@@ -1779,14 +1779,21 @@ with tabs[menu.index("📹 Telemedicina")]:
         with c_vid1:
             st.markdown("### 🔴 Sala de Video")
             
-            # Inyectar Iframe con permisos explícitos obligatorios para el navegador
+            # 1. Solución nativa para móviles (Obligatorio para iOS/Android)
+            st.warning("📱 **¿Ingresaste desde un celular?** Usa este botón para evitar bloqueos de cámara:")
+            st.link_button("🚀 ABRIR VIDEOLLAMADA EN PANTALLA COMPLETA", jitsi_url, use_container_width=True)
+            
+            st.divider()
+            
+            # 2. Solución embebida para PC (Desktop)
+            st.caption("💻 Vista integrada (Recomendada únicamente para PC):")
             iframe_html = f"""
             <iframe src="{jitsi_url}" 
                 allow="camera; microphone; fullscreen; display-capture" 
-                style="width: 100%; height: 550px; border: none; border-radius: 8px; box-shadow: 0px 4px 12px rgba(0,0,0,0.1);">
+                style="width: 100%; height: 500px; border: none; border-radius: 8px; box-shadow: 0px 4px 12px rgba(0,0,0,0.1);">
             </iframe>
             """
-            components.html(iframe_html, height=560)
+            components.html(iframe_html, height=510)
 
         with c_vid2:
             st.markdown("### 🔗 Conexión Externa")
