@@ -1237,7 +1237,8 @@ with tabs[menu.index("💳 Caja")]:
                         "estado": estado,
                         "fecha": ahora().strftime("%d/%m/%Y %H:%M"), 
                         "empresa": mi_empresa,
-                        "operador": user["nombre"]
+                        "operador": user["nombre"],
+                        "operador_dni": user.get("dni", "S/D") # AGREGADO: Trazabilidad del DNI
                     })
                     guardar_datos()
                     st.success("✅ Movimiento de caja registrado exitosamente.")
@@ -1247,9 +1248,67 @@ with tabs[menu.index("💳 Caja")]:
                     
         st.divider()
 
-    # --- 3. HISTORIAL, FILTROS Y RECIBOS PDF (Visible para Admin/Coord) ---
+        # --- 3. HISTORIAL DE RECIBOS DEL PACIENTE (CUENTA CORRIENTE) ---
+        st.markdown("#### 🧾 Historial de Recibos del Paciente")
+        if fact_paciente:
+            # Función auxiliar para crear el PDF en el momento
+            def generar_recibo_pdf(mov):
+                if not FPDF_DISPONIBLE: return b""
+                def t(txt): return str(txt).replace('✅', '').replace('⏳', '').encode('latin-1', 'replace').decode('latin-1')
+                
+                pdf = FPDF(format='A5')
+                pdf.add_page()
+                pdf.set_font("Arial", 'B', 16)
+                pdf.cell(0, 10, t(f"RECIBO DE PAGO - {mi_empresa}"), ln=True, align='C')
+                pdf.set_font("Arial", '', 10)
+                pdf.cell(0, 5, t(f"Fecha de Emision: {mov['fecha']}"), ln=True, align='C')
+                pdf.cell(0, 5, t(f"Profesional / Operador: {mov.get('operador', 'S/D')} (DNI: {mov.get('operador_dni', 'S/D')})"), ln=True, align='C')
+                pdf.ln(8)
+                
+                pdf.set_font("Arial", 'B', 12)
+                pdf.cell(0, 8, t(f"Recibimos de: {mov['paciente']}"), ln=True)
+                pdf.line(10, pdf.get_y(), 138, pdf.get_y())
+                pdf.ln(5)
+                
+                pdf.set_font("Arial", '', 12)
+                pdf.multi_cell(0, 8, t(f"Concepto de la practica: {mov['serv']}"))
+                pdf.cell(0, 8, t(f"Medio de Pago: {mov.get('metodo', 'S/D')}"), ln=True)
+                pdf.cell(0, 8, t(f"Estado: {mov.get('estado', 'Cobrado')}"), ln=True)
+                pdf.ln(5)
+                
+                pdf.set_fill_color(240, 240, 240)
+                pdf.set_font("Arial", 'B', 16)
+                pdf.cell(0, 12, t(f"TOTAL: ${mov['monto']:,.2f}"), 1, 1, 'C', True)
+                
+                pdf.ln(15)
+                pdf.set_font("Arial", '', 9)
+                pdf.cell(0, 5, t("Documento no valido como factura fiscal. Comprobante de control interno."), ln=True, align='C')
+                
+                return pdf.output(dest='S').encode('latin-1')
+
+            # Contenedor con scroll para que no ocupe toda la pantalla
+            with st.container(height=350):
+                for i, mov in enumerate(reversed(fact_paciente)):
+                    with st.container(border=True):
+                        col_r1, col_r2 = st.columns([3, 1])
+                        estado_color = "🟢" if "✅" in mov.get("estado", "") else "🟡"
+                        col_r1.markdown(f"**{mov['fecha']}** | {mov['serv']} | **${mov['monto']:,.2f}**")
+                        col_r1.caption(f"{estado_color} {mov.get('estado', 'S/D')} | Medio: {mov.get('metodo', 'S/D')} | Profesional: {mov.get('operador', 'S/D')}")
+                        
+                        if FPDF_DISPONIBLE:
+                            pdf_bytes = generar_recibo_pdf(mov)
+                            file_name_safe = f"Recibo_{mov['fecha'][:10].replace('/','-')}_{i}.pdf"
+                            col_r2.download_button("📄 Descargar PDF", pdf_bytes, file_name=file_name_safe, mime="application/pdf", key=f"dl_recibo_{i}_{mov['fecha']}", use_container_width=True)
+        else:
+            st.info("No hay facturación ni recibos registrados para este paciente.")
+
+    else:
+        st.info("👈 Seleccione un paciente para registrar un cobro o ver su cuenta corriente.")
+
+    # --- 4. AUDITORÍA GENERAL (Visible para Admin/Coord) ---
     if rol in ["SuperAdmin", "Coordinador"]:
-        st.markdown("#### 🔍 Auditoría de Facturación y Recibos")
+        st.divider()
+        st.markdown("#### 🔍 Auditoría de Facturación General")
         df_caja = pd.DataFrame([f for f in st.session_state.get("facturacion_db", []) if f.get("empresa", "") == mi_empresa])
         
         if not df_caja.empty:
@@ -1268,69 +1327,19 @@ with tabs[menu.index("💳 Caja")]:
             # Renombrar para que quede prolijo
             df_mostrar = df_mostrar.rename(columns={
                 "fecha": "Fecha", "paciente": "Paciente", "serv": "Concepto", 
-                "monto": "Monto ($)", "metodo": "Medio de Pago", "estado": "Estado", "operador": "Registró"
+                "monto": "Monto ($)", "metodo": "Medio de Pago", "estado": "Estado", 
+                "operador": "Registró", "operador_dni": "DNI Registró"
             })
             
             st.dataframe(df_mostrar.iloc[::-1], use_container_width=True, hide_index=True)
             
-            # Botones de exportación
-            col_dl1, col_dl2 = st.columns(2)
-            
-            # 1. Excel
+            # Exportación Excel General
             output = io.BytesIO()
             with pd.ExcelWriter(output, engine='openpyxl') as writer: 
                 df_mostrar.to_excel(writer, index=False, sheet_name='Caja_MediCare')
-            col_dl1.download_button("📊 DESCARGAR EXCEL DE CAJA", data=output.getvalue(), file_name=f"Caja_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
-
-            # 2. Recibo PDF del último movimiento del paciente seleccionado
-            if paciente_sel and FPDF_DISPONIBLE:
-                ultimos_movs = [f for f in st.session_state["facturacion_db"] if f["paciente"] == paciente_sel]
-                if ultimos_movs:
-                    ultimo_mov = ultimos_movs[-1]
-                    
-                    def t(txt): return str(txt).replace('✅', '').replace('⏳', '').encode('latin-1', 'replace').decode('latin-1')
-                    
-                    def generar_recibo_pdf(mov):
-                        pdf = FPDF(format='A5')
-                        pdf.add_page()
-                        pdf.set_font("Arial", 'B', 16)
-                        pdf.cell(0, 10, t(f"RECIBO DE PAGO - {mi_empresa}"), ln=True, align='C')
-                        pdf.set_font("Arial", '', 10)
-                        pdf.cell(0, 5, t(f"Fecha: {mov['fecha']} | Operador: {mov.get('operador', 'S/D')}"), ln=True, align='C')
-                        pdf.ln(10)
-                        
-                        pdf.set_font("Arial", 'B', 12)
-                        pdf.cell(0, 8, t(f"Recibimos de: {mov['paciente']}"), ln=True)
-                        pdf.line(10, pdf.get_y(), 138, pdf.get_y())
-                        pdf.ln(5)
-                        
-                        pdf.set_font("Arial", '', 12)
-                        pdf.multi_cell(0, 8, t(f"Concepto: {mov['serv']}"))
-                        pdf.cell(0, 8, t(f"Medio de Pago: {mov.get('metodo', 'S/D')}"), ln=True)
-                        pdf.cell(0, 8, t(f"Estado: {mov.get('estado', 'Cobrado')}"), ln=True)
-                        pdf.ln(5)
-                        
-                        pdf.set_fill_color(240, 240, 240)
-                        pdf.set_font("Arial", 'B', 16)
-                        pdf.cell(0, 12, t(f"TOTAL: ${mov['monto']:,.2f}"), 1, 1, 'C', True)
-                        
-                        pdf.ln(20)
-                        pdf.set_font("Arial", '', 10)
-                        pdf.cell(0, 5, t("Documento no válido como factura. Comprobante de control interno."), ln=True, align='C')
-                        
-                        return pdf.output(dest='S').encode('latin-1')
-
-                    col_dl2.download_button(
-                        "📄 GENERAR RECIBO DEL ÚLTIMO COBRO (PDF)", 
-                        generar_recibo_pdf(ultimo_mov), 
-                        f"Recibo_{paciente_sel.split()[0]}_{ahora().strftime('%d%m')}.pdf", 
-                        "application/pdf",
-                        use_container_width=True
-                    )
+            st.download_button("📊 DESCARGAR EXCEL DE CAJA GENERAL", data=output.getvalue(), file_name=f"Caja_General_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         else:
-            st.info("No hay registros de facturación en la base de datos.")
-    elif not paciente_sel:
-        st.info("👈 Seleccione un paciente para registrar un cobro.")
+            st.info("No hay registros de facturación en la base de datos general.")
 
 # 12. HISTORIAL COMPLETO (CONTENEDORES CON SCROLL MÓVIL)
 with tabs[menu.index("📚 Historial")]:
