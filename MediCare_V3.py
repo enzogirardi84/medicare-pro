@@ -1760,18 +1760,18 @@ if "🕵️ Auditoría" in menu:
         else:
             st.error("Librería FPDF no disponible. Instalar para generar reportes.")
             
-# 14. TELEMEDICINA (JITSI EMBEBIDO + BOTÓN PARA MÓVILES)
+# 14. TELEMEDICINA (JITSI EMBEBIDO + FIX MÓVILES + EXTRACCIÓN DINÁMICA DE VITALES)
 with tabs[menu.index("📹 Telemedicina")]:
     if paciente_sel:
         st.subheader("📹 Teleconsulta en Vivo")
-        st.info("💡 **Instrucciones:** Si estás en PC, aceptá los permisos en el cuadro de abajo. Si estás en celular, usá el botón azul para abrir a pantalla completa.")
+        st.info("💡 **Instrucciones:** Si estás en PC, aceptá los permisos en el cuadro inferior. Si ingresas desde un dispositivo móvil, utiliza el botón azul para abrir a pantalla completa.")
 
-        # Generar un ID de sala único y seguro (Ej: MediCare-JuanPerez-31032026)
+        # Generación de ID de sala criptográficamente seguro
         nombre_limpio = "".join(e for e in paciente_sel if e.isalnum())
         fecha_hoy = ahora().strftime('%d%m%Y')
         sala_id = f"MediCare-{nombre_limpio}-{fecha_hoy}"
         
-        # URL con el FIX para que no pida descargar la app en celulares
+        # Parámetro disableDeepLinking para forzar renderizado web en iOS/Android
         jitsi_url = f"https://meet.jit.si/{sala_id}#config.disableDeepLinking=true"
 
         c_vid1, c_vid2 = st.columns([2, 1])
@@ -1779,14 +1779,14 @@ with tabs[menu.index("📹 Telemedicina")]:
         with c_vid1:
             st.markdown("### 🔴 Sala de Video")
             
-            # 1. Solución nativa para móviles (Obligatorio para iOS/Android)
-            st.warning("📱 **¿Ingresaste desde un celular?** Usa este botón para evitar bloqueos de cámara:")
+            # Vía de escape nativa para navegadores móviles (WebKit/Brave/Chrome Mobile)
+            st.warning("📱 **¿Ingresaste desde un celular?** Usa este botón para evitar bloqueos de hardware (cámara/micrófono):")
             st.link_button("🚀 ABRIR VIDEOLLAMADA EN PANTALLA COMPLETA", jitsi_url, use_container_width=True)
             
             st.divider()
             
-            # 2. Solución embebida para PC (Desktop)
-            st.caption("💻 Vista integrada (Recomendada únicamente para PC):")
+            # Renderizado mediante Iframe con inyección de políticas de permisos explícitas
+            st.caption("💻 Vista integrada (Recomendada únicamente para entornos Desktop):")
             iframe_html = f"""
             <iframe src="{jitsi_url}" 
                 allow="camera; microphone; fullscreen; display-capture" 
@@ -1797,29 +1797,32 @@ with tabs[menu.index("📹 Telemedicina")]:
 
         with c_vid2:
             st.markdown("### 🔗 Conexión Externa")
-            st.write("Si el médico o familiar no usa el sistema, enviale este link por WhatsApp. Entrará directo sin instalar nada:")
+            st.write("Enlace directo para médicos interconsultores o familiares (No requiere instalación de software cliente):")
             st.code(jitsi_url)
             
             st.divider()
             
-            st.markdown("### 📋 Resumen Rápido")
+            st.markdown("### 📋 Resumen Clínico Inmediato")
             st.write(f"**Paciente:** {paciente_sel}")
             
-            # Traer los últimos signos vitales para que el enfermero se los dicte al médico
+            # Consulta a la base de datos en memoria (session_state) para latencia cero
             vitales_paciente = [v for v in st.session_state.get("vitales_db", []) if v.get("paciente") == paciente_sel]
+            
             if vitales_paciente:
-                ult = vitales_paciente[-1]
-                st.success(f"""
-                **Últimos Signos ({ult.get('fecha', 'S/D')}):**
-                * 🩸 TA: {ult.get('tas', '-')}/{ult.get('tad', '-')}
-                * 💓 FC: {ult.get('fc', '-')} lpm
-                * 🫁 SatO2: {ult.get('sat', '-')}%
-                * 🌡️ Temp: {ult.get('temp', '-')}°C
-                """)
+                ult = vitales_paciente[-1] # Indexación del array para obtener el registro cronológico más reciente
+                st.success(f"**Último Control ({ult.get('fecha', 'S/D')}):**")
+                
+                # Extracción dinámica de claves: Renderiza cualquier variable registrada ignorando metadatos estructurales
+                claves_excluidas = ["paciente", "fecha", "id", "observaciones", "firma"]
+                for clave, valor in ult.items():
+                    if clave not in claves_excluidas and valor != "" and valor is not None:
+                        # Formatea la clave (ej: 'presion_arterial' -> 'Presion arterial')
+                        nombre_formateado = str(clave).replace('_', ' ').capitalize()
+                        st.write(f"* **{nombre_formateado}:** {valor}")
             else:
-                st.warning("No hay signos vitales registrados para informarle al médico.")
+                st.warning("El paciente no posee registros previos de signos vitales en la sesión actual.")
 
     else:
-        st.info("👈 Seleccione un paciente para iniciar o programar una teleconsulta.")
+        st.info("👈 Seleccione un paciente en el panel lateral para iniciar o programar una teleconsulta.")
 
 # --- FIN DEL SISTEMA MEDICARE PRO V9.11 ---
