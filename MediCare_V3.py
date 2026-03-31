@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import streamlit.components.v1 as components
 from datetime import datetime, date, timedelta
 import json
 import pytz
@@ -391,13 +392,14 @@ with st.sidebar:
     if st.button("Cerrar Sesión", width="stretch"): st.session_state["logeado"] = False; st.rerun()
 
 # --- MENU DINÁMICO ---
-menu = ["📍 Visitas y Agenda", "👤 Admisión", "📊 Clínica", "👶 Pediatría", "📝 Evolución", "🔬 Estudios", "💉 Materiales", "💊 Recetas", "⚖️ Balance", "📦 Inventario", "💳 Caja", "📚 Historial", "🗄️ PDF"]
+menu = ["📍 Visitas y Agenda", "👤 Admisión", "📊 Clínica", "👶 Pediatría", "📝 Evolución", "🔬 Estudios", "💉 Materiales", "💊 Recetas", "⚖️ Balance", "📦 Inventario", "💳 Caja", "📹 Telemedicina"]
 
 if rol in ["SuperAdmin", "Coordinador"]: 
     menu.insert(1, "📈 Dashboard") 
     menu.append("📑 Cierre Diario")
     menu.append("⚙️ Mi Equipo")
     menu.append("🕵️ Auditoría")
+   
 
 tabs = st.tabs(menu)
 
@@ -1757,5 +1759,51 @@ if "🕵️ Auditoría" in menu:
                 st.download_button("📥 DESCARGAR REPORTE RRHH (PDF)", crear_pdf_rrhh(prof_sel), f"Auditoria_RRHH_{prof_sel}.pdf", "application/pdf")
         else:
             st.error("Librería FPDF no disponible. Instalar para generar reportes.")
+            
+# 17. TELEMEDICINA (JITSI EMBEBIDO)
+with tabs[menu.index("📹 Telemedicina")]:
+    if paciente_sel:
+        st.subheader("📹 Teleconsulta en Vivo")
+        st.info("💡 **Instrucciones:** Al ingresar, el navegador te pedirá permiso para usar la cámara y el micrófono. Aceptalos para iniciar.")
+
+        # Generar un ID de sala único y seguro (Ej: MediCare-JuanPerez-31032026)
+        nombre_limpio = "".join(e for e in paciente_sel if e.isalnum())
+        fecha_hoy = ahora().strftime('%d%m%Y')
+        sala_id = f"MediCare-{nombre_limpio}-{fecha_hoy}"
+        jitsi_url = f"https://meet.jit.si/{sala_id}"
+
+        c_vid1, c_vid2 = st.columns([2, 1])
+
+        with c_vid1:
+            st.markdown("### 🔴 Sala de Video")
+            # Embeber Jitsi en la aplicación con altura de 550px
+            components.iframe(jitsi_url, height=550, scrolling=True)
+
+        with c_vid2:
+            st.markdown("### 🔗 Conexión Externa")
+            st.write("Si el médico de cabecera no está usando el sistema, copiale y enviale este link por WhatsApp para que se una:")
+            st.code(jitsi_url)
+            
+            st.divider()
+            
+            st.markdown("### 📋 Resumen Rápido")
+            st.write(f"**Paciente:** {paciente_sel}")
+            
+            # Traer los últimos signos vitales para que el enfermero se los dicte al médico
+            vitales_paciente = [v for v in st.session_state.get("vitales_db", []) if v.get("paciente") == paciente_sel]
+            if vitales_paciente:
+                ult = vitales_paciente[-1]
+                st.success(f"""
+                **Últimos Signos ({ult.get('fecha', 'S/D')}):**
+                * 🩸 TA: {ult.get('tas', '-')}/{ult.get('tad', '-')}
+                * 💓 FC: {ult.get('fc', '-')} lpm
+                * 🫁 SatO2: {ult.get('sat', '-')}%
+                * 🌡️ Temp: {ult.get('temp', '-')}°C
+                """)
+            else:
+                st.warning("No hay signos vitales registrados para informarle al médico.")
+
+    else:
+        st.info("👈 Seleccione un paciente para iniciar o programar una teleconsulta.")
 
 # --- FIN DEL SISTEMA MEDICARE PRO V9.11 ---
