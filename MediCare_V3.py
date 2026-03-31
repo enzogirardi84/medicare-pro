@@ -1760,7 +1760,7 @@ if "🕵️ Auditoría" in menu:
         else:
             st.error("Librería FPDF no disponible. Instalar para generar reportes.")
             
-# 14. TELEMEDICINA (JITSI EMBEBIDO CON PERMISOS DE CÁMARA)
+# 14. TELEMEDICINA (JITSI EMBEBIDO CON PERMISOS Y FIX PARA CELULARES)
 with tabs[menu.index("📹 Telemedicina")]:
     if paciente_sel:
         st.subheader("📹 Teleconsulta en Vivo")
@@ -1770,14 +1770,16 @@ with tabs[menu.index("📹 Telemedicina")]:
         nombre_limpio = "".join(e for e in paciente_sel if e.isalnum())
         fecha_hoy = ahora().strftime('%d%m%Y')
         sala_id = f"MediCare-{nombre_limpio}-{fecha_hoy}"
-        jitsi_url = f"https://meet.jit.si/{sala_id}"
+        
+        # NUEVO: URL con el FIX para que no pida descargar la app en celulares
+        jitsi_url = f"https://meet.jit.si/{sala_id}#config.disableDeepLinking=true"
 
         c_vid1, c_vid2 = st.columns([2, 1])
 
         with c_vid1:
             st.markdown("### 🔴 Sala de Video")
             
-            # NUEVO: Inyectar Iframe con permisos explícitos obligatorios para el navegador
+            # Inyectar Iframe con permisos explícitos obligatorios para el navegador
             iframe_html = f"""
             <iframe src="{jitsi_url}" 
                 allow="camera; microphone; fullscreen; display-capture" 
@@ -1788,7 +1790,7 @@ with tabs[menu.index("📹 Telemedicina")]:
 
         with c_vid2:
             st.markdown("### 🔗 Conexión Externa")
-            st.write("Si el médico de cabecera no está usando el sistema, copiale y enviale este link por WhatsApp para que se una:")
+            st.write("Si el médico o familiar no usa el sistema, enviale este link por WhatsApp. Entrará directo sin instalar nada:")
             st.code(jitsi_url)
             
             st.divider()
