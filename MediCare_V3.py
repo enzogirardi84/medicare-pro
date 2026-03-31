@@ -392,7 +392,7 @@ with st.sidebar:
     if st.button("Cerrar Sesión", width="stretch"): st.session_state["logeado"] = False; st.rerun()
 
 # --- MENU DINÁMICO ---
-menu = ["📍 Visitas y Agenda", "👤 Admisión", "📊 Clínica", "👶 Pediatría", "📝 Evolución", "🔬 Estudios", "💉 Materiales", "💊 Recetas", "⚖️ Balance", "📦 Inventario", "💳 Caja", "📹 Telemedicina"]
+menu = ["📍 Visitas y Agenda", "👤 Admisión", "📊 Clínica", "👶 Pediatría", "📝 Evolución", "🔬 Estudios", "💉 Materiales", "💊 Recetas", "⚖️ Balance", "📦 Inventario", "💳 Caja", "📚 Historial", "📄 PDF", "📹 Telemedicina"]
 
 if rol in ["SuperAdmin", "Coordinador"]: 
     menu.insert(1, "📈 Dashboard") 
