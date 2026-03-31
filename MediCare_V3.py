@@ -1760,11 +1760,11 @@ if "🕵️ Auditoría" in menu:
         else:
             st.error("Librería FPDF no disponible. Instalar para generar reportes.")
             
-# 17. TELEMEDICINA (JITSI EMBEBIDO)
+# 14. TELEMEDICINA (JITSI EMBEBIDO CON PERMISOS DE CÁMARA)
 with tabs[menu.index("📹 Telemedicina")]:
     if paciente_sel:
         st.subheader("📹 Teleconsulta en Vivo")
-        st.info("💡 **Instrucciones:** Al ingresar, el navegador te pedirá permiso para usar la cámara y el micrófono. Aceptalos para iniciar.")
+        st.info("💡 **Instrucciones:** Al ingresar, el navegador te pedirá permiso para usar la cámara y el micrófono. ¡Aceptalos para iniciar la videollamada!")
 
         # Generar un ID de sala único y seguro (Ej: MediCare-JuanPerez-31032026)
         nombre_limpio = "".join(e for e in paciente_sel if e.isalnum())
@@ -1776,8 +1776,15 @@ with tabs[menu.index("📹 Telemedicina")]:
 
         with c_vid1:
             st.markdown("### 🔴 Sala de Video")
-            # Embeber Jitsi en la aplicación con altura de 550px
-            components.iframe(jitsi_url, height=550, scrolling=True)
+            
+            # NUEVO: Inyectar Iframe con permisos explícitos obligatorios para el navegador
+            iframe_html = f"""
+            <iframe src="{jitsi_url}" 
+                allow="camera; microphone; fullscreen; display-capture" 
+                style="width: 100%; height: 550px; border: none; border-radius: 8px; box-shadow: 0px 4px 12px rgba(0,0,0,0.1);">
+            </iframe>
+            """
+            components.html(iframe_html, height=560)
 
         with c_vid2:
             st.markdown("### 🔗 Conexión Externa")
