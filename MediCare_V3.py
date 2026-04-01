@@ -581,10 +581,22 @@ with tabs[menu.index("📊 Clínica")]:
             hgt = col_signos[4].text_input("HGT", "100")
             
             if st.form_submit_button("Guardar Signos", width="stretch"):
-                # Toma la fecha y hora que escribiste en las cajitas
+                # 1. Armamos el texto con la fecha y hora que elegiste arriba
                 fecha_str_toma = f"{fecha_toma.strftime('%d/%m/%Y')} {hora_toma.strftime('%H:%M')}"
-                st.session_state["vitales_db"].append({"paciente": paciente_sel, "TA": ta, "FC": fc, "FR": fr, "Sat": sat, "Temp": temp, "HGT": hgt, "fecha": fecha_str_toma})
+                
+                # 2. Guardamos usando ESA variable (fecha_str_toma), NO la hora actual
+                st.session_state["vitales_db"].append({
+                    "paciente": paciente_sel, 
+                    "TA": ta, 
+                    "FC": fc, 
+                    "FR": fr, 
+                    "Sat": sat, 
+                    "Temp": temp, 
+                    "HGT": hgt, 
+                    "fecha": fecha_str_toma  # <-- ESTA ES LA LÍNEA CLAVE QUE ARREGLA EL PROBLEMA
+                })
                 guardar_datos()
+                
                 alerta_disparada = False
                 if fc > 110: st.error(f"🚨 ALERTA ROJA: Taquicardia severa detectada (FC: {fc})."); alerta_disparada = True
                 elif fc < 50: st.error(f"🚨 ALERTA ROJA: Bradicardia detectada (FC: {fc})."); alerta_disparada = True
@@ -597,13 +609,10 @@ with tabs[menu.index("📊 Clínica")]:
             st.divider()
             col_tit, col_btn = st.columns([3, 1])
             col_tit.markdown("#### 📋 Historial de Signos Vitales (Tendencia)")
-            
-            # --- NUEVO: Botón para eliminar el último registro si te equivocás ---
             if col_btn.button("🗑️ Borrar último", use_container_width=True, help="Elimina el último control cargado por error"):
                 st.session_state["vitales_db"].remove(vits[-1])
                 guardar_datos()
                 st.rerun()
-            # -------------------------------------------------------------------
             
             with st.container(height=250):
                 df_vits = pd.DataFrame(vits).drop(columns=["paciente"], errors='ignore')
