@@ -1441,15 +1441,31 @@ with tabs[menu.index("📚 Historial")]:
 # 13. PDF 
 with tabs[menu.index("🗄️ PDF")]:
     if paciente_sel and FPDF_DISPONIBLE:
+        import os
         def t(txt): return str(txt).replace('⚖️', '').replace('⚠️', '').replace('📌', '').replace('📅', '').replace('📸', '').replace('🗄️', '').replace('🔬', '').encode('latin-1', 'replace').decode('latin-1')
+
+        # --- FUNCION PARA INSERTAR EL LOGO NUEVO ---
+        def insertar_logo(pdf_obj):
+            directorio_actual = os.path.dirname(os.path.abspath(__file__))
+            ruta_logo = os.path.join(directorio_actual, "logo_medicare_pro.jpeg")
+            try:
+                # Insertamos tu nuevo logo jpeg (w=25 es el ancho en mm)
+                pdf_obj.image(ruta_logo, x=10, y=10, w=25)
+            except Exception:
+                # Fallback: si falla o no encuentra la imagen, hace el dibujo azul original
+                pdf_obj.set_fill_color(59, 130, 246); pdf_obj.ellipse(10, 10, 22, 22, 'F')
+                pdf_obj.set_draw_color(255, 255, 255); pdf_obj.set_line_width(1.2)
+                pdf_obj.line(21, 14, 21, 28); pdf_obj.line(14, 21, 28, 21)
+        # -------------------------------------------
 
         def crear_pdf_pro(p):
             pdf = FPDF(); pdf.add_page()
-            pdf.set_fill_color(59, 130, 246); pdf.ellipse(10, 10, 22, 22, 'F'); pdf.set_draw_color(255, 255, 255); pdf.set_line_width(1.2)
-            pdf.line(21, 14, 21, 28); pdf.line(14, 21, 28, 21)
+            
+            insertar_logo(pdf) # Aplicamos el logo nuevo
+            
             emp_paciente = st.session_state["detalles_pacientes_db"].get(p, {}).get("empresa", mi_empresa)
-            pdf.set_font("Arial", 'B', 16); pdf.set_xy(38, 14); pdf.cell(0, 10, t(emp_paciente), ln=True)
-            pdf.set_font("Arial", 'I', 9); pdf.set_xy(38, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V9.11)"), ln=True); pdf.ln(15)
+            pdf.set_font("Arial", 'B', 16); pdf.set_xy(40, 14); pdf.cell(0, 10, t(emp_paciente), ln=True)
+            pdf.set_font("Arial", 'I', 9); pdf.set_xy(40, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V9.11)"), ln=True); pdf.ln(15)
             
             det = st.session_state["detalles_pacientes_db"].get(p, {})
             estado_texto = " [ARCHIVADO/ALTA]" if det.get("estado") == "De Alta" else ""
@@ -1528,16 +1544,18 @@ with tabs[menu.index("🗄️ PDF")]:
 
         def crear_consentimiento_pdf(p):
             pdf = FPDF(); pdf.add_page()
+            
+            insertar_logo(pdf) # Aplicamos el logo nuevo
+            
             det = st.session_state["detalles_pacientes_db"].get(p, {})
             emp_paciente = det.get("empresa", mi_empresa); nombre_paciente = p.split(" (")[0]
             
+            pdf.set_y(40) # Bajamos el título para que no pise el logo
             pdf.set_font("Arial", 'B', 14); pdf.cell(0, 10, t("CONSENTIMIENTO INFORMADO DE INTERNACION DOMICILIARIA"), ln=True, align='C'); pdf.ln(10)
             pdf.set_font("Arial", '', 11)
-            texto_legal = f"""Por la presente, yo {nombre_paciente}, con DNI {det.get('dni', 'S/D')}, con domicilio en {det.get('direccion', 'S/D')}, declaro haber sido informado/a por el personal de la empresa {emp_paciente} sobre los alcances, modalidades y pautas del servicio de internación / cuidado domiciliario que voy a recibir.
-
-Comprendo que la atencion domiciliaria requiere de la colaboracion activa del grupo familiar y declaro mi total conformidad para que el personal de salud (medicos, enfermeros, kinesiologos, etc.) ingrese a mi domicilio para realizar las practicas establecidas en el plan terapeutico.
-
-Asimismo, entiendo que los registros clinicos seran resguardados en formato digital a traves de la plataforma MediCare Enterprise PRO, autorizando el procesamiento de mis datos de salud segun las normativas vigentes."""
+            
+            texto_legal = f"Por la presente, yo {nombre_paciente}, con DNI {det.get('dni', 'S/D')}, con domicilio en {det.get('direccion', 'S/D')}, declaro haber sido informado/a por el personal de la empresa {emp_paciente} sobre los alcances, modalidades y pautas del servicio de internación / cuidado domiciliario que voy a recibir.\n\nComprendo que la atencion domiciliaria requiere de la colaboracion activa del grupo familiar y declaro mi total conformidad para que el personal de salud (medicos, enfermeros, kinesiologos, etc.) ingrese a mi domicilio para realizar las practicas establecidas en el plan terapeutico.\n\nAsimismo, entiendo que los registros clinicos seran resguardados en formato digital a traves de la plataforma MediCare Enterprise PRO, autorizando el procesamiento de mis datos de salud segun las normativas vigentes."
+            
             pdf.multi_cell(0, 7, t(texto_legal)); pdf.ln(30)
             
             y_firma = pdf.get_y()
