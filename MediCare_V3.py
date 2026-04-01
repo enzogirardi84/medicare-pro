@@ -1147,10 +1147,10 @@ with tabs[menu.index("⚖️ Balance")]:
         st.subheader("⚖️ Balance Hídrico Estricto")
         
         with st.form("bal", clear_on_submit=True):
-            # Fila de metadatos (Fecha, Hora, Turno)
+            # --- ARREGLO MÁGICO: Fechas fijadas y hora en texto ---
             col_meta1, col_meta2, col_meta3 = st.columns(3)
-            fecha_bal = col_meta1.date_input("Fecha de control", value=ahora().date())
-            hora_bal = col_meta2.time_input("Hora exacta", value=ahora().time())
+            fecha_bal = col_meta1.date_input("📅 Fecha de control", value=ahora().date(), key="fecha_bal")
+            hora_bal_str = col_meta2.text_input("⏰ Hora exacta (Formato HH:MM)", value=ahora().strftime("%H:%M"), key="hora_bal")
             turno = col_meta3.selectbox("Turno de Guardia", ["Mañana (06 a 14hs)", "Tarde (14 a 22hs)", "Noche (22 a 06hs)"])
             
             st.divider()
@@ -1164,13 +1164,17 @@ with tabs[menu.index("⚖️ Balance")]:
             e2 = c2.number_input("Drenajes / Sondas", 0, step=50)
             e3 = c2.number_input("Pérdidas Insensibles / Catarsis", 0, step=50)
             
-            if st.form_submit_button("Guardar Balance y Calcular Shift", width="stretch"):
+            if st.form_submit_button("💾 Guardar Balance y Calcular Shift", width="stretch"):
+                # Validar hora manual para evitar errores de tipeo
+                if len(hora_bal_str) != 5 or ":" not in hora_bal_str:
+                    hora_bal_str = ahora().strftime("%H:%M")
+                    
                 ting = i1 + i2
                 tegr = e1 + e2 + e3
                 bal = ting - tegr
                 
                 # Guardamos la fecha combinada para compatibilidad y los datos nuevos desglosados
-                fecha_str_combinada = f"{fecha_bal.strftime('%d/%m/%Y')} {hora_bal.strftime('%H:%M')}"
+                fecha_str_combinada = f"{fecha_bal.strftime('%d/%m/%Y')} {hora_bal_str}"
                 
                 st.session_state["balance_db"].append({
                     "paciente": paciente_sel, 
@@ -1191,7 +1195,13 @@ with tabs[menu.index("⚖️ Balance")]:
         blp = [x for x in st.session_state["balance_db"] if x["paciente"] == paciente_sel]
         if blp:
             st.divider()
-            st.markdown("#### 📋 Historial de Balances Hídricos")
+            col_tit, col_btn = st.columns([3, 1])
+            col_tit.markdown("#### 📋 Historial de Balances Hídricos")
+            
+            if col_btn.button("🗑️ Borrar último", use_container_width=True, key="del_bal", help="Elimina el último balance cargado por error"):
+                st.session_state["balance_db"].remove(blp[-1])
+                guardar_datos()
+                st.rerun()
             
             with st.container(height=350):
                 df_bal = pd.DataFrame(blp)
@@ -1199,6 +1209,9 @@ with tabs[menu.index("⚖️ Balance")]:
                 # Parche de compatibilidad por si tenés balances viejos guardados sin la palabra "turno"
                 if "turno" not in df_bal.columns: 
                     df_bal["turno"] = "S/D"
+                else:
+                    # Limpiamos los "None" viejos que se ven en la foto
+                    df_bal["turno"] = df_bal["turno"].fillna("S/D")
                     
                 # Formateo visual de los datos
                 df_bal["Ingresos"] = df_bal["ingresos"].astype(str) + " ml"
@@ -1221,8 +1234,14 @@ with tabs[menu.index("⚖️ Balance")]:
                     "firma": "Enfermero/a"
                 })
                 
-                # Mostramos la tabla invertida (último registro arriba)
-                st.dataframe(df_mostrar.iloc[::-1], use_container_width=True, hide_index=True)
+                # Ordenamos cronológicamente (el más nuevo arriba)
+                try:
+                    df_mostrar['fecha_dt'] = pd.to_datetime(df_mostrar['Fecha y Hora'], format="%d/%m/%Y %H:%M")
+                    df_mostrar = df_mostrar.sort_values(by='fecha_dt', ascending=False).drop(columns=['fecha_dt'])
+                except Exception:
+                    df_mostrar = df_mostrar.iloc[::-1]
+                
+                st.dataframe(df_mostrar, use_container_width=True, hide_index=True)
 
 # 10. INVENTARIO 
 with tabs[menu.index("📦 Inventario")]:
