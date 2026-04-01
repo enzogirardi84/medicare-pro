@@ -570,10 +570,10 @@ with tabs[menu.index("📊 Clínica")]:
         with st.form("vitales_f", clear_on_submit=True):
             st.markdown("##### ⏱️ Fecha y Hora del Control")
             col_time1, col_time2 = st.columns(2)
-            fecha_toma = col_time1.date_input("📅 Fecha de la toma", value=ahora().date())
             
-            # --- ARREGLO 1: Cambiamos a text_input para que escribas rápido y no se borre ---
-            hora_toma_str = col_time2.text_input("⏰ Hora exacta (Formato HH:MM)", value=ahora().strftime("%H:%M"))
+            # --- ARREGLO MÁGICO: Agregamos key="..." a ambos para que Streamlit no los resetee ---
+            fecha_toma = col_time1.date_input("📅 Fecha de la toma", value=ahora().date(), key="fecha_vits")
+            hora_toma_str = col_time2.text_input("⏰ Hora exacta (Formato HH:MM)", value=ahora().strftime("%H:%M"), key="hora_vits")
             st.divider()
 
             ta = st.text_input("Tensión Arterial (TA)", "120/80")
@@ -616,12 +616,9 @@ with tabs[menu.index("📊 Clínica")]:
             with st.container(height=250):
                 df_vits = pd.DataFrame(vits).drop(columns=["paciente"], errors='ignore')
                 
-                # --- ARREGLO 2: Forzamos el orden y los nombres de las columnas para evitar el desastre visual ---
                 columnas_esperadas = ["fecha", "TA", "FC", "FR", "Sat", "Temp", "HGT"]
-                # Filtramos para asegurarnos que solo muestre estas y en este orden
                 df_vits = df_vits[[c for c in columnas_esperadas if c in df_vits.columns]]
                 
-                # Renombramos con estilo
                 df_vits = df_vits.rename(columns={
                     "fecha": "Fecha y Hora", "TA": "T.A.", "FC": "F.C.", 
                     "FR": "F.R.", "Sat": "SatO2%", "Temp": "Temp °C"
