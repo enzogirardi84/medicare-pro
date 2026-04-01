@@ -568,11 +568,12 @@ with tabs[menu.index("📊 Clínica")]:
             c4.metric("SatO2", f"{u.get('Sat', '-')}%"); c5.metric("Temp", f"{u.get('Temp', '-')} °C"); c6.metric("HGT", u.get("HGT", "-"))
         
         with st.form("vitales_f", clear_on_submit=True):
-            # --- LA SOLUCIÓN: Fecha y Hora ADENTRO del formulario ---
             st.markdown("##### ⏱️ Fecha y Hora del Control")
             col_time1, col_time2 = st.columns(2)
-            fecha_toma = col_time1.date_input("Fecha de la toma", value=ahora().date())
-            hora_toma = col_time2.time_input("Hora exacta de la toma", value=ahora().time())
+            fecha_toma = col_time1.date_input("📅 Fecha de la toma", value=ahora().date())
+            
+            # --- ARREGLO 1: Cambiamos a text_input para que escribas rápido y no se borre ---
+            hora_toma_str = col_time2.text_input("⏰ Hora exacta (Formato HH:MM)", value=ahora().strftime("%H:%M"))
             st.divider()
 
             ta = st.text_input("Tensión Arterial (TA)", "120/80")
@@ -581,9 +582,12 @@ with tabs[menu.index("📊 Clínica")]:
             sat = col_signos[2].number_input("SatO2%", 50, 100, 98); temp = col_signos[3].number_input("Temp °C", 35.0, 42.0, 36.5)
             hgt = col_signos[4].text_input("HGT", "100")
             
-            if st.form_submit_button("Guardar Signos", width="stretch"):
-                # Toma la fecha y hora INTACTAS porque están dentro del paquete del form
-                fecha_str_toma = f"{fecha_toma.strftime('%d/%m/%Y')} {hora_toma.strftime('%H:%M')}"
+            if st.form_submit_button("💾 Guardar Signos", width="stretch"):
+                # Validamos que no hayan escrito cualquier cosa en la hora
+                if len(hora_toma_str) != 5 or ":" not in hora_toma_str:
+                    hora_toma_str = ahora().strftime("%H:%M")
+                    
+                fecha_str_toma = f"{fecha_toma.strftime('%d/%m/%Y')} {hora_toma_str}"
                 
                 st.session_state["vitales_db"].append({
                     "paciente": paciente_sel, 
@@ -611,8 +615,20 @@ with tabs[menu.index("📊 Clínica")]:
             
             with st.container(height=250):
                 df_vits = pd.DataFrame(vits).drop(columns=["paciente"], errors='ignore')
+                
+                # --- ARREGLO 2: Forzamos el orden y los nombres de las columnas para evitar el desastre visual ---
+                columnas_esperadas = ["fecha", "TA", "FC", "FR", "Sat", "Temp", "HGT"]
+                # Filtramos para asegurarnos que solo muestre estas y en este orden
+                df_vits = df_vits[[c for c in columnas_esperadas if c in df_vits.columns]]
+                
+                # Renombramos con estilo
+                df_vits = df_vits.rename(columns={
+                    "fecha": "Fecha y Hora", "TA": "T.A.", "FC": "F.C.", 
+                    "FR": "F.R.", "Sat": "SatO2%", "Temp": "Temp °C"
+                })
+                
                 try:
-                    df_vits['fecha_dt'] = pd.to_datetime(df_vits['fecha'], format="%d/%m/%Y %H:%M")
+                    df_vits['fecha_dt'] = pd.to_datetime(df_vits['Fecha y Hora'], format="%d/%m/%Y %H:%M")
                     df_vits = df_vits.sort_values(by='fecha_dt', ascending=False).drop(columns=['fecha_dt'])
                 except Exception:
                     df_vits = df_vits.iloc[::-1] 
