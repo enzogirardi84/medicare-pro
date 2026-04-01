@@ -225,35 +225,25 @@ input[type=number] { -moz-appearance: textfield; }
 """
 st.markdown(page_bg_css, unsafe_allow_html=True)
 
+import os
+import streamlit as st
+
 # --- 🎁 LOGO EXCLUSIVO PROFESIONAL ---
 def render_logo_eg(size=100):
+    # Obtenemos la ruta exacta de la carpeta donde está este script de Python
+    directorio_actual = os.path.dirname(os.path.abspath(__file__))
+    # Unimos esa ruta con el nombre de tu imagen
+    ruta_logo = os.path.join(directorio_actual, "logo_medicare_pro.jpeg")
+    
+    # Usamos columnas para centrar el logo en el panel lateral
     col1, col2, col3 = st.sidebar.columns([1, 1.5, 1])
     with col2:
-        st.image("logo_medicare_pro.jpeg", use_container_width=True)
-
-# --- MOTOR DE PERSISTENCIA ---
-def cargar_datos():
-    try:
-        response = supabase.table('medicare_db').select('datos').eq('id', 1).execute()
-        if response.data: return response.data[0]['datos']
-    except Exception as e:
-        st.error(f"Error cargando datos: {e}")
-    return None
-
-def guardar_datos():
-    claves = [
-        "usuarios_db", "pacientes_db", "detalles_pacientes_db", "vitales_db", 
-        "indicaciones_db", "turnos_db", "evoluciones_db", "facturacion_db", "logs_db", 
-        "balance_db", "pediatria_db", "fotos_heridas_db",
-        "agenda_db", "checkin_db", "inventario_db", "consumos_db", "nomenclador_db", "firmas_tactiles_db",
-        "reportes_diarios_db", "estudios_db", "administracion_med_db"
-    ]
-    data = {k: st.session_state[k] for k in claves if k in st.session_state}
-    try:
-        supabase.table('medicare_db').upsert({"id": 1, "datos": data}).execute()
-        st.toast("✅ Guardado exitosamente en la nube", icon="☁️")
-    except Exception as e:
-        st.error(f"⚠️ Error al subir a la nube: {e}")
+        try:
+            # Intenta cargar la imagen con la ruta absoluta
+            st.image(ruta_logo, use_container_width=True)
+        except Exception as e:
+            # Si el archivo no está (ej: faltó subirlo a GitHub), muestra este aviso sin romper la app
+            st.error("⚠️ Falta subir logo_medicare_pro.jpeg a GitHub")
 
 # --- INICIALIZACIÓN ---
 if "db_inicializada" not in st.session_state:
