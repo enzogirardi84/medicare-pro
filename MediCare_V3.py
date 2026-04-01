@@ -244,6 +244,29 @@ def render_logo_eg(size=100):
         except Exception as e:
             # Si el archivo no está (ej: faltó subirlo a GitHub), muestra este aviso sin romper la app
             st.error("⚠️ Falta subir logo_medicare_pro.jpeg a GitHub")
+# --- MOTOR DE PERSISTENCIA ---
+def cargar_datos():
+    try:
+        response = supabase.table('medicare_db').select('datos').eq('id', 1).execute()
+        if response.data: return response.data[0]['datos']
+    except Exception as e:
+        st.error(f"Error cargando datos: {e}")
+    return None
+
+def guardar_datos():
+    claves = [
+        "usuarios_db", "pacientes_db", "detalles_pacientes_db", "vitales_db", 
+        "indicaciones_db", "turnos_db", "evoluciones_db", "facturacion_db", "logs_db", 
+        "balance_db", "pediatria_db", "fotos_heridas_db",
+        "agenda_db", "checkin_db", "inventario_db", "consumos_db", "nomenclador_db", "firmas_tactiles_db",
+        "reportes_diarios_db", "estudios_db", "administracion_med_db"
+    ]
+    data = {k: st.session_state[k] for k in claves if k in st.session_state}
+    try:
+        supabase.table('medicare_db').upsert({"id": 1, "datos": data}).execute()
+        st.toast("✅ Guardado exitosamente en la nube", icon="☁️")
+    except Exception as e:
+        st.error(f"⚠️ Error al subir a la nube: {e}")            
 
 # --- INICIALIZACIÓN ---
 if "db_inicializada" not in st.session_state:
