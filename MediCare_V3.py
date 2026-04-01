@@ -227,23 +227,9 @@ st.markdown(page_bg_css, unsafe_allow_html=True)
 
 # --- 🎁 LOGO EXCLUSIVO PROFESIONAL ---
 def render_logo_eg(size=100):
-    svg_code = f"""
-    <svg width="{size}" height="{size}" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-            <linearGradient id="egGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#1e3a8a;stop-opacity:1" />
-                <stop offset="100%" style="stop-color:#0d9488;stop-opacity:1" />
-            </linearGradient>
-        </defs>
-        <circle cx="60" cy="60" r="55" fill="url(#egGrad)" stroke="white" stroke-width="2"/>
-        <g fill="white" font-family="Arial, Helvetica, sans-serif" font-weight="bold" text-anchor="middle">
-            <text x="60" y="55" font-size="36" letter-spacing="-1">E.G</text>
-            <text x="60" y="80" font-size="10" font-weight="normal" letter-spacing="0.5">ENZO GIRARDI</text>
-            <text x="60" y="92" font-size="8" font-weight="normal" letter-spacing="0.2">SISTEMAS SOLUTIONS</text>
-        </g>
-    </svg>
-    """
-    st.sidebar.markdown(f'<div style="display: flex; justify-content: center; padding: 10px;">{svg_code}</div>', unsafe_allow_html=True)
+    col1, col2, col3 = st.sidebar.columns([1, 1.5, 1])
+    with col2:
+        st.image("logo_medicare_pro.jpeg", use_container_width=True)
 
 # --- MOTOR DE PERSISTENCIA ---
 def cargar_datos():
