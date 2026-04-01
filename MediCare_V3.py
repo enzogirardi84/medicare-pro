@@ -537,11 +537,16 @@ with tabs[menu.index("👤 Admisión")]:
     with st.form("adm_form", clear_on_submit=True):
         col_a, col_b = st.columns(2)
         n = col_a.text_input("Nombre y Apellido"); o = col_b.text_input("Obra Social")
-        d = col_a.text_input("DNI del Paciente"); f_nac = col_b.date_input("Nacimiento", value=date(2000, 1, 1))
+        d = col_a.text_input("DNI del Paciente")
+        
+        # --- ACÁ ESTÁ EL ARREGLO: Agregamos min_value y max_value ---
+        f_nac = col_b.date_input("Nacimiento", value=date(1980, 1, 1), min_value=date(1900, 1, 1), max_value=ahora().date())
+        
         col_c, col_d = st.columns(2)
         se = col_c.selectbox("Sexo", ["F", "M"]); tel = col_d.text_input("WhatsApp (Ej: 3584302024)")
         dir_p = st.text_input("Dirección Exacta (Para el PDF)")
         emp_d = st.text_input("Empresa", value=mi_empresa) if rol == "SuperAdmin" else mi_empresa
+        
         if st.form_submit_button("Habilitar Paciente", width="stretch"):
             if n and d and emp_d: 
                 id_p = f"{n} ({o}) - {emp_d.strip()}"
