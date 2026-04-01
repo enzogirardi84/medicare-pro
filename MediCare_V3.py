@@ -620,9 +620,16 @@ with tabs[menu.index("👶 Pediatría")]:
         se = det.get("sexo", "F"); f_n_str = det.get("fnac", "01/01/2000")
         f_n = pd.to_datetime(f_n_str, format="%d/%m/%Y", errors='coerce')
         if pd.isna(f_n): f_n = datetime(2000, 1, 1)
-        eda_meses = round((ahora().replace(tzinfo=None) - f_n).days / 30.4375, 1)
         
         with st.form("pedia", clear_on_submit=True):
+            # --- NUEVO: Control de Fecha y Hora de la toma ---
+            st.markdown("##### ⏱️ Fecha y Hora del Control Pediátrico")
+            col_time1, col_time2 = st.columns(2)
+            fecha_toma = col_time1.date_input("Fecha del control", value=ahora().date())
+            hora_toma = col_time2.time_input("Hora exacta", value=ahora().time())
+            st.divider()
+            # --------------------------------------------------
+            
             col_a, col_b = st.columns(2)
             pes = col_a.number_input("Peso Actual (kg)", min_value=0.0, format="%.2f")
             tal = col_b.number_input("Talla Actual (cm)", min_value=0.0, format="%.2f")
@@ -635,9 +642,16 @@ with tabs[menu.index("👶 Pediatría")]:
                 if se == "F": percentil_sug = "⚖️ P3 - Bajo Peso" if imc < 14 else "⚖️ P50 - Peso Normal" if imc < 18 else "⚠️ P97 - Sobrepeso"
                 else: percentil_sug = "⚖️ P3 - Bajo Peso" if imc < 14.5 else "⚖️ P50 - Peso Normal" if imc < 18.5 else "⚠️ P97 - Sobrepeso"
                 
+                # Calculamos la edad en meses EXACTA en la fecha que se hizo el control
+                dt_toma = datetime.combine(fecha_toma, hora_toma)
+                eda_meses = round((dt_toma - f_n).days / 30.4375, 1)
+                if eda_meses < 0: eda_meses = 0.0 # Por si cargan una fecha antes de que nazca
+
+                fecha_str_toma = f"{fecha_toma.strftime('%d/%m/%Y')} {hora_toma.strftime('%H:%M')}"
+                
                 st.session_state["pediatria_db"].append({
                     "paciente": paciente_sel, 
-                    "fecha": ahora().strftime("%d/%m/%Y %H:%M"), 
+                    "fecha": fecha_str_toma, 
                     "edad_meses": eda_meses, 
                     "peso": pes, 
                     "talla": tal, 
@@ -653,16 +667,31 @@ with tabs[menu.index("👶 Pediatría")]:
         if ped:
             st.divider()
             st.markdown("#### 📈 Curvas de Crecimiento")
-            df_g = pd.DataFrame(ped).set_index("fecha")
+            # Ordenamos los datos cronológicamente para que el gráfico no haga líneas raras si cargás cosas viejas
+            df_g = pd.DataFrame(ped)
+            try:
+                df_g['fecha_dt'] = pd.to_datetime(df_g['fecha'], format="%d/%m/%Y %H:%M")
+                df_g = df_g.sort_values(by='fecha_dt')
+            except:
+                pass
+            df_g = df_g.set_index("fecha")
+            
             c1, c2 = st.columns(2)
             if "peso" in df_g.columns: c1.line_chart(df_g["peso"], color="#3b82f6")
             if "talla" in df_g.columns: c2.line_chart(df_g["talla"], color="#10b981")
             
             st.markdown("#### 📋 Historial de Controles Pediátricos")
-            # --- SISTEMA ANTI-COLAPSO ---
+            # --- SISTEMA ANTI-COLAPSO CON ORDEN CRONOLÓGICO ---
             with st.container(height=250):
                 df_ped = pd.DataFrame(ped).drop(columns=["paciente"], errors='ignore')
                 
+                # ORDEN CRONOLÓGICO SEGURO (El más reciente arriba)
+                try:
+                    df_ped['fecha_dt'] = pd.to_datetime(df_ped['fecha'], format="%d/%m/%Y %H:%M")
+                    df_ped = df_ped.sort_values(by='fecha_dt', ascending=False).drop(columns=['fecha_dt'])
+                except Exception:
+                    df_ped = df_ped.iloc[::-1]
+                    
                 # Renombramos las columnas para que queden súper prolijas en pantalla
                 df_ped = df_ped.rename(columns={
                     "fecha": "Fecha", 
@@ -676,8 +705,7 @@ with tabs[menu.index("👶 Pediatría")]:
                     "firma": "Profesional"
                 })
                 
-                # Damos vuelta la tabla para ver el último control arriba de todo (.iloc[::-1])
-                st.dataframe(df_ped.iloc[::-1], use_container_width=True, hide_index=True)
+                st.dataframe(df_ped, use_container_width=True, hide_index=True)
 
 # 6. EVOLUCIÓN
 with tabs[menu.index("📝 Evolución")]:
