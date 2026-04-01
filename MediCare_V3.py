@@ -567,14 +567,14 @@ with tabs[menu.index("📊 Clínica")]:
             c1.metric("T.A.", u.get("TA", "-")); c2.metric("F.C.", f"{u.get('FC', '-')} lpm"); c3.metric("F.R.", f"{u.get('FR', '-')} rpm")
             c4.metric("SatO2", f"{u.get('Sat', '-')}%"); c5.metric("Temp", f"{u.get('Temp', '-')} °C"); c6.metric("HGT", u.get("HGT", "-"))
         
-        # --- LA SOLUCIÓN: Sacamos la hora AFUERA del formulario para que no se borre ---
-        st.markdown("##### ⏱️ Fecha y Hora del Control")
-        col_time1, col_time2 = st.columns(2)
-        fecha_toma = col_time1.date_input("Fecha de la toma", value=ahora().date())
-        hora_toma = col_time2.time_input("Hora exacta de la toma", value=ahora().time())
-        st.divider()
-
         with st.form("vitales_f", clear_on_submit=True):
+            # --- LA SOLUCIÓN: Fecha y Hora ADENTRO del formulario ---
+            st.markdown("##### ⏱️ Fecha y Hora del Control")
+            col_time1, col_time2 = st.columns(2)
+            fecha_toma = col_time1.date_input("Fecha de la toma", value=ahora().date())
+            hora_toma = col_time2.time_input("Hora exacta de la toma", value=ahora().time())
+            st.divider()
+
             ta = st.text_input("Tensión Arterial (TA)", "120/80")
             col_signos = st.columns(5)
             fc = col_signos[0].number_input("F.C.", 30, 200, 75); fr = col_signos[1].number_input("F.R.", 10, 50, 16)
@@ -582,7 +582,7 @@ with tabs[menu.index("📊 Clínica")]:
             hgt = col_signos[4].text_input("HGT", "100")
             
             if st.form_submit_button("Guardar Signos", width="stretch"):
-                # Toma la fecha y hora INTACTAS que quedaron afuera del formulario
+                # Toma la fecha y hora INTACTAS porque están dentro del paquete del form
                 fecha_str_toma = f"{fecha_toma.strftime('%d/%m/%Y')} {hora_toma.strftime('%H:%M')}"
                 
                 st.session_state["vitales_db"].append({
