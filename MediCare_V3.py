@@ -559,18 +559,34 @@ with tabs[menu.index("📊 Clínica")]:
     if paciente_sel:
         vits = [v for v in st.session_state["vitales_db"] if v["paciente"] == paciente_sel]
         if vits:
-            u = vits[-1]; c1, c2, c3, c4, c5, c6 = st.columns(6)
+            # Ordenamos temporalmente para que los "metrics" de arriba muestren siempre el último control real cronológico
+            vits_ordenados = sorted(vits, key=lambda x: datetime.strptime(x['fecha'], "%d/%m/%Y %H:%M") if pd.notna(x.get('fecha')) else datetime.min)
+            u = vits_ordenados[-1] if vits_ordenados else vits[-1]
+            
+            c1, c2, c3, c4, c5, c6 = st.columns(6)
             c1.metric("T.A.", u.get("TA", "-")); c2.metric("F.C.", f"{u.get('FC', '-')} lpm"); c3.metric("F.R.", f"{u.get('FR', '-')} rpm")
             c4.metric("SatO2", f"{u.get('Sat', '-')}%"); c5.metric("Temp", f"{u.get('Temp', '-')} °C"); c6.metric("HGT", u.get("HGT", "-"))
         
         with st.form("vitales_f", clear_on_submit=True):
+            # --- NUEVO: Control de Fecha y Hora de la toma ---
+            st.markdown("##### ⏱️ Fecha y Hora del Control")
+            col_time1, col_time2 = st.columns(2)
+            fecha_toma = col_time1.date_input("Fecha de la toma", value=ahora().date())
+            hora_toma = col_time2.time_input("Hora exacta de la toma", value=ahora().time())
+            st.divider()
+            # --------------------------------------------------
+
             ta = st.text_input("Tensión Arterial (TA)", "120/80")
             col_signos = st.columns(5)
             fc = col_signos[0].number_input("F.C.", 30, 200, 75); fr = col_signos[1].number_input("F.R.", 10, 50, 16)
             sat = col_signos[2].number_input("SatO2%", 50, 100, 98); temp = col_signos[3].number_input("Temp °C", 35.0, 42.0, 36.5)
             hgt = col_signos[4].text_input("HGT", "100")
-            if st.form_submit_button("Guardar Signos"):
-                st.session_state["vitales_db"].append({"paciente": paciente_sel, "TA": ta, "FC": fc, "FR": fr, "Sat": sat, "Temp": temp, "HGT": hgt, "fecha": ahora().strftime("%d/%m/%Y %H:%M")})
+            
+            if st.form_submit_button("Guardar Signos", width="stretch"):
+                # Construir el string de fecha con lo que eligió el usuario en el calendario/reloj
+                fecha_str_toma = f"{fecha_toma.strftime('%d/%m/%Y')} {hora_toma.strftime('%H:%M')}"
+                
+                st.session_state["vitales_db"].append({"paciente": paciente_sel, "TA": ta, "FC": fc, "FR": fr, "Sat": sat, "Temp": temp, "HGT": hgt, "fecha": fecha_str_toma})
                 guardar_datos()
                 alerta_disparada = False
                 if fc > 110: st.error(f"🚨 ALERTA ROJA: Taquicardia severa detectada (FC: {fc})."); alerta_disparada = True
@@ -579,14 +595,23 @@ with tabs[menu.index("📊 Clínica")]:
                 if temp > 38.0: st.warning(f"⚠️ ALERTA AMARILLA: Paciente febril (Temp: {temp}°C)."); alerta_disparada = True
                 if not alerta_disparada: st.rerun()
 
-        # --- NUEVO: HISTORIAL ANTI-COLAPSO EN LA MISMA PESTAÑA ---
+        # --- HISTORIAL ANTI-COLAPSO EN LA MISMA PESTAÑA ---
         if vits:
             st.divider()
             st.markdown("#### 📋 Historial de Signos Vitales (Tendencia)")
             with st.container(height=250):
-                # Armamos un dataframe rápido sin la columna 'paciente' y lo damos vuelta para ver el más nuevo arriba
+                # Armamos un dataframe rápido sin la columna 'paciente'
                 df_vits = pd.DataFrame(vits).drop(columns=["paciente"], errors='ignore')
-                st.dataframe(df_vits.iloc[::-1], use_container_width=True, hide_index=True)
+                
+                # ORDEN CRONOLÓGICO: Convertimos la fecha a formato tiempo para ordenarla perfectamente de más nueva a más vieja
+                try:
+                    df_vits['fecha_dt'] = pd.to_datetime(df_vits['fecha'], format="%d/%m/%Y %H:%M")
+                    df_vits = df_vits.sort_values(by='fecha_dt', ascending=False).drop(columns=['fecha_dt'])
+                except Exception:
+                    # Si hay alguna fecha muy vieja guardada con otro formato, usa el reverso tradicional
+                    df_vits = df_vits.iloc[::-1] 
+                
+                st.dataframe(df_vits, use_container_width=True, hide_index=True)
 
 # 5. PEDIATRÍA (CON GRÁFICOS Y TABLA ANTI-COLAPSO)
 with tabs[menu.index("👶 Pediatría")]:
