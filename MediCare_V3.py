@@ -1471,10 +1471,10 @@ with tabs[menu.index("💊 Recetas")]:
 
         st.divider()
 
-        # ====================== TABLA 00:00 - 23:00 ======================
         recs = [r for r in st.session_state.get("indicaciones_db", []) if r.get("paciente") == paciente_sel]
 
         if recs:
+            # ====================== TABLA 00:00 - 23:00 ======================
             st.markdown("#### 📅 Administración de Hoy (00:00 a 23:00)")
 
             fecha_hoy = ahora().strftime("%d/%m/%Y")
@@ -1527,12 +1527,85 @@ with tabs[menu.index("💊 Recetas")]:
 
             st.divider()
 
-           # ====================== HISTORIAL DE PRESCRIPCIONES ======================
-            st.markdown("#### 🕰️ Historial de Prescripciones Médicas")
+            # ====================== PANEL DE REGISTRO DE DOSIS ======================
+            st.markdown("#### 📝 Panel de Registro de Dosis (Enfermería)")
+            with st.form("form_registro_dosis", clear_on_submit=True):
+                meds_activas_nombres = [r['med'].split(" |")[0].strip() for r in recs]
+                
+                c_med, c_hora = st.columns([2, 1])
+                med_sel = c_med.selectbox("1. Medicación a registrar:", meds_activas_nombres)
+                
+                opciones_hora = [f"{i:02d}:00" for i in range(24)]
+                hora_actual_str = f"{ahora().hour:02d}:00"
+                idx_hora = opciones_hora.index(hora_actual_str) if hora_actual_str in opciones_hora else 0
+                
+                hora_sel = c_hora.selectbox("2. Hora de la dosis:", opciones_hora, index=idx_hora)
+                estado_sel = st.radio("3. Estado de la aplicación:", ["✅ Realizada", "❌ No realizada / Suspendida"], horizontal=True)
+                justificacion = st.text_input("4. Justificación Clínica (OBLIGATORIA si marca ❌ No realizada):", placeholder="Ej: Paciente hipotenso, falta de stock, etc.")
+                
+                if st.form_submit_button("💾 Guardar Registro", width="stretch"):
+                    if "❌" in estado_sel and not justificacion.strip():
+                        st.error("🚨 LEGAL: Es obligatorio justificar clínicamente por qué no se administró la dosis.")
+                    else:
+                        if "administracion_med_db" not in st.session_state:
+                            st.session_state["administracion_med_db"] = []
+                            
+                        # Limpia si ya había un registro a esa misma hora y lo sobreescribe
+                        st.session_state["administracion_med_db"] = [
+                            a for a in st.session_state.get("administracion_med_db", [])
+                            if not (a.get("paciente") == paciente_sel and a.get("fecha") == fecha_hoy and a.get("med") == med_sel and a.get("hora") == hora_sel)
+                        ]
+                        
+                        st.session_state["administracion_med_db"].append({
+                            "paciente": paciente_sel,
+                            "med": med_sel,
+                            "fecha": fecha_hoy,
+                            "hora": hora_sel,
+                            "estado": estado_sel,
+                            "motivo": justificacion.strip() if "❌" in estado_sel else "",
+                            "firma": user["nombre"]
+                        })
+                        guardar_datos()
+                        st.success(f"✅ Registro guardado exitosamente para las {hora_sel}.")
+                        st.rerun()
+
+            st.divider()
+
+            # ====================== MODIFICAR O SUSPENDER ======================
+            st.markdown("#### ⚙️ Modificar o Suspender Manualmente")
+            c_ed1, c_ed2 = st.columns([3, 2])
             
-            # ACÁ ESTÁ EL ANTI-COLAPSO MÁGICO 👇
+            opciones_recetas = [f"[{r.get('fecha', '')}] {r.get('med', '')}" for r in recs]
+            receta_seleccionada = c_ed1.selectbox("Seleccionar indicación a gestionar:", opciones_recetas)
+            
+            accion_receta = c_ed2.selectbox("Acción a realizar:", ["Suspender / Eliminar", "Editar indicación"])
+            
+            nuevo_texto_receta = ""
+            if accion_receta == "Editar indicación" and receta_seleccionada:
+                try:
+                    texto_original = receta_seleccionada.split("] ")[1]
+                except:
+                    texto_original = receta_seleccionada
+                nuevo_texto_receta = st.text_input("Modificar detalle (Dosis, días, etc.):", value=texto_original)
+            
+            if st.button("⚠️ Aplicar Cambios en Terapéutica", use_container_width=True):
+                for r in st.session_state["indicaciones_db"]:
+                    if r["paciente"] == paciente_sel and f"[{r.get('fecha', '')}] {r.get('med', '')}" == receta_seleccionada:
+                        if accion_receta == "Suspender / Eliminar":
+                            st.session_state["indicaciones_db"].remove(r)
+                            st.success("✅ Indicación suspendida.")
+                        elif accion_receta == "Editar indicación" and nuevo_texto_receta:
+                            r["med"] = nuevo_texto_receta
+                            st.success("✅ Indicación editada con éxito.")
+                        break
+                guardar_datos()
+                st.rerun()
+
+            st.divider()
+
+            # ====================== HISTORIAL DE PRESCRIPCIONES ======================
+            st.markdown("#### 🕰️ Historial de Prescripciones Médicas")
             with st.container(height=400):
-                # Le puse límite de 30 total ahora tiene scroll y no molesta
                 for r in reversed(recs[-30:]):
                     st.success(f"""
                     📌 **{r.get('fecha', '—')}** Indicado por: **{r.get('medico_nombre', '—')}** Matrícula: {r.get('medico_matricula', '—')}  
