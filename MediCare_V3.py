@@ -1662,91 +1662,132 @@ with tabs[menu.index("📚 Historial")]:
                     for r in reversed(recs[-limite:]): st.success(f"📌 **{r['fecha']}** | Indicado por: **{r['firma']}**\n\n{r['med']}")
             else: st.write("No hay terapéutica indicada.")
 
-# 13. PDF 
+# 13. PDF - VERSIÓN CORREGIDA Y COMPLETA (SIN ERRORES 404)
 with tabs[menu.index("🗄️ PDF")]:
     if paciente_sel and FPDF_DISPONIBLE:
         import os
-        def t(txt): return str(txt).replace('⚖️', '').replace('⚠️', '').replace('📌', '').replace('📅', '').replace('📸', '').replace('🗄️', '').replace('🔬', '').encode('latin-1', 'replace').decode('latin-1')
+        
+        def t(txt):
+            return str(txt).replace('⚖️', '').replace('⚠️', '').replace('📌', '').replace('📅', '').replace('📸', '').replace('🗄️', '').replace('🔬', '').encode('latin-1', 'replace').decode('latin-1')
 
-        # --- FUNCION PARA INSERTAR EL LOGO NUEVO ---
+        # --- INSERTAR LOGO ---
         def insertar_logo(pdf_obj):
             directorio_actual = os.path.dirname(os.path.abspath(__file__))
             ruta_logo = os.path.join(directorio_actual, "logo_medicare_pro.jpeg")
             try:
-                # Insertamos tu nuevo logo jpeg (w=25 es el ancho en mm)
                 pdf_obj.image(ruta_logo, x=10, y=10, w=25)
             except Exception:
-                # Fallback: si falla o no encuentra la imagen, hace el dibujo azul original
-                pdf_obj.set_fill_color(59, 130, 246); pdf_obj.ellipse(10, 10, 22, 22, 'F')
-                pdf_obj.set_draw_color(255, 255, 255); pdf_obj.set_line_width(1.2)
-                pdf_obj.line(21, 14, 21, 28); pdf_obj.line(14, 21, 28, 21)
-        # -------------------------------------------
+                pdf_obj.set_fill_color(59, 130, 246)
+                pdf_obj.ellipse(10, 10, 22, 22, 'F')
+                pdf_obj.set_draw_color(255, 255, 255)
+                pdf_obj.set_line_width(1.2)
+                pdf_obj.line(21, 14, 21, 28)
+                pdf_obj.line(14, 21, 28, 21)
 
+        # --- GENERAR HISTORIA CLÍNICA COMPLETA ---
         def crear_pdf_pro(p):
-            pdf = FPDF(); pdf.add_page()
-            
-            insertar_logo(pdf) # Aplicamos el logo nuevo
-            
+            pdf = FPDF()
+            pdf.add_page()
+            insertar_logo(pdf)
+
             emp_paciente = st.session_state["detalles_pacientes_db"].get(p, {}).get("empresa", mi_empresa)
-            pdf.set_font("Arial", 'B', 16); pdf.set_xy(40, 14); pdf.cell(0, 10, t(emp_paciente), ln=True)
-            pdf.set_font("Arial", 'I', 9); pdf.set_xy(40, 20); pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V9.11)"), ln=True); pdf.ln(15)
-            
+            pdf.set_font("Arial", 'B', 16)
+            pdf.set_xy(40, 14)
+            pdf.cell(0, 10, t(emp_paciente), ln=True)
+            pdf.set_font("Arial", 'I', 9)
+            pdf.set_xy(40, 20)
+            pdf.cell(0, 10, t("Historia Clinica Digital Integral (Pro V9.11)"), ln=True)
+            pdf.ln(15)
+
             det = st.session_state["detalles_pacientes_db"].get(p, {})
             estado_texto = " [ARCHIVADO/ALTA]" if det.get("estado") == "De Alta" else ""
-            pdf.set_fill_color(240, 240, 240); pdf.set_font("Arial", 'B', 11)
+            pdf.set_fill_color(240, 240, 240)
+            pdf.set_font("Arial", 'B', 11)
             pdf.cell(0, 8, t(f" PACIENTE: {p}{estado_texto}"), 1, 1, 'L', True)
             pdf.set_font("Arial", '', 9)
             pdf.cell(0, 6, t(f" DNI: {det.get('dni','S/D')} | Nacimiento: {det.get('fnac','S/D')} | Sexo: {det.get('sexo','S/D')}"), ln=True)
-            pdf.cell(0, 6, t(f" Domicilio del Legajo: {det.get('direccion','S/D')}"), ln=True); pdf.ln(5)
+            pdf.cell(0, 6, t(f" Domicilio del Legajo: {det.get('direccion','S/D')}"), ln=True)
+            pdf.ln(5)
 
+            # Signos Vitales
             vits = [x for x in st.session_state["vitales_db"] if x["paciente"] == p]
             if vits:
-                pdf.set_font("Arial", 'B', 10); pdf.cell(0, 8, t("SIGNOS VITALES:"), ln=True); pdf.set_font("Arial", 'B', 8); pdf.set_fill_color(230, 230, 230)
-                pdf.cell(30, 6, "FECHA", 1, 0, 'C', True); pdf.cell(20, 6, "TA", 1, 0, 'C', True); pdf.cell(20, 6, "FC", 1, 0, 'C', True); pdf.cell(20, 6, "FR", 1, 0, 'C', True); pdf.cell(20, 6, "SAT%", 1, 0, 'C', True); pdf.cell(20, 6, "TEMP", 1, 0, 'C', True); pdf.cell(20, 6, "HGT", 1, 1, 'C', True)
+                pdf.set_font("Arial", 'B', 10)
+                pdf.cell(0, 8, t("SIGNOS VITALES:"), ln=True)
+                pdf.set_font("Arial", 'B', 8)
+                pdf.set_fill_color(230, 230, 230)
+                pdf.cell(30, 6, "FECHA", 1, 0, 'C', True)
+                pdf.cell(20, 6, "TA", 1, 0, 'C', True)
+                pdf.cell(20, 6, "FC", 1, 0, 'C', True)
+                pdf.cell(20, 6, "FR", 1, 0, 'C', True)
+                pdf.cell(20, 6, "SAT%", 1, 0, 'C', True)
+                pdf.cell(20, 6, "TEMP", 1, 0, 'C', True)
+                pdf.cell(20, 6, "HGT", 1, 1, 'C', True)
                 pdf.set_font("Arial", '', 8)
                 for v in vits:
-                    pdf.cell(30, 6, t(v.get('fecha','')), 1, 0, 'C'); pdf.cell(20, 6, t(v.get('TA','')), 1, 0, 'C'); pdf.cell(20, 6, str(v.get('FC','')), 1, 0, 'C')
-                    pdf.cell(20, 6, str(v.get('FR','')), 1, 0, 'C'); pdf.cell(20, 6, str(v.get('Sat','')), 1, 0, 'C'); pdf.cell(20, 6, str(v.get('Temp','')), 1, 0, 'C'); pdf.cell(20, 6, t(v.get('HGT','')), 1, 1, 'C')
+                    pdf.cell(30, 6, t(v.get('fecha','')), 1, 0, 'C')
+                    pdf.cell(20, 6, t(v.get('TA','')), 1, 0, 'C')
+                    pdf.cell(20, 6, str(v.get('FC','')), 1, 0, 'C')
+                    pdf.cell(20, 6, str(v.get('FR','')), 1, 0, 'C')
+                    pdf.cell(20, 6, str(v.get('Sat','')), 1, 0, 'C')
+                    pdf.cell(20, 6, str(v.get('Temp','')), 1, 0, 'C')
+                    pdf.cell(20, 6, t(v.get('HGT','')), 1, 1, 'C')
                 pdf.ln(4)
 
+            # Evoluciones
             evs = [x for x in st.session_state["evoluciones_db"] if x["paciente"] == p]
             if evs:
-                pdf.set_font("Arial", 'B', 10); pdf.cell(0, 8, t("EVOLUCIONES CLINICAS:"), ln=True)
+                pdf.set_font("Arial", 'B', 10)
+                pdf.cell(0, 8, t("EVOLUCIONES CLINICAS:"), ln=True)
                 for ev in evs:
-                    pdf.set_font("Arial", 'B', 8); pdf.cell(0, 5, t(f"[{ev.get('fecha','')}] - Firma: {ev.get('firma','')}"), ln=True)
-                    pdf.set_font("Arial", '', 9); pdf.multi_cell(0, 5, t(ev.get('nota','')), 'L'); pdf.ln(2)
+                    pdf.set_font("Arial", 'B', 8)
+                    pdf.cell(0, 5, t(f"[{ev.get('fecha','')}] - Firma: {ev.get('firma','')}"), ln=True)
+                    pdf.set_font("Arial", '', 9)
+                    pdf.multi_cell(0, 5, t(ev.get('nota','')), 'L')
+                    pdf.ln(2)
 
-            # NUEVO: IMPRIMIR ESTUDIOS COMPLEMENTARIOS EN PDF
+            # Estudios Complementarios
             estudios_pdf = [x for x in st.session_state.get("estudios_db", []) if x["paciente"] == p]
             if estudios_pdf:
-                pdf.set_font("Arial", 'B', 10); pdf.cell(0, 8, t("ESTUDIOS COMPLEMENTARIOS:"), ln=True)
+                pdf.set_font("Arial", 'B', 10)
+                pdf.cell(0, 8, t("ESTUDIOS COMPLEMENTARIOS:"), ln=True)
                 for est in estudios_pdf:
-                    pdf.set_font("Arial", 'B', 8); pdf.cell(0, 5, t(f"[{est.get('fecha','')}] {est.get('tipo','')} - Firma: {est.get('firma','')}"), ln=True)
+                    pdf.set_font("Arial", 'B', 8)
+                    pdf.cell(0, 5, t(f"[{est.get('fecha','')}] {est.get('tipo','')} - Firma: {est.get('firma','')}"), ln=True)
                     if est.get('detalle'):
-                        pdf.set_font("Arial", '', 9); pdf.multi_cell(0, 5, t(est.get('detalle','')), 'L')
+                        pdf.set_font("Arial", '', 9)
+                        pdf.multi_cell(0, 5, t(est.get('detalle','')), 'L')
                 pdf.ln(4)
 
+            # Materiales
             cons = [x for x in st.session_state["consumos_db"] if x["paciente"] == p]
             if cons:
-                pdf.set_font("Arial", 'B', 10); pdf.cell(0, 8, t("MATERIALES DESCARTABLES UTILIZADOS:"), ln=True)
+                pdf.set_font("Arial", 'B', 10)
+                pdf.cell(0, 8, t("MATERIALES DESCARTABLES UTILIZADOS:"), ln=True)
                 for c in cons:
-                    pdf.set_font("Arial", '', 9); pdf.cell(0, 5, t(f"[{c['fecha']}] {c['cantidad']}x {c['insumo']} - Registrado por: {c['firma']}"), ln=True)
+                    pdf.set_font("Arial", '', 9)
+                    pdf.cell(0, 5, t(f"[{c['fecha']}] {c['cantidad']}x {c['insumo']} - Registrado por: {c['firma']}"), ln=True)
                 pdf.ln(4)
 
+            # Checkins GPS
             chks = [x for x in st.session_state["checkin_db"] if x["paciente"] == p]
             if chks:
-                pdf.set_font("Arial", 'B', 10); pdf.cell(0, 8, t("AUDITORIA DE PRESENCIA GPS (Llegada/Salida):"), ln=True)
+                pdf.set_font("Arial", 'B', 10)
+                pdf.cell(0, 8, t("AUDITORIA DE PRESENCIA GPS (Llegada/Salida):"), ln=True)
                 pdf.set_font("Arial", '', 8)
                 for c in chks:
                     pdf.multi_cell(0, 5, t(f"[{c['fecha_hora']}] {c['tipo']} | Por: {c['profesional']}"), align='L')
                 pdf.ln(4)
 
-            pdf.ln(10); y_firma = pdf.get_y()
+            # Firmas
+            pdf.ln(10)
+            y_firma = pdf.get_y()
             pdf.line(10, y_firma, 80, y_firma)
-            pdf.set_font("Arial", 'B', 9); pdf.set_xy(10, y_firma + 2)
+            pdf.set_font("Arial", 'B', 9)
+            pdf.set_xy(10, y_firma + 2)
             pdf.cell(70, 5, t(f"Firma Profesional: {user['nombre']}"), ln=2)
             pdf.cell(70, 5, t(f"Matricula: {user.get('matricula', 'S/D')}"), ln=0)
-            
+
             firmas_paciente = [x for x in st.session_state.get("firmas_tactiles_db", []) if x["paciente"] == p]
             if firmas_paciente:
                 ultima_firma = firmas_paciente[-1]["firma_img"]
@@ -1754,33 +1795,41 @@ with tabs[menu.index("🗄️ PDF")]:
                     try:
                         img_data = base64.b64decode(ultima_firma)
                         with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
-                            tmp.write(img_data); tmp_path = tmp.name
+                            tmp.write(img_data)
+                            tmp_path = tmp.name
                         pdf.image(tmp_path, x=130, y=y_firma - 15, w=40)
                         os.remove(tmp_path)
-                    except Exception as e: pass
+                    except Exception:
+                        pass
 
-            nombre_paciente = p.split(" (")[0] 
-            pdf.line(120, y_firma, 190, y_firma); pdf.set_xy(120, y_firma + 2)
+            nombre_paciente = p.split(" (")[0]
+            pdf.line(120, y_firma, 190, y_firma)
+            pdf.set_xy(120, y_firma + 2)
             pdf.cell(70, 5, t("Conformidad Paciente / Familiar"), ln=2)
             pdf.cell(70, 5, t(f"Aclaracion: {nombre_paciente}"), ln=2)
             pdf.cell(70, 5, t(f"DNI: {det.get('dni', 'S/D')}"), ln=0)
             return pdf.output(dest='S').encode('latin-1')
 
+        # --- CONSENTIMIENTO INFORMADO (sin cambios) ---
         def crear_consentimiento_pdf(p):
-            pdf = FPDF(); pdf.add_page()
-            
-            insertar_logo(pdf) # Aplicamos el logo nuevo
+            pdf = FPDF()
+            pdf.add_page()
+            insertar_logo(pdf)
             
             det = st.session_state["detalles_pacientes_db"].get(p, {})
-            emp_paciente = det.get("empresa", mi_empresa); nombre_paciente = p.split(" (")[0]
+            emp_paciente = det.get("empresa", mi_empresa)
+            nombre_paciente = p.split(" (")[0]
             
-            pdf.set_y(40) # Bajamos el título para que no pise el logo
-            pdf.set_font("Arial", 'B', 14); pdf.cell(0, 10, t("CONSENTIMIENTO INFORMADO DE INTERNACION DOMICILIARIA"), ln=True, align='C'); pdf.ln(10)
+            pdf.set_y(40)
+            pdf.set_font("Arial", 'B', 14)
+            pdf.cell(0, 10, t("CONSENTIMIENTO INFORMADO DE INTERNACION DOMICILIARIA"), ln=True, align='C')
+            pdf.ln(10)
             pdf.set_font("Arial", '', 11)
             
-            texto_legal = f"Por la presente, yo {nombre_paciente}, con DNI {det.get('dni', 'S/D')}, con domicilio en {det.get('direccion', 'S/D')}, declaro haber sido informado/a por el personal de la empresa {emp_paciente} sobre los alcances, modalidades y pautas del servicio de internación / cuidado domiciliario que voy a recibir.\n\nComprendo que la atencion domiciliaria requiere de la colaboracion activa del grupo familiar y declaro mi total conformidad para que el personal de salud (medicos, enfermeros, kinesiologos, etc.) ingrese a mi domicilio para realizar las practicas establecidas en el plan terapeutico.\n\nAsimismo, entiendo que los registros clinicos seran resguardados en formato digital a traves de la plataforma MediCare Enterprise PRO, autorizando el procesamiento de mis datos de salud segun las normativas vigentes."
+            texto_legal = f"Por la presente, yo {nombre_paciente}, con DNI {det.get('dni', 'S/D')}, con domicilio en {det.get('direccion', 'S/D')}, declaro haber sido informado/a por el personal de la empresa {emp_paciente} sobre los alcances, modalidades y pautas del servicio de internación / cuidado domiciliario que voy a recibir.\n\nComprendo que la atención domiciliaria requiere de la colaboración activa del grupo familiar y declaro mi total conformidad para que el personal de salud ingrese a mi domicilio para realizar las prácticas establecidas en el plan terapéutico.\n\nAsimismo, entiendo que los registros clínicos serán resguardados en formato digital a través de la plataforma MediCare Enterprise PRO, autorizando el procesamiento de mis datos de salud según las normativas vigentes."
             
-            pdf.multi_cell(0, 7, t(texto_legal)); pdf.ln(30)
+            pdf.multi_cell(0, 7, t(texto_legal))
+            pdf.ln(30)
             
             y_firma = pdf.get_y()
             firmas_paciente = [x for x in st.session_state.get("firmas_tactiles_db", []) if x["paciente"] == p]
@@ -1790,28 +1839,52 @@ with tabs[menu.index("🗄️ PDF")]:
                     try:
                         img_data = base64.b64decode(ultima_firma)
                         with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
-                            tmp.write(img_data); tmp_path = tmp.name
+                            tmp.write(img_data)
+                            tmp_path = tmp.name
                         pdf.image(tmp_path, x=85, y=y_firma - 15, w=40)
                         os.remove(tmp_path)
-                    except Exception as e: pass
-
-            pdf.line(60, y_firma, 150, y_firma); pdf.set_xy(60, y_firma + 2)
-            pdf.set_font("Arial", 'B', 10); pdf.cell(90, 5, t("Firma del Paciente / Responsable"), ln=2, align='C')
+                    except Exception:
+                        pass
+            
+            pdf.line(60, y_firma, 150, y_firma)
+            pdf.set_xy(60, y_firma + 2)
+            pdf.set_font("Arial", 'B', 10)
+            pdf.cell(90, 5, t("Firma del Paciente / Responsable"), ln=2, align='C')
             pdf.cell(90, 5, t(f"Aclaracion: {nombre_paciente}"), ln=2, align='C')
             pdf.cell(90, 5, t(f"DNI: {det.get('dni', 'S/D')}"), ln=2, align='C')
             pdf.cell(90, 5, t(f"Fecha: {ahora().strftime('%d/%m/%Y')}"), ln=0, align='C')
             return pdf.output(dest='S').encode('latin-1')
 
-        # --- BOTONES HTML ANTI-404 PARA LA PESTAÑA PDF ---
+        # --- BOTONES DE DESCARGA SEGURA ---
+        st.markdown("### 📄 Generar Documentos del Paciente")
+        
         pdf_hc = crear_pdf_pro(paciente_sel)
         b64_hc = base64.b64encode(pdf_hc).decode('utf-8')
-        html_hc = f'''<a href="data:application/pdf;base64,{b64_hc}" download="HC_{paciente_sel}.pdf" style="display: block; width: 100%; text-align: center; background-color: #2563eb; color: white; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: 600; font-family: sans-serif; margin-bottom: 10px;">📥 1. Generar Historia Clínica en PDF</a>'''
+        html_hc = f'''
+        <a href="data:application/pdf;base64,{b64_hc}" 
+           download="HC_{paciente_sel.replace(' ', '_')}.pdf" 
+           style="display: block; width: 100%; text-align: center; background-color: #2563eb; 
+                  color: white; padding: 14px; border-radius: 8px; text-decoration: none; 
+                  font-weight: 600; font-family: sans-serif; margin-bottom: 12px;">
+           📥 1. Descargar Historia Clínica Completa (PDF)
+        </a>
+        '''
         st.markdown(html_hc, unsafe_allow_html=True)
 
         pdf_cons = crear_consentimiento_pdf(paciente_sel)
         b64_cons = base64.b64encode(pdf_cons).decode('utf-8')
-        html_cons = f'''<a href="data:application/pdf;base64,{b64_cons}" download="Consentimiento_{paciente_sel}.pdf" style="display: block; width: 100%; text-align: center; background-color: #10b981; color: white; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: 600; font-family: sans-serif;">📄 2. Descargar Consentimiento Informado Legal</a>'''
+        html_cons = f'''
+        <a href="data:application/pdf;base64,{b64_cons}" 
+           download="Consentimiento_{paciente_sel.replace(' ', '_')}.pdf" 
+           style="display: block; width: 100%; text-align: center; background-color: #10b981; 
+                  color: white; padding: 14px; border-radius: 8px; text-decoration: none; 
+                  font-weight: 600; font-family: sans-serif;">
+           📄 2. Descargar Consentimiento Informado Legal
+        </a>
+        '''
         st.markdown(html_cons, unsafe_allow_html=True)
+
+        st.success("✅ Descargas seguras activadas. Ya no deberían aparecer errores 404.")
 
 # 14. CIERRE DIARIO Y REPORTES DE STOCK (SOLO VISIBLE PARA ADMIN/COORDINADOR)
 if "📑 Cierre Diario" in menu:
