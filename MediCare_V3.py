@@ -1201,14 +1201,16 @@ with tabs[menu.index("⚖️ Balance")]:
             e3 = c2.number_input("Pérdidas Insensibles / Catarsis", 0, step=50)
             
             if st.form_submit_button("💾 Guardar Balance y Calcular Shift", width="stretch"):
-                if len(hora_bal_str) != 5 or ":" not in hora_bal_str:
-                    hora_bal_str = ahora().strftime("%H:%M")
+                # --- ARREGLO: Validación flexible de hora ---
+                hora_limpia = hora_bal_str.strip()
+                if not hora_limpia or ":" not in hora_limpia:
+                    hora_limpia = ahora().strftime("%H:%M")
                     
                 ting = i1 + i2
                 tegr = e1 + e2 + e3
                 bal = ting - tegr
                 
-                fecha_str_combinada = f"{fecha_bal.strftime('%d/%m/%Y')} {hora_bal_str}"
+                fecha_str_combinada = f"{fecha_bal.strftime('%d/%m/%Y')} {hora_limpia}"
                 
                 st.session_state["balance_db"].append({
                     "paciente": paciente_sel, 
