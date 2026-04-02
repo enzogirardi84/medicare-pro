@@ -833,12 +833,12 @@ with tabs[menu.index("📝 Evolución")]:
         else:
             st.info("Aún no hay evoluciones registradas para este paciente.")
 
-# 6.5 ESTUDIOS COMPLEMENTARIOS (VERSIÓN FINAL - DESCARGA SEGURA + BORRAR CUALQUIERA)
+# 6.5 ESTUDIOS COMPLEMENTARIOS - VERSIÓN CORREGIDA (SIN ERRORES 404 + BOTÓN PARA BORRAR)
 with tabs[menu.index("🔬 Estudios")]:
     if paciente_sel:
         st.subheader("Órdenes y Resultados de Estudios")
         
-        # Formulario para agregar nuevo estudio
+        # --- FORMULARIO PARA AGREGAR ESTUDIO ---
         with st.form("form_estudios", clear_on_submit=True):
             col_e1, col_e2 = st.columns([1, 2])
             tipo_estudio = col_e1.selectbox("Tipo de Estudio", [
@@ -877,17 +877,26 @@ with tabs[menu.index("🔬 Estudios")]:
                 st.success("✅ Estudio guardado correctamente.")
                 st.rerun()
 
-        # --- LISTADO DE ESTUDIOS CON DESCARGA SEGURA Y BOTÓN DE BORRAR INDIVIDUAL ---
+        # --- LISTADO DE ESTUDIOS CON DESCARGA SEGURA Y BORRADO INDIVIDUAL ---
         estudios_pac = [e for e in st.session_state.get("estudios_db", []) if e["paciente"] == paciente_sel]
         
         if estudios_pac:
             st.divider()
             st.markdown("#### 📁 Archivo de Estudios del Paciente")
             
+            # Botón para borrar el último estudio (rápido)
+            col_del1, col_del2 = st.columns([3, 1])
+            if col_del1.button("🗑️ Borrar último estudio", use_container_width=True):
+                if estudios_pac:
+                    st.session_state["estudios_db"].remove(estudios_pac[-1])
+                    guardar_datos()
+                    st.success("Estudio eliminado correctamente.")
+                    st.rerun()
+            
             limite_est = st.selectbox("Mostrar últimos:", [10, 20, 50, "Todos"], key="lim_estudios_tab")
             estudios_mostrar = estudios_pac if limite_est == "Todos" else estudios_pac[-int(limite_est):]
             
-            with st.container(height=550):
+            with st.container(height=520):
                 for idx, est in enumerate(reversed(estudios_mostrar)):
                     with st.container(border=True):
                         col1, col2 = st.columns([4, 1])
@@ -896,11 +905,11 @@ with tabs[menu.index("🔬 Estudios")]:
                             st.markdown(f"**📅 {est['fecha']}** | 👨‍⚕️ **{est['firma']}**")
                             st.markdown(f"**🔬 {est['tipo']}**")
                             if est.get('detalle'):
-                                st.caption(est['detalle'])
+                                st.caption(est.get('detalle'))
                         
                         with col2:
                             # Botón para borrar ESTE estudio específico
-                            if st.button("🗑️", key=f"del_est_{est['fecha']}_{idx}", help="Eliminar este estudio"):
+                            if st.button("🗑️ Eliminar", key=f"del_est_{est['fecha']}_{idx}", help="Borrar este estudio"):
                                 st.session_state["estudios_db"] = [
                                     e for e in st.session_state["estudios_db"] 
                                     if not (e["paciente"] == paciente_sel and e["fecha"] == est["fecha"])
@@ -909,7 +918,7 @@ with tabs[menu.index("🔬 Estudios")]:
                                 st.success("Estudio eliminado")
                                 st.rerun()
                         
-                        # Descarga segura del PDF
+                        # DESCARGA SEGURA DE PDF
                         if est.get('imagen'):
                             try:
                                 b64_str = est['imagen']
@@ -920,16 +929,17 @@ with tabs[menu.index("🔬 Estudios")]:
                                     html_btn = f'''
                                     <a href="data:application/pdf;base64,{b64_str}" 
                                        download="{nombre_arch}" 
-                                       style="display:block; width:100%; text-align:center; background:#2563eb; 
-                                              color:white; padding:12px; border-radius:8px; text-decoration:none; 
-                                              font-weight:600; margin-top:8px;">
+                                       style="display: block; width: 100%; text-align: center; 
+                                              background-color: #2563eb; color: white; padding: 12px; 
+                                              border-radius: 8px; text-decoration: none; 
+                                              font-weight: 600; margin-top: 8px;">
                                        📥 DESCARGAR PDF (Seguro)
                                     </a>
                                     '''
                                     st.markdown(html_btn, unsafe_allow_html=True)
                                 else:
                                     st.image(img_bytes, caption="Documento Adjunto", use_container_width=True)
-                            except:
+                            except Exception:
                                 st.error("⚠️ Error al leer el archivo")
         else:
             st.info("Aún no hay estudios guardados para este paciente.")
