@@ -773,77 +773,124 @@ with tabs[menu.index("👤 Admisión")]:
 
 # 4. CLÍNICA
 with tabs[menu.index("📊 Clínica")]:
-    if paciente_sel:
-        vits = [v for v in st.session_state["vitales_db"] if v["paciente"] == paciente_sel]
-        if vits:
-            # Ordenamos temporalmente para que los metrics de arriba muestren siempre el último control real cronológico
-            vits_ordenados = sorted(vits, key=lambda x: datetime.strptime(x['fecha'], "%d/%m/%Y %H:%M") if pd.notna(x.get('fecha')) else datetime.min)
-            u = vits_ordenados[-1] if vits_ordenados else vits[-1]
-            
-            c1, c2, c3, c4, c5, c6 = st.columns(6)
-            c1.metric("T.A.", u.get("TA", "-")); c2.metric("F.C.", f"{u.get('FC', '-')} lpm"); c3.metric("F.R.", f"{u.get('FR', '-')} rpm")
-            c4.metric("SatO2", f"{u.get('Sat', '-')}%"); c5.metric("Temp", f"{u.get('Temp', '-')} °C"); c6.metric("HGT", u.get("HGT", "-"))
-        
-        with st.form("vitales_f", clear_on_submit=True):
-            st.markdown("##### ⏱️ Fecha y Hora del Control")
-            col_time1, col_time2 = st.columns(2)
-            
-            fecha_toma = col_time1.date_input("📅 Fecha de la toma", value=ahora().date(), key="fecha_vits")
-            hora_toma_str = col_time2.text_input("⏰ Hora exacta (Formato HH:MM)", value=ahora().strftime("%H:%M"), key="hora_vits")
-            st.divider()
+    if not paciente_sel:
+        st.info("👈 Seleccioná un paciente en el menú lateral.")
+    else:
+        st.subheader("📊 Signos Vitales - Control Clínico")
 
+        # === ÚLTIMOS SIGNOS VITALES (MÉTRICAS) ===
+        vits = [v for v in st.session_state.get("vitales_db", []) if v.get("paciente") == paciente_sel]
+        
+        if vits:
+            # Ordenamos cronológicamente (función segura)
+            def parse_fecha_hora(fecha_str: str):
+                try:
+                    return datetime.strptime(fecha_str, "%d/%m/%Y %H:%M:%S")
+                except ValueError:
+                    try:
+                        return datetime.strptime(fecha_str, "%d/%m/%Y %H:%M")
+                    except:
+                        return datetime.min
+
+            vits_ordenados = sorted(vits, key=lambda x: parse_fecha_hora(x.get('fecha', '')))
+            ultimo = vits_ordenados[-1]
+
+            st.markdown("##### Último control registrado")
+            c1, c2, c3, c4, c5, c6 = st.columns(6)
+            c1.metric("T.A.", ultimo.get("TA", "-"), help="Tensión Arterial")
+            c2.metric("F.C.", f"{ultimo.get('FC', '-')} lpm")
+            c3.metric("F.R.", f"{ultimo.get('FR', '-')} rpm")
+            c4.metric("SatO₂", f"{ultimo.get('Sat', '-')} %")
+            c5.metric("Temp", f"{ultimo.get('Temp', '-')} °C")
+            c6.metric("HGT", ultimo.get("HGT", "-"))
+
+            # Tendencia simple (último vs anteúltimo)
+            if len(vits_ordenados) >= 2:
+                penultimo = vits_ordenados[-2]
+                delta_fc = int(ultimo.get('FC', 0)) - int(penultimo.get('FC', 0))
+                st.caption(f"**Tendencia FC:** {'↑' if delta_fc > 0 else '↓' if delta_fc < 0 else '→'} {abs(delta_fc)} lpm")
+        else:
+            st.info("Aún no hay signos vitales registrados para este paciente.")
+
+        st.divider()
+
+        # === FORMULARIO PARA NUEVO CONTROL ===
+        with st.form("vitales_f", clear_on_submit=True):
+            st.markdown("##### ⏱️ Nuevo Control de Signos Vitales")
+            col_time1, col_time2 = st.columns(2)
+            fecha_toma = col_time1.date_input("📅 Fecha", value=ahora().date(), key="fecha_vits")
+            hora_toma_str = col_time2.text_input("⏰ Hora (HH:MM)", value=ahora().strftime("%H:%M"), key="hora_vits")
+
+            st.divider()
             ta = st.text_input("Tensión Arterial (TA)", "120/80")
             col_signos = st.columns(5)
-            fc = col_signos[0].number_input("F.C.", 30, 200, 75); fr = col_signos[1].number_input("F.R.", 10, 50, 16)
-            sat = col_signos[2].number_input("SatO2%", 50, 100, 98); temp = col_signos[3].number_input("Temp °C", 35.0, 42.0, 36.5)
-            hgt = col_signos[4].text_input("HGT", "100")
-            
-            if st.form_submit_button("💾 Guardar Signos", width="stretch"):
-                if len(hora_toma_str) != 5 or ":" not in hora_toma_str:
-                    hora_toma_str = ahora().strftime("%H:%M")
-                    
-                fecha_str_toma = f"{fecha_toma.strftime('%d/%m/%Y')} {hora_toma_str}"
-                
+            fc = col_signos[0].number_input("F.C. (lpm)", 30, 220, 75)
+            fr = col_signos[1].number_input("F.R. (rpm)", 8, 60, 16)
+            sat = col_signos[2].number_input("SatO₂ (%)", 70, 100, 96)
+            temp = col_signos[3].number_input("Temperatura (°C)", 34.0, 42.0, 36.5, step=0.1)
+            hgt = col_signos[4].text_input("HGT (mg/dL)", "110")
+
+            if st.form_submit_button("💾 Guardar Signos Vitales", use_container_width=True, type="primary"):
+                # Validación flexible de hora
+                hora_limpia = hora_toma_str.strip() if ":" in hora_toma_str else ahora().strftime("%H:%M")
+                fecha_str = f"{fecha_toma.strftime('%d/%m/%Y')} {hora_limpia}"
+
                 st.session_state["vitales_db"].append({
-                    "paciente": paciente_sel, 
-                    "TA": ta, "FC": fc, "FR": fr, "Sat": sat, "Temp": temp, "HGT": hgt, 
-                    "fecha": fecha_str_toma
+                    "paciente": paciente_sel,
+                    "TA": ta,
+                    "FC": fc,
+                    "FR": fr,
+                    "Sat": sat,
+                    "Temp": temp,
+                    "HGT": hgt,
+                    "fecha": fecha_str
                 })
                 guardar_datos()
-                
-                alerta_disparada = False
-                if fc > 110: st.error(f"🚨 ALERTA ROJA: Taquicardia severa detectada (FC: {fc})."); alerta_disparada = True
-                elif fc < 50: st.error(f"🚨 ALERTA ROJA: Bradicardia detectada (FC: {fc})."); alerta_disparada = True
-                if sat < 90: st.error(f"🚨 ALERTA ROJA: Desaturación crítica (SatO2: {sat}%)."); alerta_disparada = True
-                if temp > 38.0: st.warning(f"⚠️ ALERTA AMARILLA: Paciente febril (Temp: {temp}°C)."); alerta_disparada = True
-                if not alerta_disparada: st.rerun()
 
-        # --- HISTORIAL ANTI-COLAPSO EN LA MISMA PESTAÑA ---
+                # Alertas clínicas
+                alerta = False
+                if fc > 110 or fc < 50:
+                    st.error(f"🚨 ALERTA: Frecuencia cardíaca crítica → {fc} lpm")
+                    alerta = True
+                if sat < 92:
+                    st.error(f"🚨 ALERTA: Desaturación → SatO₂ {sat}%")
+                    alerta = True
+                if temp > 38.0:
+                    st.warning(f"⚠️ Fiebre detectada → {temp}°C")
+                    alerta = True
+                if not alerta:
+                    st.success("✅ Signos vitales guardados correctamente.")
+                st.rerun()
+
+        # === HISTORIAL COMPLETO ===
         if vits:
             st.divider()
             col_tit, col_btn = st.columns([3, 1])
-            col_tit.markdown("#### 📋 Historial de Signos Vitales (Tendencia)")
-            if col_btn.button("🗑️ Borrar último", use_container_width=True, help="Elimina el último control cargado por error"):
-                st.session_state["vitales_db"].remove(vits[-1])
-                guardar_datos()
-                st.rerun()
+            col_tit.markdown("#### 📋 Historial de Signos Vitales")
             
-            with st.container(height=250):
+            if col_btn.button("🗑️ Borrar último control", use_container_width=True, help="Elimina solo el último registro"):
+                if st.checkbox("¿Estás seguro? Esta acción no se puede deshacer", key="conf_borrar_vital"):
+                    st.session_state["vitales_db"].remove(vits[-1])  # vits ya está filtrado por paciente
+                    guardar_datos()
+                    st.success("Registro eliminado.")
+                    st.rerun()
+
+            with st.container(height=380):
                 df_vits = pd.DataFrame(vits).drop(columns=["paciente"], errors='ignore')
                 
-                columnas_esperadas = ["fecha", "TA", "FC", "FR", "Sat", "Temp", "HGT"]
-                df_vits = df_vits[[c for c in columnas_esperadas if c in df_vits.columns]]
+                # Ordenar de forma segura
+                df_vits['fecha_dt'] = df_vits['fecha'].apply(parse_fecha_hora)
+                df_vits = df_vits.sort_values(by='fecha_dt', ascending=False).drop(columns=['fecha_dt'])
                 
                 df_vits = df_vits.rename(columns={
-                    "fecha": "Fecha y Hora", "TA": "T.A.", "FC": "F.C.", 
-                    "FR": "F.R.", "Sat": "SatO2%", "Temp": "Temp °C"
+                    "fecha": "Fecha y Hora",
+                    "TA": "T.A.",
+                    "FC": "F.C.",
+                    "FR": "F.R.",
+                    "Sat": "SatO₂%",
+                    "Temp": "Temp °C",
+                    "HGT": "HGT"
                 })
-                
-                try:
-                    df_vits['fecha_dt'] = pd.to_datetime(df_vits['Fecha y Hora'], format="%d/%m/%Y %H:%M")
-                    df_vits = df_vits.sort_values(by='fecha_dt', ascending=False).drop(columns=['fecha_dt'])
-                except Exception:
-                    df_vits = df_vits.iloc[::-1] 
                 
                 st.dataframe(df_vits, use_container_width=True, hide_index=True)
 
