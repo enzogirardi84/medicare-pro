@@ -1764,8 +1764,16 @@ with tabs[menu.index("🗄️ PDF")]:
             pdf.cell(90, 5, t(f"Fecha: {ahora().strftime('%d/%m/%Y')}"), ln=0, align='C')
             return pdf.output(dest='S').encode('latin-1')
 
-        st.download_button("📥 1. Generar Historia Clínica en PDF", crear_pdf_pro(paciente_sel), f"HC_{paciente_sel}.pdf", "application/pdf")
-        st.download_button("📄 2. Descargar Consentimiento Informado Legal", crear_consentimiento_pdf(paciente_sel), f"Consentimiento_{paciente_sel}.pdf", "application/pdf")
+        # --- BOTONES HTML ANTI-404 PARA LA PESTAÑA PDF ---
+        pdf_hc = crear_pdf_pro(paciente_sel)
+        b64_hc = base64.b64encode(pdf_hc).decode('utf-8')
+        html_hc = f'''<a href="data:application/pdf;base64,{b64_hc}" download="HC_{paciente_sel}.pdf" style="display: block; width: 100%; text-align: center; background-color: #2563eb; color: white; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: 600; font-family: sans-serif; margin-bottom: 10px;">📥 1. Generar Historia Clínica en PDF</a>'''
+        st.markdown(html_hc, unsafe_allow_html=True)
+
+        pdf_cons = crear_consentimiento_pdf(paciente_sel)
+        b64_cons = base64.b64encode(pdf_cons).decode('utf-8')
+        html_cons = f'''<a href="data:application/pdf;base64,{b64_cons}" download="Consentimiento_{paciente_sel}.pdf" style="display: block; width: 100%; text-align: center; background-color: #10b981; color: white; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: 600; font-family: sans-serif;">📄 2. Descargar Consentimiento Informado Legal</a>'''
+        st.markdown(html_cons, unsafe_allow_html=True)
 
 # 14. CIERRE DIARIO Y REPORTES DE STOCK (SOLO VISIBLE PARA ADMIN/COORDINADOR)
 if "📑 Cierre Diario" in menu:
