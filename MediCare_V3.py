@@ -939,15 +939,12 @@ with tabs[menu.index("👶 Pediatría")]:
                 hora_limpia = hora_toma_str.strip() if ":" in hora_toma_str else ahora().strftime("%H:%M")
                 fecha_str_toma = f"{fecha_toma.strftime('%d/%m/%Y')} {hora_limpia}"
 
-                # Cálculo preciso de edad en meses
                 dt_toma = parse_fecha_hora(fecha_str_toma)
-                eda_meses = round((dt_toma - f_n).days / 30.4375, 1)
-                if eda_meses < 0:
-                    eda_meses = 0.0
+                eda_meses = round((dt_toma - f_n).days / 30.4375, 1) if f_n else 0.0
+                if eda_meses < 0: eda_meses = 0.0
 
                 imc = round(pes / ((tal / 100) ** 2), 2) if tal > 0 else 0.0
 
-                # Percentil simplificado pero más claro
                 if se == "F":
                     percentil_sug = "🟢 P3 - Bajo peso" if imc < 14 else "🟡 P50 - Normal" if imc < 18 else "🔴 P97 - Sobrepeso"
                 else:
@@ -987,23 +984,18 @@ with tabs[menu.index("👶 Pediatría")]:
                 st.caption("📏 Talla (cm)")
                 st.line_chart(df_g.set_index("fecha")["talla"], color="#10b981", use_container_width=True)
 
-            # Gráfico combinado opcional
-            if st.checkbox("Ver gráfico combinado (Peso + Talla)"):
-                chart = alt.Chart(df_g).mark_line(point=True).encode(
-                    x=alt.X('fecha_dt:T', title="Fecha"),
-                    y=alt.Y('peso:Q', title="Peso (kg)"),
-                    color=alt.value("#3b82f6")
-                ).properties(height=400, title="Evolución Peso y Talla")
-                st.altair_chart(chart, use_container_width=True)
-
             st.divider()
 
             # === HISTORIAL ===
             col_tit, col_btn = st.columns([3, 1])
             col_tit.markdown("#### 📋 Historial de Controles Pediátricos")
 
-            if col_btn.button("🗑️ Borrar último control", use_container_width=True, help="Elimina solo el último registro"):
-                if st.checkbox("¿Confirmar borrado? (No se puede deshacer)", key="conf_del_ped"):
+            # ←←← CLAVE ÚNICA PARA EVITAR DUPLICADO ←←←
+            if col_btn.button("🗑️ Borrar último control", use_container_width=True, 
+                            key="borrar_ultimo_pediatria", 
+                            help="Elimina solo el último registro"):
+                if st.checkbox("¿Confirmar borrado? Esta acción no se puede deshacer", 
+                              key="conf_del_ped"):
                     st.session_state["pediatria_db"].remove(ped[-1])
                     guardar_datos()
                     st.success("Control eliminado.")
