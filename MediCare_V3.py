@@ -1397,15 +1397,17 @@ with tabs[menu.index("💉 Materiales")]:
         else:
             st.info("Aún no se han registrado consumos de materiales para este paciente.")
             
-# 8. RECETAS - TABLA COMPLETA 00:00 A 23:00 (VERSIÓN MEJORADA Y PROFESIONAL)
+# 8. RECETAS - VERSIÓN MEJORADA Y LEGAL (Nombre + Matrícula + Firma Digital)
 with tabs[menu.index("💊 Recetas")]:
     if not paciente_sel:
         st.info("👈 Seleccioná un paciente en el menú lateral.")
     else:
         st.subheader("💊 Plan Terapéutico y Administración de Medicamentos")
 
-        # ====================== AGREGAR NUEVA MEDICACIÓN ======================
+        # ====================== AGREGAR NUEVA MEDICACIÓN (VERSIÓN LEGAL) ======================
         with st.form("recet", clear_on_submit=True):
+            st.markdown("##### 👨‍⚕️ Nueva Prescripción Médica")
+
             c1, c2 = st.columns([3, 1])
             lista_vademecum = ["-- Seleccionar del Vademécum --"] + VADEMECUM_BASE
             med_vademecum = c1.selectbox("1. Medicamento (Vademécum):", lista_vademecum)
@@ -1419,20 +1421,55 @@ with tabs[menu.index("💊 Recetas")]:
             ])
             dias = col5.number_input("Días de Tratamiento", min_value=1, max_value=90, value=7)
 
-            if st.form_submit_button("➕ Agregar al Plan Terapéutico", use_container_width=True, type="primary"):
+            # === DATOS DEL MÉDICO PRESCRIPTOR ===
+            st.markdown("##### ✍️ Datos del Médico Prescriptor")
+            col_m1, col_m2 = st.columns(2)
+            medico_nombre = col_m1.text_input("Nombre completo del médico", value=user.get("nombre", ""))
+            medico_matricula = col_m2.text_input("Matrícula profesional", placeholder="Ej: 123456")
+
+            # === FIRMA DIGITAL ===
+            st.markdown("##### Firma Digital del Médico")
+            firma_canvas = st.canvas(
+                key="firma_receta",
+                background_color="#f8f9fa",
+                height=150,
+                drawing_mode="freedraw",
+                stroke_width=4,
+                stroke_color="#000000"
+            )
+
+            if st.form_submit_button("➕ Guardar Prescripción Médica", use_container_width=True, type="primary"):
                 med_final = med_manual.strip().title() if med_manual.strip() else med_vademecum
+
                 if med_final and med_final != "-- Seleccionar del Vademécum --":
-                    texto_receta = f"{med_final} | Vía: {via} | {frecuencia} | Durante {dias} días"
-                    st.session_state["indicaciones_db"].append({
-                        "paciente": paciente_sel,
-                        "med": texto_receta,
-                        "fecha": ahora().strftime("%d/%m/%Y %H:%M:%S"),
-                        "dias_duracion": dias,
-                        "firma": user["nombre"]
-                    })
-                    guardar_datos()
-                    st.success(f"✅ **{med_final}** agregado al plan terapéutico.")
-                    st.rerun()
+                    if not medico_matricula.strip():
+                        st.error("❌ Debe ingresar la matrícula del médico.")
+                    else:
+                        # Guardar firma
+                        firma_b64 = ""
+                        if firma_canvas.image_data is not None:
+                            import io
+                            from PIL import Image
+                            img = Image.fromarray(firma_canvas.image_data.astype("uint8"))
+                            buf = io.BytesIO()
+                            img.save(buf, format="PNG")
+                            firma_b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+
+                        texto_receta = f"{med_final} | Vía: {via} | {frecuencia} | Durante {dias} días"
+
+                        st.session_state["indicaciones_db"].append({
+                            "paciente": paciente_sel,
+                            "med": texto_receta,
+                            "fecha": ahora().strftime("%d/%m/%Y %H:%M:%S"),
+                            "dias_duracion": dias,
+                            "medico_nombre": medico_nombre.strip(),
+                            "medico_matricula": medico_matricula.strip(),
+                            "firma_b64": firma_b64,
+                            "firmado_por": user["nombre"]
+                        })
+                        guardar_datos()
+                        st.success(f"✅ Prescripción de **{med_final}** guardada con firma médica.")
+                        st.rerun()
 
         st.divider()
 
@@ -1455,7 +1492,13 @@ with tabs[menu.index("💊 Recetas")]:
                 via = partes[1].replace("Vía: ", "") if len(partes) > 1 else ""
                 freq = partes[2] if len(partes) > 2 else ""
 
-                fila = {"Medicamento": nombre, "Vía": via, "Frecuencia": freq}
+                fila = {
+                    "Medicamento": nombre,
+                    "Vía": via,
+                    "Frecuencia": freq,
+                    "Médico": r.get("medico_nombre", "—"),
+                    "Matrícula": r.get("medico_matricula", "—")
+                }
 
                 for h in all_horarios:
                     realizada = any(
@@ -1468,11 +1511,11 @@ with tabs[menu.index("💊 Recetas")]:
 
             df = pd.DataFrame(table_data)
 
-            # === ESTILO PROFESIONAL DE LA TABLA ===
+            # Estilo profesional
             def style_medicacion(row):
                 styles = []
                 for col in row.index:
-                    if col in ["Medicamento", "Vía", "Frecuencia"]:
+                    if col in ["Medicamento", "Vía", "Frecuencia", "Médico", "Matrícula"]:
                         styles.append('background-color: #1e1e1e; color: #ffffff; font-weight: 500')
                     else:
                         if row[col] == "✅":
@@ -1483,13 +1526,7 @@ with tabs[menu.index("💊 Recetas")]:
 
             styled_df = df.style.apply(style_medicacion, axis=1)
 
-            st.dataframe(
-                styled_df,
-                use_container_width=True,
-                hide_index=True
-            )
-
-            # Leyenda
+            st.dataframe(styled_df, use_container_width=True, hide_index=True)
             st.caption("✅ = Administrado   ⭕ = Pendiente")
 
             st.divider()
@@ -1501,18 +1538,15 @@ with tabs[menu.index("💊 Recetas")]:
                 med_sel = st.selectbox("Medicamento a registrar:", meds_activas)
 
                 col_h, col_e = st.columns(2)
-                hora_sel = col_h.selectbox("Hora exacta:", [f"{h:02d}:00" for h in range(24)], 
-                                         index=ahora().hour)
+                hora_sel = col_h.selectbox("Hora exacta:", [f"{h:02d}:00" for h in range(24)], index=ahora().hour)
                 estado = col_e.radio("Estado de la dosis:", ["✅ Realizada", "❌ No realizada"], horizontal=True)
 
-                justif = st.text_input("Justificación (solo si ❌)", 
-                                     placeholder="Ej: Paciente dormido, náuseas, rechazo...")
+                justif = st.text_input("Justificación (solo si ❌)", placeholder="Ej: Paciente dormido, rechazo...")
 
                 if st.form_submit_button("💾 Guardar Registro", use_container_width=True, type="primary"):
                     if "❌" in estado and not justif.strip():
                         st.error("⚠️ Debes justificar cuando la dosis no se administra.")
                     else:
-                        # Evitar duplicados
                         st.session_state["administracion_med_db"] = [
                             a for a in st.session_state.get("administracion_med_db", [])
                             if not (a.get("paciente") == paciente_sel and
@@ -1520,7 +1554,6 @@ with tabs[menu.index("💊 Recetas")]:
                                    a.get("med") == med_sel and
                                    a.get("hora") == hora_sel)
                         ]
-
                         st.session_state["administracion_med_db"].append({
                             "paciente": paciente_sel,
                             "med": med_sel,
@@ -1545,7 +1578,6 @@ with tabs[menu.index("💊 Recetas")]:
                 max_value=ahora().date()
             )
             fecha_str = fecha_consulta.strftime("%d/%m/%Y")
-
             admin_hist = [a for a in st.session_state.get("administracion_med_db", [])
                          if a.get("paciente") == paciente_sel and a.get("fecha") == fecha_str]
 
@@ -1554,7 +1586,6 @@ with tabs[menu.index("💊 Recetas")]:
                 df_hist = df_hist[["hora", "med", "estado", "motivo", "firma"]]
                 df_hist.columns = ["Hora", "Medicamento", "Estado", "Justificación", "Enfermero/a"]
                 df_hist = df_hist.sort_values(by="Hora")
-
                 st.dataframe(df_hist, use_container_width=True, hide_index=True)
             else:
                 st.info(f"No hay registros de administración para el día **{fecha_str}**.")
