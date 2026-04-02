@@ -1362,7 +1362,7 @@ with tabs[menu.index("💉 Materiales")]:
                 )
         else:
             st.info("Aún no se han registrado consumos de materiales para este paciente.")
-# 8. RECETAS - TABLA PROFESIONAL CON HORARIOS COMPLETOS (00:00 a 23:00)
+# 8. RECETAS - VERSIÓN COMPLETA CON HISTORIAL
 with tabs[menu.index("💊 Recetas")]:
     if not paciente_sel:
         st.info("👈 Seleccioná un paciente en el menú lateral.")
@@ -1380,7 +1380,7 @@ with tabs[menu.index("💊 Recetas")]:
             via = col3.selectbox("Vía", ["Oral", "EV", "IM", "SC", "Tópica", "Inhalatoria", "Otro"])
             frecuencia = col4.selectbox("Frecuencia", [
                 "Cada 1 hora", "Cada 2 horas", "Cada 4 horas", "Cada 6 horas", 
-                "Cada 8 horas", "Cada 12 horas", "Cada 24 horas", "Dosis única", "Según necesidad (SOS)"
+                "Cada 8 horas", "Cada 12 horas", "Cada 24 horas", "Dosis única", "SOS"
             ])
             dias = col5.number_input("Días", min_value=1, max_value=90, value=7)
 
@@ -1396,22 +1396,21 @@ with tabs[menu.index("💊 Recetas")]:
                         "firma": user["nombre"]
                     })
                     guardar_datos()
-                    st.success("✅ Medicación agregada correctamente")
+                    st.success("✅ Medicación agregada")
                     st.rerun()
 
         st.divider()
 
-        # ====================== TABLA CON HORARIOS COMPLETOS (00:00 - 23:00) ======================
+        # ====================== TABLA DEL DÍA ACTUAL ======================
         recs = [r for r in st.session_state.get("indicaciones_db", []) if r.get("paciente") == paciente_sel]
 
         if recs:
-            st.markdown("#### 📋 Medicación Indicada - Administración por Horario (00:00 a 23:00)")
+            st.markdown("#### 📅 Administración de Hoy")
 
             fecha_hoy = ahora().strftime("%d/%m/%Y")
             admin_hoy = [a for a in st.session_state.get("administracion_med_db", []) 
                         if a.get("paciente") == paciente_sel and a.get("fecha") == fecha_hoy]
 
-            # Generar todos los horarios de 00:00 a 23:00
             all_horarios = [f"{h:02d}:00" for h in range(24)]
 
             table_data = []
@@ -1421,13 +1420,8 @@ with tabs[menu.index("💊 Recetas")]:
                 via = partes[1].replace("Vía: ", "") if len(partes) > 1 else ""
                 freq = partes[2] if len(partes) > 2 else ""
 
-                fila = {
-                    "Medicamento": nombre,
-                    "Vía": via,
-                    "Frecuencia": freq
-                }
+                fila = {"Medicamento": nombre, "Vía": via, "Frecuencia": freq}
 
-                # Marcar si se realizó cada hora
                 for h in all_horarios:
                     realizada = any(
                         a.get("med") == nombre and a.get("hora", "").startswith(h[:2]) 
@@ -1437,32 +1431,29 @@ with tabs[menu.index("💊 Recetas")]:
 
                 table_data.append(fila)
 
-            if table_data:
-                df = pd.DataFrame(table_data)
+            df_hoy = pd.DataFrame(table_data)
+            fixed = ["Medicamento", "Vía", "Frecuencia"]
+            horario_cols = [col for col in df_hoy.columns if col not in fixed]
 
-                # Ordenar columnas: Medicamento, Vía, Frecuencia + todos los horarios
-                fixed = ["Medicamento", "Vía", "Frecuencia"]
-                horario_cols = [col for col in df.columns if col not in fixed]
+            st.dataframe(
+                df_hoy[fixed + horario_cols],
+                use_container_width=True,
+                hide_index=True
+            )
 
-                st.dataframe(
-                    df[fixed + horario_cols],
-                    use_container_width=True,
-                    hide_index=True
-                )
-
-            # ====================== REGISTRO RÁPIDO DE DOSIS ======================
+            # ====================== REGISTRO RÁPIDO ======================
             st.divider()
-            st.markdown("#### 📝 Registrar Administración")
+            st.markdown("#### 📝 Registrar Administración (Hoy)")
 
             with st.form("registro_dosis", clear_on_submit=True):
                 meds = [r['med'].split(" |")[0].strip() for r in recs]
                 med_sel = st.selectbox("Medicamento:", meds)
 
                 col_h, col_e = st.columns(2)
-                hora_sel = col_h.selectbox("Hora exacta:", [f"{h:02d}:00" for h in range(24)], index=ahora().hour)
+                hora_sel = col_h.selectbox("Hora:", [f"{h:02d}:00" for h in range(24)], index=ahora().hour)
                 estado = col_e.radio("Estado:", ["✅ Realizada", "❌ No realizada"], horizontal=True)
 
-                justif = st.text_input("Justificación (obligatorio si ❌)", placeholder="Ej: Paciente dormido, rechazo, etc.")
+                justif = st.text_input("Justificación (solo si ❌)", placeholder="Motivo...")
 
                 if st.form_submit_button("💾 Guardar Registro", use_container_width=True, type="primary"):
                     if "❌" in estado and not justif.strip():
@@ -1471,13 +1462,10 @@ with tabs[menu.index("💊 Recetas")]:
                         if "administracion_med_db" not in st.session_state:
                             st.session_state["administracion_med_db"] = []
 
-                        # Evitar duplicados
                         st.session_state["administracion_med_db"] = [
                             a for a in st.session_state.get("administracion_med_db", [])
-                            if not (a.get("paciente") == paciente_sel and 
-                                   a.get("fecha") == fecha_hoy and 
-                                   a.get("med") == med_sel and 
-                                   a.get("hora") == hora_sel)
+                            if not (a.get("paciente") == paciente_sel and a.get("fecha") == fecha_hoy 
+                                   and a.get("med") == med_sel and a.get("hora") == hora_sel)
                         ]
 
                         st.session_state["administracion_med_db"].append({
@@ -1490,8 +1478,34 @@ with tabs[menu.index("💊 Recetas")]:
                             "firma": user["nombre"]
                         })
                         guardar_datos()
-                        st.success(f"✅ Registro guardado: {med_sel} a las {hora_sel}")
+                        st.success(f"Registro guardado: {med_sel} - {hora_sel}")
                         st.rerun()
+
+            # ====================== HISTORIAL DE DÍAS ANTERIORES ======================
+            st.divider()
+            st.markdown("#### 🕰️ Historial de Administraciones Anteriores")
+
+            with st.expander("Consultar administraciones de días previos", expanded=True):
+                col_f1, col_f2 = st.columns([1, 2])
+                fecha_consulta = col_f1.date_input(
+                    "Seleccionar fecha:", 
+                    value=(ahora() - timedelta(days=1)).date(), 
+                    max_value=ahora().date()
+                )
+                fecha_str = fecha_consulta.strftime("%d/%m/%Y")
+
+                admin_hist = [a for a in st.session_state.get("administracion_med_db", []) 
+                             if a.get("paciente") == paciente_sel and a.get("fecha") == fecha_str]
+
+                if admin_hist:
+                    df_hist = pd.DataFrame(admin_hist)
+                    df_hist = df_hist[["hora", "med", "estado", "motivo", "firma"]]
+                    df_hist.columns = ["Hora", "Medicamento", "Estado", "Justificación", "Enfermero/a"]
+                    df_hist = df_hist.sort_values(by="Hora")
+
+                    st.dataframe(df_hist, use_container_width=True, hide_index=True)
+                else:
+                    st.info(f"No hay registros de administración para el día {fecha_str}.")
 
         else:
             st.info("Aún no hay medicación indicada para este paciente.")
