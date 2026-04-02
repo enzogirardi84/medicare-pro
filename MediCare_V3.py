@@ -1527,17 +1527,17 @@ with tabs[menu.index("💊 Recetas")]:
 
             st.divider()
 
-            # ====================== HISTORIAL DE PRESCRIPCIONES ======================
+           # ====================== HISTORIAL DE PRESCRIPCIONES ======================
             st.markdown("#### 🕰️ Historial de Prescripciones Médicas")
             
-            # Últimas 10 prescripciones (seguro)
-            for r in reversed(recs[-10:]):
-                st.success(f"""
-                📌 **{r.get('fecha', '—')}**  
-                Indicado por: **{r.get('medico_nombre', '—')}**  
-                Matrícula: {r.get('medico_matricula', '—')}
-                {r.get('med', '')}
-                """)
+            # ACÁ ESTÁ EL ANTI-COLAPSO MÁGICO 👇
+            with st.container(height=400):
+                # Le puse límite de 30 total ahora tiene scroll y no molesta
+                for r in reversed(recs[-30:]):
+                    st.success(f"""
+                    📌 **{r.get('fecha', '—')}** Indicado por: **{r.get('medico_nombre', '—')}** Matrícula: {r.get('medico_matricula', '—')}  
+                    {r.get('med', '')}
+                    """)
 
         else:
             st.info("Aún no hay medicación indicada para este paciente.")
