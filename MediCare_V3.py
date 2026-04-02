@@ -2079,7 +2079,7 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
                     "Profesional": prof,
                     "Matrícula": matricula,
                     "Acción": accion,
-                    "Tiempo Trabajado": tiempo_total, # NUEVA COLUMNA CLAVE
+                    "Tiempo Trabajado": tiempo_total,
                     "Paciente": pac,
                     "Detalle_GPS": accion_raw,
                     "fecha_dt": dt_actual # Columna oculta para filtrar
@@ -2132,13 +2132,12 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
                         pdf.set_fill_color(59, 130, 246) # Azul corporativo
                         pdf.set_text_color(255, 255, 255)
                         pdf.set_font("Arial", 'B', 9)
-                        # Ajustamos anchos para meter la columna nueva
                         pdf.cell(22, 8, "FECHA", 1, 0, 'C', True)
                         pdf.cell(15, 8, "HORA", 1, 0, 'C', True)
                         pdf.cell(48, 8, "PROFESIONAL", 1, 0, 'C', True)
                         pdf.cell(22, 8, "MATRICULA", 1, 0, 'C', True)
                         pdf.cell(24, 8, "ACCION", 1, 0, 'C', True)
-                        pdf.cell(24, 8, "TIEMPO", 1, 0, 'C', True) # NUEVA COLUMNA
+                        pdf.cell(24, 8, "TIEMPO", 1, 0, 'C', True) 
                         pdf.cell(122, 8, "PACIENTE", 1, 1, 'C', True)
 
                         # Filas de la Tabla
@@ -2162,7 +2161,6 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
                             pdf.cell(24, 8, t(fila['Acción']), 1, 0, 'C')
                             pdf.set_text_color(0, 0, 0) # Volver al negro
                             
-                            # Columna de Tiempo Trabajado
                             pdf.cell(24, 8, t(fila['Tiempo Trabajado']), 1, 0, 'C')
                             
                             # Truncar nombre del paciente si es muy largo
@@ -2180,5 +2178,28 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
         else:
             st.info("Aún no existen registros de ingresos o egresos en la base de datos general.")
 
+        # --- 5. GESTIÓN Y ELIMINACIÓN DE REGISTROS (SOLO ADMIN/COORD) ---
+        st.divider()
+        st.markdown("#### 🛠️ Gestión de Registros (Corregir Errores)")
+        st.warning("Si un profesional marcó mal su entrada o salida, podés eliminar ese registro específico acá. Los tiempos de guardia se recalcularán automáticamente.")
+        
+        opciones_borrar = []
+        for c in st.session_state.get("checkin_db", []):
+            if c.get("empresa") == mi_empresa or rol == "SuperAdmin":
+                lbl = f"📅 {c.get('fecha_hora')} | 👤 {c.get('profesional')} | 📍 {c.get('tipo').replace('LLEGADA en', 'INGRESO:').replace('SALIDA de', 'EGRESO:')} | Paciente: {c.get('paciente')}"
+                opciones_borrar.append((lbl, c))
+                
+        if opciones_borrar:
+            # Ordenamos para ver los más recientes primero en la lista desplegable
+            opciones_borrar.sort(key=lambda x: x[0], reverse=True)
+            
+            col_del1, col_del2 = st.columns([3, 1])
+            registro_a_borrar = col_del1.selectbox("Seleccione el fichaje a eliminar:", options=opciones_borrar, format_func=lambda x: x[0])
+            
+            if col_del2.button("🗑️ Eliminar Fichaje", use_container_width=True):
+                st.session_state["checkin_db"].remove(registro_a_borrar[1])
+                guardar_datos()
+                st.success("✅ Fichaje eliminado. La tabla y las horas se han actualizado.")
+                st.rerun()
 
 # --- FIN DEL SISTEMA MEDICARE PRO V9.12 ---
