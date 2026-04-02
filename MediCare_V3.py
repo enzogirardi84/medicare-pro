@@ -813,6 +813,26 @@ with tabs[menu.index("📝 Evolución")]:
                         st.session_state["fotos_heridas_db"].append({"paciente": paciente_sel, "fecha": fecha_n, "descripcion": desc_w, "base64_foto": base64_foto, "firma": user["nombre"]})
                     guardar_datos(); st.rerun()
 
+        # --- HISTORIAL ANTI-COLAPSO DE EVOLUCIONES ---
+        evs_paciente = [e for e in st.session_state.get("evoluciones_db", []) if e.get("paciente") == paciente_sel]
+        if evs_paciente:
+            st.divider()
+            col_tit, col_btn = st.columns([3, 1])
+            col_tit.markdown("#### 📋 Historial de Evoluciones")
+            
+            if col_btn.button("🗑️ Borrar última", use_container_width=True, key="del_evol", help="Elimina la última evolución cargada por error"):
+                st.session_state["evoluciones_db"].remove(evs_paciente[-1])
+                guardar_datos()
+                st.rerun()
+            
+            with st.container(height=350):
+                for ev in reversed(evs_paciente):
+                    with st.container(border=True):
+                        st.markdown(f"📅 **{ev['fecha']}** | 👨‍⚕️ **Firma:** {ev['firma']}")
+                        st.write(ev['nota'])
+        else:
+            st.info("Aún no hay evoluciones registradas para este paciente.")
+
 # 6.5 ESTUDIOS COMPLEMENTARIOS (CON UPLOAD Y CARPETAS INTELIGENTES)
 with tabs[menu.index("🔬 Estudios")]:
     if paciente_sel:
