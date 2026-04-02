@@ -1618,64 +1618,115 @@ with tabs[menu.index("⚖️ Balance")]:
         else:
             st.info("Aún no hay balances hídricos registrados para este paciente.")
 
-# 10. INVENTARIO 
+# 10. INVENTARIO - VERSIÓN MEJORADA (Sin borrar nada)
 with tabs[menu.index("📦 Inventario")]:
-    inv_mio = [i for i in st.session_state["inventario_db"] if i["empresa"] == mi_empresa]
-    if inv_mio:
-        stock_critico = [i for i in inv_mio if i['stock'] <= 10]
-        if stock_critico:
-            st.error("🚨 **ALERTA DE STOCK CRÍTICO EN FARMACIA:**")
-            for item in stock_critico:
-                st.warning(f"⚠️ {item['item']}: Quedan solo **{item['stock']}** unidades.")
-            st.divider()
+    st.subheader("📦 Gestión de Inventario y Stock de Farmacia")
 
+    # Filtrar inventario de la empresa actual
+    inv_mio = [i for i in st.session_state.get("inventario_db", []) if i.get("empresa") == mi_empresa]
+
+    # ====================== ALERTA DE STOCK CRÍTICO ======================
+    stock_critico = [i for i in inv_mio if i.get("stock", 0) <= 10]
+    if stock_critico:
+        st.markdown("#### 🚨 **ALERTA DE STOCK CRÍTICO EN FARMACIA**")
+        for item in stock_critico:
+            st.error(f"⚠️ **{item.get('item')}**: Quedan solo **{item.get('stock', 0)}** unidades.")
+
+    st.divider()
+
+    # ====================== INGRESO DE MERCADERÍA ======================
     with st.form("form_inv", clear_on_submit=True):
         st.markdown("#### ➕ Ingreso de Mercadería (Suma al stock existente)")
+
         c1, c2, c3 = st.columns([2, 2, 1])
-        
         lista_base_inv = ["-- Seleccionar del Vademécum --"] + VADEMECUM_BASE
         
         item_sel = c1.selectbox("1. Catálogo Frecuente:", lista_base_inv)
-        nuevo_item_manual = c2.text_input("O 2. Escribir Insumo Nuevo:")
-        cantidad_ini = c3.number_input("Cantidad", min_value=1, value=10)
-        
-        if st.form_submit_button("Sumar Stock", width="stretch"):
-            item_final = nuevo_item_manual.strip().title() if nuevo_item_manual.strip() else item_sel
-            
+        nuevo_item = c2.text_input("2. Escribir Insumo Nuevo:")
+        cantidad = c3.number_input("Cantidad", min_value=1, value=10, step=1)
+
+        if st.form_submit_button("💾 Sumar al Stock", use_container_width=True, type="primary"):
+            item_final = nuevo_item.strip().title() if nuevo_item.strip() else item_sel
+
             if item_final and item_final != "-- Seleccionar del Vademécum --":
                 encontrado = False
                 for i in st.session_state["inventario_db"]:
-                    if i["item"].lower() == item_final.lower() and i["empresa"] == mi_empresa:
-                        i["stock"] += cantidad_ini; encontrado = True; break
-                if not encontrado:
-                    st.session_state["inventario_db"].append({"item": item_final, "stock": cantidad_ini, "empresa": mi_empresa})
-                guardar_datos(); st.rerun()
+                    if i["item"].lower() == item_final.lower() and i.get("empresa") == mi_empresa:
+                        i["stock"] = i.get("stock", 0) + cantidad
+                        encontrado = True
+                        break
                 
+                if not encontrado:
+                    st.session_state["inventario_db"].append({
+                        "item": item_final,
+                        "stock": cantidad,
+                        "empresa": mi_empresa
+                    })
+                
+                guardar_datos()
+                st.success(f"✅ Se agregaron **{cantidad}** unidades de **{item_final}** al stock.")
+                st.rerun()
+
     st.divider()
-    
-    if inv_mio: 
+
+    # ====================== STOCK ACTUAL ======================
+    if inv_mio:
         st.markdown("#### 📋 Stock Actual en Farmacia")
-        st.dataframe(pd.DataFrame(inv_mio).drop(columns="empresa"), use_container_width=True)
-        
+
+        df_stock = pd.DataFrame(inv_mio)
+        df_stock = df_stock.rename(columns={"item": "Insumo", "stock": "Stock Actual"})
+
+        # Colorear según nivel de stock
+        def highlight_stock(val):
+            if val <= 10:
+                return 'background-color: #ffebee; color: #c62828; font-weight: bold'
+            elif val <= 25:
+                return 'background-color: #fff3e0; color: #ef6c00'
+            return ''
+
+        st.dataframe(
+            df_stock[["Insumo", "Stock Actual"]].style.applymap(highlight_stock, subset=["Stock Actual"]),
+            use_container_width=True,
+            hide_index=True
+        )
+    else:
+        st.info("Aún no hay insumos cargados en el inventario.")
+
+    st.divider()
+
+    # ====================== AJUSTE MANUAL Y ELIMINACIÓN ======================
+    if inv_mio:
         st.markdown("#### ⚙️ Ajuste Manual y Corrección")
+
         c_ed1, c_ed2, c_ed3 = st.columns([2, 1, 1])
-        item_a_editar = c_ed1.selectbox("Seleccionar Insumo a corregir:", [i["item"] for i in inv_mio], key="edit_sel")
+        item_a_editar = c_ed1.selectbox("Seleccionar insumo a corregir:", [i["item"] for i in inv_mio], key="edit_sel")
         
-        nuevo_stock_total = c_ed2.number_input("Declarar Stock Real Exacto:", min_value=0, value=0, key="new_stock")
-        
+        stock_actual = next((i.get("stock", 0) for i in inv_mio if i["item"] == item_a_editar), 0)
+        nuevo_stock = c_ed2.number_input("Declarar Stock Real Exacto:", min_value=0, value=stock_actual, key="new_stock")
+
         if c_ed3.button("✏️ Fijar Nuevo Stock", use_container_width=True):
             for i in st.session_state["inventario_db"]:
-                if i["item"] == item_a_editar and i["empresa"] == mi_empresa:
-                    i["stock"] = nuevo_stock_total
+                if i["item"] == item_a_editar and i.get("empresa") == mi_empresa:
+                    i["stock"] = nuevo_stock
                     break
-            guardar_datos(); st.rerun()
+            guardar_datos()
+            st.success(f"Stock de **{item_a_editar}** actualizado a **{nuevo_stock}** unidades.")
+            st.rerun()
 
+        # Eliminar insumo
         st.divider()
-        col_del1, col_del2 = st.columns([3,1])
-        del_item = col_del1.selectbox("Seleccionar insumo a eliminar por completo del sistema:", [i["item"] for i in inv_mio], key="del_sel2")
-        if col_del2.button("🗑️ Eliminar Insumo Definitivamente", use_container_width=True):
-            st.session_state["inventario_db"] = [i for i in st.session_state["inventario_db"] if not (i["item"] == del_item and i["empresa"] == mi_empresa)]
-            guardar_datos(); st.rerun()
+        col_del1, col_del2 = st.columns([3, 1])
+        del_item = col_del1.selectbox("Eliminar insumo por completo del sistema:", [i["item"] for i in inv_mio], key="del_sel")
+        
+        if col_del2.button("🗑️ Eliminar Insumo Definitivamente", use_container_width=True, type="secondary"):
+            if st.checkbox("¿Estás completamente seguro? Esta acción no se puede deshacer.", key="conf_del_item"):
+                st.session_state["inventario_db"] = [
+                    i for i in st.session_state["inventario_db"] 
+                    if not (i["item"] == del_item and i.get("empresa") == mi_empresa)
+                ]
+                guardar_datos()
+                st.success(f"Insumo **{del_item}** eliminado definitivamente.")
+                st.rerun()
 
 # 11. CAJA - VERSIÓN CORREGIDA (SIN ERRORES 404)
 with tabs[menu.index("💳 Caja")]:
