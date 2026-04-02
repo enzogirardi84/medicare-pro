@@ -1575,14 +1575,9 @@ with tabs[menu.index("📚 Historial")]:
                                     
                                     if img_bytes.startswith(b'%PDF') or est.get('extension') == 'pdf':
                                         nombre_arch = f"Estudio_{est['fecha'][:10].replace('/','-')}.pdf"
-                                        html_btn = f'''
-                                        <a href="data:application/pdf;base64,{b64_str}" download="{nombre_arch}" 
-                                           style="display: block; width: 100%; text-align: center; background-color: #2563eb; 
-                                                  color: white; padding: 12px; border-radius: 8px; text-decoration: none; 
-                                                  font-weight: 600; font-family: sans-serif; margin-top: 10px;">
-                                           📥 Descargar PDF
-                                        </a>
-                                        '''
+                                        html_btn = f"""
+                                        <a href="data:application/pdf;base64,{b64_str}" download="{nombre_arch}" style="display: block; width: 100%; text-align: center; background-color: #2563eb; color: white; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: 600; font-family: sans-serif; margin-top: 10px;">📥 Descargar PDF</a>
+                                        """
                                         st.markdown(html_btn, unsafe_allow_html=True)
                                     else:
                                         st.image(img_bytes, caption="Documento Adjunto", use_container_width=True)
