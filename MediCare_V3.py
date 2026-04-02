@@ -2222,7 +2222,7 @@ with tabs[menu.index("📚 Historial")]:
                             st.error(f"❌ **{fecha_mostrar}** | Indicado por: **{firma_mostrar}**\n\n~~{med_mostrar}~~\n*(ESTADO: {estado.upper()})*")
             else: st.write("No hay terapéutica indicada en el registro histórico.")
 
-# 13. PDF - VERSIÓN CORREGIDA Y COMPLETA (SIN ERRORES 404)
+# 13. PDF - VERSIÓN CORREGIDA Y COMPLETA (SIN ERRORES 404 Y CON RECETAS LEGALES)
 with tabs[menu.index("🗄️ PDF")]:
     if paciente_sel and FPDF_DISPONIBLE:
         import os
@@ -2270,7 +2270,7 @@ with tabs[menu.index("🗄️ PDF")]:
             pdf.ln(5)
 
             # Signos Vitales
-            vits = [x for x in st.session_state["vitales_db"] if x["paciente"] == p]
+            vits = [x for x in st.session_state.get("vitales_db", []) if x["paciente"] == p]
             if vits:
                 pdf.set_font("Arial", 'B', 10)
                 pdf.cell(0, 8, t("SIGNOS VITALES:"), ln=True)
@@ -2295,7 +2295,7 @@ with tabs[menu.index("🗄️ PDF")]:
                 pdf.ln(4)
 
             # Evoluciones
-            evs = [x for x in st.session_state["evoluciones_db"] if x["paciente"] == p]
+            evs = [x for x in st.session_state.get("evoluciones_db", []) if x["paciente"] == p]
             if evs:
                 pdf.set_font("Arial", 'B', 10)
                 pdf.cell(0, 8, t("EVOLUCIONES CLINICAS:"), ln=True)
@@ -2305,6 +2305,49 @@ with tabs[menu.index("🗄️ PDF")]:
                     pdf.set_font("Arial", '', 9)
                     pdf.multi_cell(0, 5, t(ev.get('nota','')), 'L')
                     pdf.ln(2)
+                    
+            # PLAN TERAPEUTICO, RECETAS Y SÁBANA DE ENFERMERÍA (NUEVO)
+            recs = [x for x in st.session_state.get("indicaciones_db", []) if x["paciente"] == p]
+            if recs:
+                pdf.set_font("Arial", 'B', 10)
+                pdf.cell(0, 8, t("PLAN TERAPEUTICO E INDICACIONES MEDICAS:"), ln=True)
+                
+                admins_totales = [a for a in st.session_state.get("administracion_med_db", []) if a.get("paciente") == p]
+                
+                for r in recs:
+                    fecha_rec = r.get('fecha', 'S/D')
+                    med_completo = r.get('med', 'S/D')
+                    med_nombre_corto = med_completo.split(" |")[0].strip()
+                    medico = r.get('medico_nombre', r.get('firma', r.get('firmado_por', 'S/D')))
+                    matricula = r.get('medico_matricula', 'S/D')
+                    estado_rec = r.get('estado_receta', 'Activa')
+
+                    if estado_rec == "Activa":
+                        pdf.set_font("Arial", 'B', 8)
+                        pdf.cell(0, 5, t(f"[{fecha_rec}] - Medico: {medico} (Mat: {matricula})"), ln=True)
+                        pdf.set_font("Arial", '', 9)
+                        pdf.multi_cell(0, 5, t(f"Rp/ {med_completo}"), 'L')
+                    else:
+                        fecha_susp = r.get('fecha_suspension', 'S/D')
+                        pdf.set_text_color(220, 38, 38) # Rojo
+                        pdf.set_font("Arial", 'B', 8)
+                        pdf.cell(0, 5, t(f"[{fecha_rec}] - Medico: {medico} (Mat: {matricula}) - {estado_rec.upper()} el {fecha_susp}"), ln=True)
+                        pdf.set_font("Arial", '', 9)
+                        pdf.multi_cell(0, 5, t(f"~~ ANULADA: {med_completo} ~~"), 'L')
+                        pdf.set_text_color(0, 0, 0) # Vuelve a Negro
+                    
+                    # Rastrear aplicaciones para este medicamento en particular
+                    admins_medicamento = [a for a in admins_totales if a.get("med") == med_nombre_corto]
+                    if admins_medicamento:
+                        pdf.set_font("Arial", 'I', 8)
+                        pdf.cell(0, 4, t("   > Registros de Administracion (Sabana):"), ln=True)
+                        for a in admins_medicamento:
+                            estado_adm = "APLICADO" if "✅" in a.get("estado", "") else f"NO APLICADO (Motivo: {a.get('motivo','')})"
+                            texto_adm = f"     - {a.get('fecha')} a las {a.get('hora')}hs | Estado: {estado_adm} | Enf: {a.get('firma')}"
+                            pdf.cell(0, 4, t(texto_adm), ln=True)
+                            
+                    pdf.ln(3)
+                pdf.ln(2)
 
             # Estudios Complementarios
             estudios_pdf = [x for x in st.session_state.get("estudios_db", []) if x["paciente"] == p]
@@ -2320,7 +2363,7 @@ with tabs[menu.index("🗄️ PDF")]:
                 pdf.ln(4)
 
             # Materiales
-            cons = [x for x in st.session_state["consumos_db"] if x["paciente"] == p]
+            cons = [x for x in st.session_state.get("consumos_db", []) if x["paciente"] == p]
             if cons:
                 pdf.set_font("Arial", 'B', 10)
                 pdf.cell(0, 8, t("MATERIALES DESCARTABLES UTILIZADOS:"), ln=True)
@@ -2330,7 +2373,7 @@ with tabs[menu.index("🗄️ PDF")]:
                 pdf.ln(4)
 
             # Checkins GPS
-            chks = [x for x in st.session_state["checkin_db"] if x["paciente"] == p]
+            chks = [x for x in st.session_state.get("checkin_db", []) if x["paciente"] == p]
             if chks:
                 pdf.set_font("Arial", 'B', 10)
                 pdf.cell(0, 8, t("AUDITORIA DE PRESENCIA GPS (Llegada/Salida):"), ln=True)
