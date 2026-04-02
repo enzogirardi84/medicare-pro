@@ -481,23 +481,24 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
             st.subheader("📅 Agendar Próxima Visita")
             with st.form("agenda_form", clear_on_submit=True):
                 c1_ag, c2_ag = st.columns(2)
-                fecha_ag = c1_ag.date_input("Fecha programada", value=ahora().date())
-                hora_ag_str = c2_ag.text_input("Hora aproximada (HH:MM)", value=ahora().strftime("%H:%M"))
+                fecha_ag = c1_ag.date_input("Fecha programada", value=ahora().date(), key="fecha_agenda_nueva")
+                hora_ag_str = c2_ag.text_input("Hora aproximada (HH:MM)", value=ahora().strftime("%H:%M"), key="hora_agenda_nueva")
                 
                 profesionales = [v['nombre'] for k, v in st.session_state["usuarios_db"].items() if v['empresa'] == mi_empresa or rol == "SuperAdmin"]
                 idx_prof = profesionales.index(user['nombre']) if user['nombre'] in profesionales else 0
                 prof_ag = st.selectbox("Asignar Profesional", profesionales, index=idx_prof)
                 
                 if st.form_submit_button("Agendar Visita", width="stretch"):
-                    # Validación simple de hora
-                    if len(hora_ag_str) != 5 or ":" not in hora_ag_str:
-                        hora_ag_str = ahora().strftime("%H:%M")
+                    # ARREGLO: Validación mucho más flexible. Solo exige que haya un ":"
+                    hora_limpia = hora_ag_str.strip()
+                    if not hora_limpia or ":" not in hora_limpia:
+                        hora_limpia = ahora().strftime("%H:%M")
                         
                     st.session_state["agenda_db"].append({
                         "paciente": paciente_sel, 
                         "profesional": prof_ag, 
                         "fecha": fecha_ag.strftime("%d/%m/%Y"), 
-                        "hora": hora_ag_str, 
+                        "hora": hora_limpia, 
                         "empresa": mi_empresa, 
                         "estado": "Pendiente"
                     })
