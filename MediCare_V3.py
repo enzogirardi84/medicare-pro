@@ -1772,12 +1772,12 @@ with tabs[menu.index("📦 Inventario")]:
                 guardar_datos()
                 st.success(f"Insumo **{del_item}** eliminado definitivamente.")
                 st.rerun()
-# 11. CAJA - VERSIÓN MEJORADA (PROFESIONAL + VISUAL)
+# 11. CAJA - VERSIÓN MEJORADA Y CORREGIDA (SIN ERROR UNICODE)
 with tabs[menu.index("💳 Caja")]:
     if paciente_sel:
         st.subheader("💳 Facturación y Caja Diaria")
 
-        # --- 1. MÉTRICAS RÁPIDAS (más elegantes) ---
+        # --- 1. MÉTRICAS RÁPIDAS ---
         fact_paciente = [f for f in st.session_state.get("facturacion_db", [])
                         if f.get("paciente") == paciente_sel and f.get("empresa") == mi_empresa]
 
@@ -1785,14 +1785,14 @@ with tabs[menu.index("💳 Caja")]:
         total_pendiente = sum(f['monto'] for f in fact_paciente if "⏳" in f.get('estado', ''))
 
         col_m1, col_m2, col_m3 = st.columns(3)
-        col_m1.metric("💰 Total Cobrado", f"${total_cobrado:,.2f}", delta=None)
+        col_m1.metric("💰 Total Cobrado", f"${total_cobrado:,.2f}")
         col_m2.metric("⏳ Pendiente de Cobro", f"${total_pendiente:,.2f}", 
                      delta="-A Cobrar" if total_pendiente > 0 else None, delta_color="inverse")
         col_m3.metric("🧾 Prácticas Registradas", len(fact_paciente))
 
         st.divider()
 
-        # --- 2. FORMULARIO DE CARGA (más limpio y usable) ---
+        # --- 2. FORMULARIO DE CARGA ---
         with st.form("caja_form", clear_on_submit=True):
             st.markdown("##### 📝 Registrar Nuevo Movimiento")
             
@@ -1841,34 +1841,51 @@ with tabs[menu.index("💳 Caja")]:
 
         st.divider()
 
-        # --- 3. HISTORIAL DE RECIBOS DEL PACIENTE (más bonito) ---
+        # --- 3. HISTORIAL DE RECIBOS DEL PACIENTE ---
         st.markdown("#### 🧾 Historial de Recibos del Paciente")
         if fact_paciente:
+            
+            # === FUNCIÓN PDF CORREGIDA (SIN ERROR UNICODE) ===
             def generar_recibo_pdf(mov):
                 if not FPDF_DISPONIBLE:
                     return b""
+                
+                # Función segura para convertir texto a latin-1 (evita el error)
+                def safe_text(text):
+                    if not text:
+                        return ""
+                    # Reemplaza caracteres problemáticos comunes en español
+                    replacements = {
+                        'ñ': 'n', 'Ñ': 'N', 'á': 'a', 'Á': 'A', 'é': 'e', 'É': 'E',
+                        'í': 'i', 'Í': 'I', 'ó': 'o', 'Ó': 'O', 'ú': 'u', 'Ú': 'U',
+                        'ü': 'u', 'Ü': 'U', '¿': '', '¡': '', '°': '', '–': '-'
+                    }
+                    for old, new in replacements.items():
+                        text = text.replace(old, new)
+                    return str(text).encode('latin-1', errors='replace').decode('latin-1')
+
                 pdf = FPDF(format='A5')
                 pdf.add_page()
                 pdf.set_font("Arial", 'B', 16)
-                pdf.cell(0, 10, f"RECIBO - {mi_empresa}", ln=True, align='C')
+                pdf.cell(0, 10, safe_text(f"RECIBO - {mi_empresa}"), ln=True, align='C')
                 pdf.set_font("Arial", '', 10)
-                pdf.cell(0, 6, f"Fecha: {mov['fecha']}", ln=True, align='C')
-                pdf.cell(0, 6, f"Operador: {mov.get('operador', 'S/D')} (DNI: {mov.get('operador_dni', 'S/D')})", ln=True, align='C')
+                pdf.cell(0, 6, safe_text(f"Fecha: {mov['fecha']}"), ln=True, align='C')
+                pdf.cell(0, 6, safe_text(f"Operador: {mov.get('operador', 'S/D')} (DNI: {mov.get('operador_dni', 'S/D')})"), ln=True, align='C')
                 pdf.ln(10)
 
                 pdf.set_font("Arial", 'B', 12)
-                pdf.cell(0, 8, f"Recibimos de: {mov['paciente']}", ln=True)
+                pdf.cell(0, 8, safe_text(f"Recibimos de: {mov['paciente']}"), ln=True)
                 pdf.ln(4)
 
                 pdf.set_font("Arial", '', 11)
-                pdf.multi_cell(0, 8, f"Concepto: {mov['serv']}")
-                pdf.cell(0, 8, f"Medio de pago: {mov.get('metodo', 'S/D')}", ln=True)
-                pdf.cell(0, 8, f"Estado: {mov.get('estado', 'Cobrado')}", ln=True)
+                pdf.multi_cell(0, 8, safe_text(f"Concepto: {mov['serv']}"))
+                pdf.cell(0, 8, safe_text(f"Medio de pago: {mov.get('metodo', 'S/D')}"), ln=True)
+                pdf.cell(0, 8, safe_text(f"Estado: {mov.get('estado', 'Cobrado')}"), ln=True)
                 pdf.ln(8)
 
                 pdf.set_fill_color(240, 240, 240)
                 pdf.set_font("Arial", 'B', 18)
-                pdf.cell(0, 14, f"TOTAL: ${mov['monto']:,.2f}", 1, 1, 'C', True)
+                pdf.cell(0, 14, safe_text(f"TOTAL: ${mov['monto']:,.2f}"), 1, 1, 'C', True)
 
                 pdf.ln(12)
                 pdf.set_font("Arial", '', 9)
@@ -1884,21 +1901,21 @@ with tabs[menu.index("💳 Caja")]:
                     
                     with col_r1:
                         st.markdown(f"**{mov['fecha']}** — {mov['serv']}")
-                        st.caption(f"{estado_color} {mov.get('estado', 'S/D')} | {mov.get('metodo', 'S/D')} | ${mov['monto']:,.2f}")
+                        st.caption(f"{estado_color} {mov.get('estado', 'S/D')} | {mov.get('metodo', 'S/D')} | **${mov['monto']:,.2f}**")
                     
-                    if FPDF_DISPONIBLE:
-                        pdf_bytes = generar_recibo_pdf(mov)
-                        b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
-                        file_name = f"Recibo_{mov['fecha'][:10].replace('/','-')}_{i+1}.pdf"
-                        
-                        html_btn = f'''
-                        <a href="data:application/pdf;base64,{b64_pdf}" download="{file_name}"
-                           style="display:block; width:100%; text-align:center; background:#2563eb; color:white; 
-                                  padding:10px; border-radius:8px; text-decoration:none; font-weight:600;">
-                           📄 Descargar PDF
-                        </a>
-                        '''
-                        col_r2.markdown(html_btn, unsafe_allow_html=True)
+                    # Botón PDF seguro
+                    pdf_bytes = generar_recibo_pdf(mov)
+                    b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+                    file_name = f"Recibo_{mov['fecha'][:10].replace('/','-')}_{i+1}.pdf"
+                    
+                    html_btn = f'''
+                    <a href="data:application/pdf;base64,{b64_pdf}" download="{file_name}"
+                       style="display:block; width:100%; text-align:center; background:#2563eb; color:white; 
+                              padding:10px; border-radius:8px; text-decoration:none; font-weight:600;">
+                       📄 Descargar PDF
+                    </a>
+                    '''
+                    col_r2.markdown(html_btn, unsafe_allow_html=True)
 
         else:
             st.info("No hay movimientos registrados para este paciente aún.")
@@ -1920,7 +1937,6 @@ with tabs[menu.index("💳 Caja")]:
                 else:
                     df_caja_filtrada = df_caja
 
-                # Renombrar columnas para que sea más legible
                 df_mostrar = df_caja_filtrada.copy()
                 df_mostrar = df_mostrar.rename(columns={
                     "fecha": "Fecha", "paciente": "Paciente", "serv": "Concepto",
