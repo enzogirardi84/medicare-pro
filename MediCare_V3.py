@@ -1530,7 +1530,7 @@ with tabs[menu.index("💊 Recetas")]:
             # ====================== HISTORIAL DE PRESCRIPCIONES ======================
             st.markdown("#### 🕰️ Historial de Prescripciones Médicas")
             
-            # Últimas 10 prescripciones (seguro y sin KeyError)
+            # Últimas 10 prescripciones (seguro - sin KeyError)
             for r in reversed(recs[-10:]):
                 st.success(f"""
                 📌 **{r.get('fecha', '—')}**  
@@ -1541,7 +1541,6 @@ with tabs[menu.index("💊 Recetas")]:
 
         else:
             st.info("Aún no hay medicación indicada para este paciente.")
-
 # 9. BALANCE HÍDRICO
 with tabs[menu.index("⚖️ Balance")]:
     if not paciente_sel:
