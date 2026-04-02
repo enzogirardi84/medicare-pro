@@ -128,12 +128,11 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# --- 🎨 DISEÑO VISUAL ENTERPRISE (PREMIUM & OPTIMIZADO) ---
+# --- 🎨 DISEÑO VISUAL ENTERPRISE PREMIUM v2.0 (OPTIMIZADO) ---
 page_bg_css = """
 <style>
 /* 1. Fuente moderna y profesional (Inter) */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
 html, body, [class*="css"] {
     font-family: 'Inter', sans-serif !important;
 }
@@ -142,85 +141,145 @@ html, body, [class*="css"] {
 body { overscroll-behavior-y: none; }
 * { text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
 
-/* 2. Fondo fluido */
+/* 2. Fondo fluido + variables oscuras premium */
 .stApp {
-    background-color: var(--background-color);
+    background-color: #0f0f12;
 }
 
-/* 3. Estilo "Tarjetas Flotantes" para Formularios */
+/* 3. Tarjetas Flotantes mejoradas (con glass effect) */
 div[data-testid="stForm"] {
-    background-color: var(--secondary-background-color);
-    border: 1px solid rgba(150, 150, 150, 0.15);
+    background-color: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
     border-radius: 16px;
     padding: 24px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(12px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 div[data-testid="stForm"]:hover {
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    border-color: rgba(150, 150, 150, 0.3);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    border-color: rgba(59, 130, 246, 0.3);
 }
 
-/* 4. Botones Primarios 3D */
+/* 4. Botones Primarios 3D Premium */
 .stButton>button {
     background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
     color: white !important;
     border: none;
-    min-height: 48px; 
+    min-height: 52px;
     border-radius: 12px;
     font-weight: 600;
-    letter-spacing: 0.3px;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-    transition: all 0.2s ease-in-out;
+    letter-spacing: 0.4px;
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.35);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .stButton>button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.45);
 }
 .stButton>button:active {
     transform: scale(0.96);
 }
 
-/* 5. Cajas de Signos Vitales (Métricas) */
+/* 5. Métricas (Signos Vitales) más elegantes */
 div[data-testid="stMetric"] {
-    background-color: var(--secondary-background-color);
-    border-radius: 12px;
-    padding: 16px;
-    border: 1px solid rgba(150, 150, 150, 0.1);
-    border-left: 4px solid #3b82f6;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    background-color: rgba(255,255,255,0.06);
+    border-radius: 14px;
+    padding: 18px 20px;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-left: 5px solid #3b82f6;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
 }
 
-/* 6. Expansores (Acordeones de Historial) */
+/* 6. Expansores (Historial clínico) */
 div[data-testid="stExpander"] {
-    border-radius: 12px;
-    border: 1px solid rgba(150, 150, 150, 0.15);
-    background-color: var(--secondary-background-color);
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background-color: rgba(255,255,255,0.04);
     overflow: hidden;
 }
 div[data-testid="stExpander"] details summary {
     font-weight: 600;
-    padding: 10px;
+    padding: 14px 18px;
+    font-size: 15.5px;
 }
 
-/* 7. Botón de WhatsApp Premium */
+/* 7. Botón WhatsApp Premium */
 .wa-btn {
-    display: block; width: 100%; text-align: center; 
-    background: linear-gradient(135deg, #128C7E 0%, #25D366 100%); 
-    color: white !important; padding: 14px; border-radius: 12px; font-weight: 700; text-decoration: none;
-    margin-top: 10px; margin-bottom: 10px;
-    box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
-    transition: all 0.2s ease;
+    display: block; width: 100%; text-align: center;
+    background: linear-gradient(135deg, #128C7E 0%, #25D366 100%);
+    color: white !important; padding: 15px; border-radius: 12px; 
+    font-weight: 700; text-decoration: none;
+    margin: 12px 0;
+    box-shadow: 0 4px 15px rgba(37, 211, 102, 0.35);
+    transition: all 0.25s ease;
 }
-.wa-btn:hover { 
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(37, 211, 102, 0.4);
+.wa-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(37, 211, 102, 0.45);
+}
+
+/* 8. NUEVAS MEJORAS AÑADIDAS */
+
+/* Sidebar más elegante */
+[data-testid="stSidebar"] {
+    background-color: #0a0a0d;
+    border-right: 1px solid rgba(255,255,255,0.08);
+}
+
+/* Tabs más modernas */
+.stTabs [data-testid="stTab"] {
+    font-weight: 500;
+    padding: 12px 20px;
+    border-radius: 8px;
+}
+.stTabs [data-testid="stTab"][aria-selected="true"] {
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    color: white;
+    box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+}
+
+/* Dataframes y tablas más premium */
+[data-testid="stDataFrame"] {
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+    overflow: hidden;
+}
+
+/* Scrollbar customizada */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.4);
+    border-radius: 20px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #3b82f6;
+}
+
+/* Mejora en títulos y subtítulos */
+h1, h2, h3, h4 {
+    font-weight: 600;
+    letter-spacing: -0.5px;
+}
+
+/* Focus accesible */
+*:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 3px;
 }
 
 /* Ocultar flechas numéricas */
-input[type=number]::-webkit-inner-spin-button, 
-input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-input[type=number] { -moz-appearance: textfield; }
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { 
+    -webkit-appearance: none; 
+    margin: 0; 
+}
+input[type=number] { 
+    -moz-appearance: textfield; 
+}
 </style>
 """
 st.markdown(page_bg_css, unsafe_allow_html=True)
