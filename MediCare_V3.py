@@ -1617,7 +1617,7 @@ with tabs[menu.index("⚖️ Balance")]:
             )
         else:
             st.info("Aún no hay balances hídricos registrados para este paciente.")
-# 10. INVENTARIO - VERSIÓN TABLA LIMPIA Y PROFESIONAL (Para muchos insumos)
+# 10. INVENTARIO - VERSIÓN OSCURA UNIFICADA (Negro con letras blancas)
 with tabs[menu.index("📦 Inventario")]:
     st.subheader("📦 Gestión de Inventario y Stock de Farmacia")
 
@@ -1667,29 +1667,29 @@ with tabs[menu.index("📦 Inventario")]:
 
     st.divider()
 
-    # ====================== STOCK ACTUAL - TABLA LIMPIA ======================
+    # ====================== STOCK ACTUAL - ESTILO OSCURO UNIFICADO ======================
     if inv_mio:
         st.markdown("#### 📋 Stock Actual en Farmacia")
 
         df_stock = pd.DataFrame(inv_mio)
         df_stock = df_stock.rename(columns={"item": "Insumo", "stock": "Stock Actual"})
 
-        # Estilo limpio y oscuro
-        def style_stock(row):
+        # Estilo oscuro unificado (negro con letras blancas)
+        def style_unificado(row):
             stock = row["Stock Actual"]
             if stock <= 10:
-                return ['background-color: #3a1f1f; color: #ff8a80'] * len(row)
-            elif stock <= 25:
-                return ['background-color: #3a2f1f; color: #ffd180'] * len(row)
+                return ['background-color: #2c1f1f; color: #ff8a80; font-weight: bold'] * len(row)
             return ['background-color: #1e1e1e; color: #ffffff'] * len(row)
 
-        styled_df = df_stock[["Insumo", "Stock Actual"]].style.apply(style_stock, axis=1)
+        styled = df_stock[["Insumo", "Stock Actual"]].style.apply(style_unificado, axis=1)
 
-        st.dataframe(
-            styled_df,
-            use_container_width=True,
-            hide_index=True
-        )
+        # Contenedor con scroll interno (anti-colapso)
+        with st.container(height=480, border=True):
+            st.dataframe(
+                styled,
+                use_container_width=True,
+                hide_index=True
+            )
     else:
         st.info("Aún no hay insumos cargados en el inventario.")
 
