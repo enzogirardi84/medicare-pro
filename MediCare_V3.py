@@ -405,7 +405,7 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
 
         estado_pac = st.session_state["detalles_pacientes_db"].get(paciente_sel, {}).get("estado", "Activo")
         if estado_pac == "De Alta":
-            st.error("⚠️ Este paciente se encuentra DE ALTA. Su legajo está archivado.")
+            st.error("⚠️ Este paciente se encuentra DE ALTA.")
         else:
             det = st.session_state["detalles_pacientes_db"].get(paciente_sel, {})
             dire_paciente = det.get("direccion", "No registrada")
@@ -417,22 +417,14 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
                 lon = loc.get('longitude') if loc and loc.get('longitude') is not None else None
 
                 if lat is not None and lon is not None:
-                    try:
-                        lat_str = f"{float(lat):.5f}"
-                        lon_str = f"{float(lon):.5f}"
-                    except:
-                        lat_str = str(lat)
-                        lon_str = str(lon)
-
+                    lat_str = f"{float(lat):.5f}"
+                    lon_str = f"{float(lon):.5f}"
                     direccion_real = obtener_direccion_real(lat_str, lon_str)
+
                     st.success(f"📍 **Estás físicamente en:** {direccion_real}")
 
-                    # Botones grandes y claros para LLEGADA y SALIDA
                     col_in, col_out = st.columns(2)
-                    
-                    if col_in.button("🟢 Fichar LLEGADA en esta Ubicación", 
-                                   use_container_width=True, 
-                                   type="primary"):
+                    if col_in.button("🟢 Fichar LLEGADA en esta Ubicación", use_container_width=True, type="primary"):
                         st.session_state["checkin_db"].append({
                             "paciente": paciente_sel,
                             "profesional": user["nombre"],
@@ -441,12 +433,10 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
                             "empresa": mi_empresa
                         })
                         guardar_datos()
-                        st.success("✅ Llegada registrada correctamente.")
+                        st.success("✅ Llegada registrada.")
                         st.rerun()
 
-                    if col_out.button("🔴 Fichar SALIDA en esta Ubicación", 
-                                    use_container_width=True, 
-                                    type="secondary"):
+                    if col_out.button("🔴 Fichar SALIDA en esta Ubicación", use_container_width=True, type="secondary"):
                         st.session_state["checkin_db"].append({
                             "paciente": paciente_sel,
                             "profesional": user["nombre"],
@@ -455,7 +445,7 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
                             "empresa": mi_empresa
                         })
                         guardar_datos()
-                        st.success("✅ Salida registrada correctamente.")
+                        st.success("✅ Salida registrada.")
                         st.rerun()
                 else:
                     st.warning("📍 Aún no capturaste tu ubicación. Tocá el ícono de ubicación arriba y permití el acceso.")
@@ -464,7 +454,7 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
 
             st.divider()
 
-            # ====================== CONTROL DE HORAS DE GUARDIA ======================
+            # ====================== CONTROL DE HORAS DE GUARDIA (CORREGIDO) ======================
             st.markdown("#### ⏳ Control de Horas de Guardia (Hoy)")
 
             hoy_str = ahora().strftime("%d/%m/%Y")
@@ -475,45 +465,45 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
                 and c.get("fecha_hora", "").startswith(hoy_str)
             ]
 
-            if fichadas_hoy:
-                def parse_fecha_hora(fecha_str):
+            def parse_fecha(fecha_str):
+                try:
+                    return datetime.strptime(fecha_str, "%d/%m/%Y %H:%M:%S")
+                except:
                     try:
-                        return datetime.strptime(fecha_str, "%d/%m/%Y %H:%M:%S")
+                        return datetime.strptime(fecha_str, "%d/%m/%Y %H:%M")
                     except:
-                        try:
-                            return datetime.strptime(fecha_str, "%d/%m/%Y %H:%M")
-                        except:
-                            return datetime.min
+                        return datetime.min
 
-                fichadas_hoy = sorted(fichadas_hoy, key=lambda x: parse_fecha_hora(x["fecha_hora"]))
+            if fichadas_hoy:
+                fichadas_hoy = sorted(fichadas_hoy, key=lambda x: parse_fecha(x["fecha_hora"]))
 
                 llegada_time = None
                 ahora_naive = ahora().replace(tzinfo=None)
 
                 for f in fichadas_hoy:
-                    dt = parse_fecha_hora(f["fecha_hora"])
+                    dt = parse_fecha(f["fecha_hora"])
 
                     if "LLEGADA" in f["tipo"].upper():
                         llegada_time = dt
-                        st.info(f"🟢 **Guardia abierta:** Ingresaste a las {dt.strftime('%H:%M')}")
                     elif "SALIDA" in f["tipo"].upper() and llegada_time:
                         duracion = dt - llegada_time
                         horas, rem = divmod(duracion.seconds, 3600)
                         minutos, _ = divmod(rem, 60)
                         st.success(f"✅ Turno completado: {llegada_time.strftime('%H:%M')} → {dt.strftime('%H:%M')} ({horas}h {minutos}m)")
-                        llegada_time = None
+                        llegada_time = None   # ←←← ESTO ES LO QUE FALTABA
 
+                # Si todavía hay una llegada sin salida → guardia abierta
                 if llegada_time:
                     duracion_actual = ahora_naive - llegada_time
                     horas, rem = divmod(duracion_actual.seconds, 3600)
                     minutos, _ = divmod(rem, 60)
-                    st.warning(f"⏳ **Guardia en curso desde las {llegada_time.strftime('%H:%M')}** → **{horas}h {minutos}m** transcurridos")
+                    st.warning(f"🟢 **Guardia en curso desde las {llegada_time.strftime('%H:%M')}** → **{horas}h {minutos}m** transcurridos")
 
                     if st.button("🔄 Actualizar cronómetro", use_container_width=True):
                         st.rerun()
                     st.caption("Se actualiza automáticamente cada 30 segundos")
             else:
-                st.info("Aún no tienes fichadas de llegada/salida hoy para este paciente.")
+                st.info("Aún no tienes fichadas hoy para este paciente.")
 
             st.divider()
 
@@ -543,7 +533,6 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
                     st.success("✅ Turno agendado correctamente.")
                     st.rerun()
 
-            # Mostrar últimas agendas
             agenda_mia = [a for a in st.session_state.get("agenda_db", []) 
                          if a.get("empresa") == mi_empresa and a.get("paciente") == paciente_sel]
             if agenda_mia:
@@ -558,7 +547,9 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
             if dire_paciente and dire_paciente != "No registrada":
                 st.info(f"🏠 **Domicilio:** {dire_paciente}")
 
-            # ... (el código de WhatsApp se mantiene igual que antes)
+            # ... (el resto del código de WhatsApp se mantiene igual que tenías antes)
+
+       
 if "📈 Dashboard" in menu:
     with tabs[menu.index("📈 Dashboard")]:
         st.markdown(f"<h3 style='color: #3b82f6;'>📈 Panel de Gestión - {mi_empresa}</h3>", unsafe_allow_html=True)
