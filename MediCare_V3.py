@@ -1397,14 +1397,14 @@ with tabs[menu.index("💉 Materiales")]:
         else:
             st.info("Aún no se han registrado consumos de materiales para este paciente.")
             
-# 8. RECETAS - VERSIÓN MEJORADA Y LEGAL (Nombre + Matrícula + Firma Digital)
+# 8. RECETAS - VERSIÓN LEGAL COMPLETA (Nombre + Matrícula + Firma Digital)
 with tabs[menu.index("💊 Recetas")]:
     if not paciente_sel:
         st.info("👈 Seleccioná un paciente en el menú lateral.")
     else:
         st.subheader("💊 Plan Terapéutico y Administración de Medicamentos")
 
-        # ====================== AGREGAR NUEVA MEDICACIÓN (VERSIÓN LEGAL) ======================
+        # ====================== AGREGAR NUEVA PRESCRIPCIÓN MÉDICA ======================
         with st.form("recet", clear_on_submit=True):
             st.markdown("##### 👨‍⚕️ Nueva Prescripción Médica")
 
@@ -1421,31 +1421,32 @@ with tabs[menu.index("💊 Recetas")]:
             ])
             dias = col5.number_input("Días de Tratamiento", min_value=1, max_value=90, value=7)
 
-            # === DATOS DEL MÉDICO PRESCRIPTOR ===
+            # Datos del médico
             st.markdown("##### ✍️ Datos del Médico Prescriptor")
             col_m1, col_m2 = st.columns(2)
             medico_nombre = col_m1.text_input("Nombre completo del médico", value=user.get("nombre", ""))
             medico_matricula = col_m2.text_input("Matrícula profesional", placeholder="Ej: 123456")
 
-            # === FIRMA DIGITAL ===
+            # Firma digital
             st.markdown("##### Firma Digital del Médico")
-            firma_canvas = st.canvas(
+            firma_canvas = st_canvas(
                 key="firma_receta",
                 background_color="#f8f9fa",
-                height=150,
+                height=160,
                 drawing_mode="freedraw",
                 stroke_width=4,
-                stroke_color="#000000"
+                stroke_color="#000000",
+                display_toolbar=True
             )
 
-            if st.form_submit_button("➕ Guardar Prescripción Médica", use_container_width=True, type="primary"):
+            if st.form_submit_button("✅ Guardar Prescripción Médica", use_container_width=True, type="primary"):
                 med_final = med_manual.strip().title() if med_manual.strip() else med_vademecum
 
                 if med_final and med_final != "-- Seleccionar del Vademécum --":
                     if not medico_matricula.strip():
                         st.error("❌ Debe ingresar la matrícula del médico.")
                     else:
-                        # Guardar firma
+                        # Guardar firma como imagen
                         firma_b64 = ""
                         if firma_canvas.image_data is not None:
                             import io
@@ -1511,17 +1512,15 @@ with tabs[menu.index("💊 Recetas")]:
 
             df = pd.DataFrame(table_data)
 
-            # Estilo profesional
             def style_medicacion(row):
                 styles = []
                 for col in row.index:
                     if col in ["Medicamento", "Vía", "Frecuencia", "Médico", "Matrícula"]:
                         styles.append('background-color: #1e1e1e; color: #ffffff; font-weight: 500')
+                    elif row[col] == "✅":
+                        styles.append('background-color: #1a3c2e; color: #4ade80; font-weight: bold')
                     else:
-                        if row[col] == "✅":
-                            styles.append('background-color: #1a3c2e; color: #4ade80; font-weight: bold')
-                        else:
-                            styles.append('background-color: #2c1f1f; color: #f87171')
+                        styles.append('background-color: #2c1f1f; color: #f87171')
                 return styles
 
             styled_df = df.style.apply(style_medicacion, axis=1)
