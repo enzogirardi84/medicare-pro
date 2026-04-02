@@ -430,7 +430,6 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
                     link_mapa = f"https://www.google.com/maps/search/?api=1&query={lat_str},{lon_str}"
                     st.markdown(f"[🗺️ Ver en Google Maps]({link_mapa})")
 
-                    # Botones de fichada más grandes y claros
                     c_in, c_out = st.columns(2)
                     if c_in.button("🟢 Fichar LLEGADA en esta Ubicación", use_container_width=True, type="primary"):
                         st.session_state["checkin_db"].append({
@@ -460,7 +459,7 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
             else:
                 st.error("⚠️ Librería 'streamlit-geolocation' no está instalada.")
 
-            # === CONTROL DE HORAS DE GUARDIA (MEJORADO) ===
+            # === CONTROL DE HORAS DE GUARDIA (VERSIÓN ROBUSTA) ===
             st.markdown("#### ⏳ Control de Horas de Guardia (Hoy)")
             hoy_str = ahora().strftime("%d/%m/%Y")
             fichadas_hoy = [
@@ -473,15 +472,21 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
             if not fichadas_hoy:
                 st.info("Aún no tenés fichadas hoy para este paciente.")
             else:
-                # Ordenamos cronológicamente
-                fichadas_hoy.sort(key=lambda x: datetime.strptime(x["fecha_hora"], "%d/%m/%Y %H:%M:%S") 
-                                  if " %H:%M:%S" in x["fecha_hora"] else datetime.strptime(x["fecha_hora"], "%d/%m/%Y %H:%M"))
+                # === FUNCIÓN SEGURA DE PARSEO (evita el error que tenías) ===
+                def parse_fecha_hora(fecha_str: str):
+                    try:
+                        return datetime.strptime(fecha_str, "%d/%m/%Y %H:%M:%S")
+                    except ValueError:
+                        return datetime.strptime(fecha_str, "%d/%m/%Y %H:%M")
+
+                # Ordenamos de forma segura
+                fichadas_hoy = sorted(fichadas_hoy, key=lambda x: parse_fecha_hora(x["fecha_hora"]))
 
                 llegada_time = None
                 ahora_naive = ahora().replace(tzinfo=None)
 
                 for f in fichadas_hoy:
-                    dt = datetime.strptime(f["fecha_hora"], "%d/%m/%Y %H:%M:%S") if " %H:%M:%S" in f["fecha_hora"] else datetime.strptime(f["fecha_hora"], "%d/%m/%Y %H:%M")
+                    dt = parse_fecha_hora(f["fecha_hora"])
 
                     if "LLEGADA" in f["tipo"].upper():
                         llegada_time = dt
@@ -493,21 +498,21 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
                         st.success(f"✅ **Turno completado:** {llegada_time.strftime('%H:%M')} → {dt.strftime('%H:%M')} → **{horas}h {minutos}m**")
                         llegada_time = None
 
-                # Cronómetro en tiempo real si hay guardia abierta
+                # Cronómetro en tiempo real
                 if llegada_time:
                     duracion_actual = ahora_naive - llegada_time
                     horas, rem = divmod(duracion_actual.seconds, 3600)
                     minutos, _ = divmod(rem, 60)
                     st.warning(f"⏳ **Guardia en curso desde las {llegada_time.strftime('%H:%M')}** → **{horas}h {minutos}m** transcurridos")
 
-                    # Auto-refresco cada 30 segundos
-                    if st.button("🔄 Actualizar cronómetro", use_container_width=True):
+                    col_refresh, _ = st.columns([1, 3])
+                    if col_refresh.button("🔄 Actualizar cronómetro", use_container_width=True):
                         st.rerun()
-                    st.caption("⏳ Se actualiza automáticamente cada 30 segundos")
+                    st.caption("⏳ Se actualiza automáticamente cada 30 segundos (o tocá el botón)")
 
             st.divider()
 
-            # === AGENDA (sin cambios importantes, solo pequeño pulido) ===
+            # === AGENDA (mismo que antes, solo pulido) ===
             st.subheader("📅 Agendar Próxima Visita")
             with st.form("agenda_form", clear_on_submit=True):
                 c1_ag, c2_ag = st.columns(2)
@@ -515,12 +520,12 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
                 hora_ag_str = c2_ag.text_input("Hora aproximada (HH:MM)", value=ahora().strftime("%H:%M"), key="hora_agenda_nueva")
 
                 profesionales = [v['nombre'] for k, v in st.session_state["usuarios_db"].items() 
-                               if v['empresa'] == mi_empresa or rol == "SuperAdmin"]
+                               if v.get('empresa') == mi_empresa or rol == "SuperAdmin"]
                 idx_prof = profesionales.index(user['nombre']) if user['nombre'] in profesionales else 0
                 prof_ag = st.selectbox("Asignar Profesional", profesionales, index=idx_prof)
 
                 if st.form_submit_button("Agendar Visita", use_container_width=True, type="primary"):
-                    hora_limpia = hora_ag_str.strip() if ":" in hora_ag_str else ahora().strftime("%H:%M")
+                    hora_limpia = hora_ag_str.strip() if ":" in hora_ag_str.strip() else ahora().strftime("%H:%M")
                     st.session_state["agenda_db"].append({
                         "paciente": paciente_sel,
                         "profesional": prof_ag,
@@ -533,7 +538,6 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
                     st.success("✅ Turno agendado correctamente.")
                     st.rerun()
 
-            # Mostrar últimas agendas
             agenda_mia = [a for a in st.session_state["agenda_db"] if a["empresa"] == mi_empresa and a["paciente"] == paciente_sel]
             if agenda_mia:
                 st.caption("Próximas visitas agendadas:")
@@ -541,7 +545,7 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
 
             st.divider()
 
-            # === CONTACTO Y WHATSAPP (mejorado) ===
+            # === WHATSAPP (mejorado) ===
             st.subheader("📲 Contacto y Ubicación")
             if dire_paciente and dire_paciente != "No registrada":
                 st.info(f"🏠 **Domicilio:** {dire_paciente}")
