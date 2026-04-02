@@ -1444,7 +1444,6 @@ with tabs[menu.index("💊 Recetas")]:
                     if not medico_matricula.strip():
                         st.error("❌ Debe ingresar la matrícula del médico.")
                     else:
-                        # Guardar firma
                         firma_b64 = ""
                         if firma_canvas.image_data is not None:
                             import io
@@ -1472,7 +1471,7 @@ with tabs[menu.index("💊 Recetas")]:
 
         st.divider()
 
-        # ====================== TABLA COMPLETA 00:00 - 23:00 ======================
+        # ====================== TABLA 00:00 - 23:00 ======================
         recs = [r for r in st.session_state.get("indicaciones_db", []) if r.get("paciente") == paciente_sel]
 
         if recs:
@@ -1531,7 +1530,7 @@ with tabs[menu.index("💊 Recetas")]:
             # ====================== HISTORIAL DE PRESCRIPCIONES ======================
             st.markdown("#### 🕰️ Historial de Prescripciones Médicas")
             
-            # Últimas 10 prescripciones (seguro)
+            # Últimas 10 prescripciones (seguro y sin KeyError)
             for r in reversed(recs[-10:]):
                 st.success(f"""
                 📌 **{r.get('fecha', '—')}**  
