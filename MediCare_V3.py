@@ -1881,8 +1881,14 @@ if "📑 Cierre Diario" in menu:
             for r in reportes_mios:
                 c1_hist, c2_hist = st.columns([3, 1])
                 c1_hist.write(f"📄 **Cierre del día:** {r['fecha_reporte']} | Generado el {r['fecha_generacion']} por {r['generado_por']}")
-                pdf_bytes = base64.b64decode(r['pdf_base64'])
-                c2_hist.download_button("📥 Descargar", data=pdf_bytes, file_name=f"Cierre_Diario_{r['fecha_reporte'].replace('/','-')}.pdf", mime="application/pdf", key=f"dl_{r['fecha_generacion']}")
+                
+                # --- ARREGLO ANTI-404: Botón HTML ---
+                b64_pdf_cierre = r['pdf_base64']
+                nombre_arch_cierre = f"Cierre_Diario_{r['fecha_reporte'].replace('/','-')}.pdf"
+                
+                html_btn_cierre = f'''<a href="data:application/pdf;base64,{b64_pdf_cierre}" download="{nombre_arch_cierre}" style="display: block; width: 100%; text-align: center; background-color: #2563eb; color: white; padding: 8px; border-radius: 6px; text-decoration: none; font-weight: 600; font-family: sans-serif;">📥 Descargar</a>'''
+                
+                c2_hist.markdown(html_btn_cierre, unsafe_allow_html=True)
         else:
             st.write("Aún no hay reportes de cierre diario guardados.")
 
