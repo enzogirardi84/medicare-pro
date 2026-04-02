@@ -2287,7 +2287,21 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
 
                     st.divider()
                     pdf_data = generar_pdf_rrhh(df_mostrar, fecha_inicio, fecha_fin, prof_filtrar)
-                    st.download_button("📥 DESCARGAR REPORTE RRHH (PDF PARA LA EMPRESA)", data=pdf_data, file_name=f"Reporte_RRHH_{mi_empresa.replace(' ', '_')}_{ahora().strftime('%d%m%Y')}.pdf", mime="application/pdf", use_container_width=True)
+                    
+                    # --- ARREGLO ANTI-404 DEFINITIVO ---
+                    import base64
+                    b64_pdf_rrhh = base64.b64encode(pdf_data).decode('utf-8')
+                    nombre_arch_rrhh = f"Reporte_RRHH_{mi_empresa.replace(' ', '_')}_{ahora().strftime('%d%m%Y')}.pdf"
+                    
+                    html_btn_rrhh = f'''
+                    <a href="data:application/pdf;base64,{b64_pdf_rrhh}" download="{nombre_arch_rrhh}" 
+                       style="display: block; width: 100%; text-align: center; background-color: #2563eb; 
+                              color: white; padding: 12px; border-radius: 8px; text-decoration: none; 
+                              font-weight: 600; font-family: sans-serif; margin-top: 10px;">
+                       📥 DESCARGAR REPORTE RRHH (PDF PARA LA EMPRESA)
+                    </a>
+                    '''
+                    st.markdown(html_btn_rrhh, unsafe_allow_html=True)
 
             else:
                 st.warning("No hay registros de fichaje en el rango de fechas seleccionado.")
