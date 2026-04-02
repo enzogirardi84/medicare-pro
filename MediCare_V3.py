@@ -1472,7 +1472,7 @@ with tabs[menu.index("💊 Recetas")]:
 
         st.divider()
 
-        # ====================== TABLA 00:00 - 23:00 ======================
+        # ====================== TABLA COMPLETA 00:00 - 23:00 ======================
         recs = [r for r in st.session_state.get("indicaciones_db", []) if r.get("paciente") == paciente_sel]
 
         if recs:
@@ -1530,10 +1530,13 @@ with tabs[menu.index("💊 Recetas")]:
 
             # ====================== HISTORIAL DE PRESCRIPCIONES ======================
             st.markdown("#### 🕰️ Historial de Prescripciones Médicas")
-            for r in reversed(recs[-10:]):   # últimas 10 prescripciones
+            
+            # Últimas 10 prescripciones (seguro)
+            for r in reversed(recs[-10:]):
                 st.success(f"""
                 📌 **{r.get('fecha', '—')}**  
-                Indicado por: **{r.get('medico_nombre', '—')}** (Matrícula: {r.get('medico_matricula', '—')})  
+                Indicado por: **{r.get('medico_nombre', '—')}**  
+                Matrícula: {r.get('medico_matricula', '—')}
                 {r.get('med', '')}
                 """)
 
