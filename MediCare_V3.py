@@ -1381,13 +1381,14 @@ with tabs[menu.index("📦 Inventario")]:
             st.session_state["inventario_db"] = [i for i in st.session_state["inventario_db"] if not (i["item"] == del_item and i["empresa"] == mi_empresa)]
             guardar_datos(); st.rerun()
 
-# 11. CAJA
+# 11. CAJA - VERSIÓN CORREGIDA (SIN ERRORES 404)
 with tabs[menu.index("💳 Caja")]:
     if paciente_sel:
         st.subheader("💳 Facturación y Caja Diaria")
         
         # --- 1. MÉTRICAS RÁPIDAS ---
-        fact_paciente = [f for f in st.session_state.get("facturacion_db", []) if f.get("paciente") == paciente_sel and f.get("empresa") == mi_empresa]
+        fact_paciente = [f for f in st.session_state.get("facturacion_db", []) 
+                        if f.get("paciente") == paciente_sel and f.get("empresa") == mi_empresa]
         
         total_cobrado = sum([f['monto'] for f in fact_paciente if "✅" in f.get('estado', '✅')])
         total_pendiente = sum([f['monto'] for f in fact_paciente if "⏳" in f.get('estado', '')])
@@ -1404,9 +1405,9 @@ with tabs[menu.index("💳 Caja")]:
             st.markdown("##### 📝 Registrar Nuevo Movimiento")
             c1, c2 = st.columns([2, 1])
             practicas_comunes = [
-                "Consulta Médica Domiciliaria", "Aplicación IM/SC", "Curación de Heridas", 
-                "Colocación/Cambio de Sonda", "Control de Signos Vitales", "Guardia de Enfermería (12hs)", 
-                "Guardia de Enfermería (24hs)", "Sesión de Kinesiología", "Insumos Extras", 
+                "Consulta Médica Domiciliaria", "Aplicación IM/SC", "Curación de Heridas",
+                "Colocación/Cambio de Sonda", "Control de Signos Vitales", "Guardia de Enfermería (12hs)",
+                "Guardia de Enfermería (24hs)", "Sesión de Kinesiología", "Insumos Extras",
                 "-- Otro (Especificar manualmente) --"
             ]
             practica_sel = c1.selectbox("Tipo de Servicio / Nomenclador:", practicas_comunes)
@@ -1423,12 +1424,12 @@ with tabs[menu.index("💳 Caja")]:
                 
                 if desc_final and mon > 0:
                     st.session_state["facturacion_db"].append({
-                        "paciente": paciente_sel, 
-                        "serv": desc_final, 
-                        "monto": mon, 
+                        "paciente": paciente_sel,
+                        "serv": desc_final,
+                        "monto": mon,
                         "metodo": metodo,
                         "estado": estado,
-                        "fecha": ahora().strftime("%d/%m/%Y %H:%M"), 
+                        "fecha": ahora().strftime("%d/%m/%Y %H:%M"),
                         "empresa": mi_empresa,
                         "operador": user["nombre"],
                         "operador_dni": user.get("dni", "S/D")
@@ -1491,9 +1492,9 @@ with tabs[menu.index("💳 Caja")]:
                             b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
                             file_name_safe = f"Recibo_{mov['fecha'][:10].replace('/','-')}_{i}.pdf"
                             html_btn_recibo = f'''
-                            <a href="data:application/pdf;base64,{b64_pdf}" download="{file_name_safe}" 
-                               style="display: block; width: 100%; text-align: center; background-color: #2563eb; 
-                               color: white; padding: 8px; border-radius: 6px; text-decoration: none; 
+                            <a href="data:application/pdf;base64,{b64_pdf}" download="{file_name_safe}"
+                               style="display: block; width: 100%; text-align: center; background-color: #2563eb;
+                               color: white; padding: 8px; border-radius: 6px; text-decoration: none;
                                font-weight: 600; font-size: 14px; font-family: sans-serif;">
                                📄 Descargar PDF
                             </a>
@@ -1502,7 +1503,7 @@ with tabs[menu.index("💳 Caja")]:
         else:
             st.info("👈 Seleccione un paciente para registrar un cobro o ver su cuenta corriente.")
 
-        # --- 4. AUDITORÍA GENERAL + DESCARGA EXCEL (AQUÍ ESTABA LA FALLA PRINCIPAL) ---
+        # --- 4. AUDITORÍA GENERAL + EXCEL SEGURO ---
         if rol in ["SuperAdmin", "Coordinador"]:
             st.divider()
             st.markdown("#### 🔍 Auditoría de Facturación General")
@@ -1518,18 +1519,18 @@ with tabs[menu.index("💳 Caja")]:
                     df_caja_filtrada = df_caja
 
                 df_mostrar = df_caja_filtrada.copy()
-                if "empresa" in df_mostrar.columns: 
+                if "empresa" in df_mostrar.columns:
                     df_mostrar = df_mostrar.drop(columns=["empresa"])
                 
                 df_mostrar = df_mostrar.rename(columns={
-                    "fecha": "Fecha", "paciente": "Paciente", "serv": "Concepto", 
-                    "monto": "Monto ($)", "metodo": "Medio de Pago", "estado": "Estado", 
+                    "fecha": "Fecha", "paciente": "Paciente", "serv": "Concepto",
+                    "monto": "Monto ($)", "metodo": "Medio de Pago", "estado": "Estado",
                     "operador": "Registró", "operador_dni": "DNI Registró"
                 })
                 
                 st.dataframe(df_mostrar.iloc[::-1], use_container_width=True, hide_index=True)
                 
-                # ==================== DESCARGA SEGURA EXCEL (CORREGIDO) ====================
+                # DESCARGA SEGURA DE EXCEL
                 output = io.BytesIO()
                 with pd.ExcelWriter(output, engine='openpyxl') as writer:
                     df_mostrar.to_excel(writer, index=False, sheet_name='Caja_MediCare')
@@ -1537,12 +1538,12 @@ with tabs[menu.index("💳 Caja")]:
                 output.seek(0)
                 b64_excel = base64.b64encode(output.getvalue()).decode('utf-8')
                 file_name_excel = f"Caja_General_{ahora().strftime('%d_%m_%Y')}.xlsx"
-
+                
                 html_btn_excel = f'''
                 <a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64_excel}" 
-                   download="{file_name_excel}" 
-                   style="display: block; width: 100%; text-align: center; background-color: #10b981; 
-                          color: white; padding: 12px; border-radius: 8px; text-decoration: none; 
+                   download="{file_name_excel}"
+                   style="display: block; width: 100%; text-align: center; background-color: #10b981;
+                          color: white; padding: 12px; border-radius: 8px; text-decoration: none;
                           font-weight: 600; font-family: sans-serif; margin-top: 10px;">
                    📊 DESCARGAR EXCEL DE CAJA GENERAL (Seguro)
                 </a>
