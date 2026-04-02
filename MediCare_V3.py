@@ -1978,7 +1978,9 @@ with tabs[menu.index("📚 Historial")]:
             evs = [x for x in st.session_state["evoluciones_db"] if x["paciente"] == paciente_sel]
             if evs:
                 with st.container(height=350):
-                    for e in reversed(evs[-limite:]): st.info(f"📅 **{e['fecha']}** | {e['firma']}\n\n{e['nota']}")
+                    for e in reversed(evs[-limite:]): 
+                        # Usamos .get() para evitar KeyError
+                        st.info(f"📅 **{e.get('fecha', '')}** | {e.get('firma', 'S/D')}\n\n{e.get('nota', '')}")
             else: st.write("No hay evoluciones médicas cargadas.")
 
         # NUEVO: HISTORIAL DE ESTUDIOS COMPLEMENTARIOS (CON CARPETAS Y REPARACIÓN PDF/IMG ANTI-404)
@@ -1989,8 +1991,8 @@ with tabs[menu.index("📚 Historial")]:
                     for idx, est in enumerate(reversed(estudios[-limite:])): 
                         # Diseño de Carpeta/Tarjeta individual
                         with st.container(border=True):
-                            st.markdown(f"**📁 {est['fecha']} - {est['tipo']}** (Por {est['firma']})")
-                            st.markdown(f"*{est['detalle']}*")
+                            st.markdown(f"**📁 {est.get('fecha', '')} - {est.get('tipo', '')}** (Por {est.get('firma', 'S/D')})")
+                            st.markdown(f"*{est.get('detalle', '')}*")
                             
                             if est.get('imagen'):
                                 try:
@@ -1998,7 +2000,7 @@ with tabs[menu.index("📚 Historial")]:
                                     img_bytes = base64.b64decode(b64_str)
                                     
                                     if img_bytes.startswith(b'%PDF') or est.get('extension') == 'pdf':
-                                        nombre_arch = f"Estudio_{est['fecha'][:10].replace('/','-')}.pdf"
+                                        nombre_arch = f"Estudio_{est.get('fecha', '')[:10].replace('/','-')}.pdf"
                                         html_btn = f"""<a href="data:application/pdf;base64,{b64_str}" download="{nombre_arch}" style="display: block; width: 100%; text-align: center; background-color: #2563eb; color: white; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: 600; font-family: sans-serif; margin-top: 10px;">📥 Descargar PDF</a>"""
                                         st.markdown(html_btn, unsafe_allow_html=True)
                                     else:
@@ -2019,28 +2021,31 @@ with tabs[menu.index("📚 Historial")]:
             if fot_her:
                 with st.container(height=450):
                     for fh in reversed(fot_her[-limite:]):
-                        st.success(f"📅 **{fh['fecha']}** | {fh['firma']}\n\nDescripción: {fh['descripcion']}")
+                        st.success(f"📅 **{fh.get('fecha', '')}** | {fh.get('firma', 'S/D')}\n\nDescripción: {fh.get('descripcion', '')}")
                         # ARREGLO ANTI-404 PARA FOTOS DE HERIDAS:
-                        b64_foto_herida = fh['base64_foto']
-                        html_foto_herida = f'<img src="data:image/png;base64,{b64_foto_herida}" style="width: 100%; border-radius: 8px; margin-top: 10px;">'
-                        st.markdown(html_foto_herida, unsafe_allow_html=True)
+                        if 'base64_foto' in fh:
+                            b64_foto_herida = fh['base64_foto']
+                            html_foto_herida = f'<img src="data:image/png;base64,{b64_foto_herida}" style="width: 100%; border-radius: 8px; margin-top: 10px;">'
+                            st.markdown(html_foto_herida, unsafe_allow_html=True)
             else: st.write("No hay registro fotográfico.")
             
         with st.expander("📊 Signos Vitales"):
             vits = [x for x in st.session_state["vitales_db"] if x["paciente"] == paciente_sel]
-            if vits: st.dataframe(pd.DataFrame(vits[-limite:]).drop(columns="paciente"), use_container_width=True)
+            if vits: st.dataframe(pd.DataFrame(vits[-limite:]).drop(columns=["paciente"], errors='ignore'), use_container_width=True)
             else: st.write("No hay signos vitales cargados.")
             
         with st.expander("👶 Control Pediátrico"):
             peds = [x for x in st.session_state["pediatria_db"] if x["paciente"] == paciente_sel]
-            if peds: st.dataframe(pd.DataFrame(peds[-limite:]).drop(columns="paciente"), use_container_width=True)
+            if peds: st.dataframe(pd.DataFrame(peds[-limite:]).drop(columns=["paciente"], errors='ignore'), use_container_width=True)
             else: st.write("No hay controles pediátricos.")
             
         with st.expander("⚖️ Balance Hídrico"):
             blp = [x for x in st.session_state["balance_db"] if x["paciente"] == paciente_sel]
             if blp:
-                dfb = pd.DataFrame(blp[-limite:]).drop(columns="paciente")
-                for c in ["ingresos", "egresos", "balance"]: dfb[c] = dfb[c].astype(str)+" ml"
+                dfb = pd.DataFrame(blp[-limite:]).drop(columns=["paciente"], errors='ignore')
+                for c in ["ingresos", "egresos", "balance"]: 
+                    if c in dfb.columns:
+                        dfb[c] = dfb[c].astype(str)+" ml"
                 st.dataframe(dfb, use_container_width=True)
             else: st.write("No hay balances hídricos calculados.")
             
@@ -2048,7 +2053,13 @@ with tabs[menu.index("📚 Historial")]:
             recs = [x for x in st.session_state["indicaciones_db"] if x["paciente"] == paciente_sel]
             if recs:
                 with st.container(height=350):
-                    for r in reversed(recs[-limite:]): st.success(f"📌 **{r['fecha']}** | Indicado por: **{r['firma']}**\n\n{r['med']}")
+                    for r in reversed(recs[-limite:]):
+                        # ARREGLO KEYERROR DEFINITIVO: Lee variables viejas y nuevas
+                        firma_mostrar = r.get('firma', r.get('medico_nombre', r.get('firmado_por', 'S/D')))
+                        fecha_mostrar = r.get('fecha', 'S/D')
+                        med_mostrar = r.get('med', 'S/D')
+                        
+                        st.success(f"📌 **{fecha_mostrar}** | Indicado por: **{firma_mostrar}**\n\n{med_mostrar}")
             else: st.write("No hay terapéutica indicada.")
 
 # 13. PDF - VERSIÓN CORREGIDA Y COMPLETA (SIN ERRORES 404)
