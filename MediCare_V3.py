@@ -2596,9 +2596,9 @@ if "⚙️ Mi Equipo" in menu:
                     st.success(f"✅ Usuario **{u_id}** habilitado correctamente.")
                     st.rerun()
 
-        st.divider()
+               st.divider()
 
-        # ====================== LISTADO DE USUARIOS ======================
+        # ====================== LISTADO DE USUARIOS CON SCROLL ANTI-COLAPSO ======================
         st.subheader("👥 Control de Accesos")
 
         buscar_usuario = st.text_input("🔎 Buscar usuario por nombre, login o DNI...", "")
@@ -2615,40 +2615,44 @@ if "⚙️ Mi Equipo" in menu:
         if not usuarios_filtrados:
             st.info("No se encontraron usuarios con ese criterio.")
         else:
-            for u, d in usuarios_filtrados.items():
-                if u == "admin":
-                    continue
+            st.caption(f"Mostrando {len(usuarios_filtrados)} usuarios")
 
-                with st.container(border=True):
-                    col1, col2, col3, col4 = st.columns([3.5, 1.2, 1, 1])
+            # === CONTENEDOR CON SCROLL INTERNO (ANTI-COLAPSO) ===
+            with st.container(height=620, border=True):   # ←←← AQUÍ ESTÁ EL SCROLL
+                for u, d in usuarios_filtrados.items():
+                    if u == "admin":
+                        continue
 
-                    estado_color = "🟢" if d.get("estado", "Activo") == "Activo" else "🔴"
-                    
-                    with col1:
-                        st.markdown(f"**{d.get('nombre', 'Sin nombre')}**")
-                        st.caption(f"Login: `{u}` | {d.get('titulo', '')} | DNI: {d.get('dni', 'S/D')} | PIN: `{d.get('pin', 'S/D')}`")
+                    with st.container(border=True):
+                        col1, col2, col3, col4 = st.columns([3.5, 1.2, 1, 1])
 
-                    with col2:
-                        st.markdown(f"{estado_color} **{d.get('estado', 'Activo')}**")
+                        estado_color = "🟢" if d.get("estado", "Activo") == "Activo" else "🔴"
+                        
+                        with col1:
+                            st.markdown(f"**{d.get('nombre', 'Sin nombre')}**")
+                            st.caption(f"Login: `{u}` | {d.get('titulo', '')} | DNI: {d.get('dni', 'S/D')} | PIN: `{d.get('pin', 'S/D')}`")
 
-                    if rol == "SuperAdmin":
-                        if d.get("estado") == "Activo":
-                            if col3.button("⏸️ Suspender", key=f"susp_{u}", use_container_width=True):
-                                st.session_state["usuarios_db"][u]["estado"] = "Bloqueado"
+                        with col2:
+                            st.markdown(f"{estado_color} **{d.get('estado', 'Activo')}**")
+
+                        if rol == "SuperAdmin":
+                            if d.get("estado") == "Activo":
+                                if col3.button("⏸️ Suspender", key=f"susp_{u}", use_container_width=True):
+                                    st.session_state["usuarios_db"][u]["estado"] = "Bloqueado"
+                                    guardar_datos()
+                                    st.rerun()
+                            else:
+                                if col3.button("▶️ Reactivar", key=f"reac_{u}", use_container_width=True):
+                                    st.session_state["usuarios_db"][u]["estado"] = "Activo"
+                                    guardar_datos()
+                                    st.rerun()
+
+                        if col4.button("❌ Bajar", key=f"del_{u}", use_container_width=True):
+                            if st.checkbox(f"¿Estás seguro de eliminar a {d.get('nombre')}?", key=f"conf_del_{u}"):
+                                del st.session_state["usuarios_db"][u]
                                 guardar_datos()
+                                st.success(f"Usuario {u} eliminado.")
                                 st.rerun()
-                        else:
-                            if col3.button("▶️ Reactivar", key=f"reac_{u}", use_container_width=True):
-                                st.session_state["usuarios_db"][u]["estado"] = "Activo"
-                                guardar_datos()
-                                st.rerun()
-
-                    if col4.button("❌ Bajar", key=f"del_{u}", use_container_width=True):
-                        if st.checkbox(f"¿Estás seguro de eliminar a {d.get('nombre')}?", key=f"conf_del_{u}"):
-                            del st.session_state["usuarios_db"][u]
-                            guardar_datos()
-                            st.success(f"Usuario {u} eliminado.")
-                            st.rerun()
 # 17. AUDITORÍA (SOLO VISIBLE PARA ADMIN/COORDINADOR)
 if "🕵️ Auditoría" in menu:
     with tabs[menu.index("🕵️ Auditoría")]:
