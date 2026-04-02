@@ -1617,8 +1617,7 @@ with tabs[menu.index("⚖️ Balance")]:
             )
         else:
             st.info("Aún no hay balances hídricos registrados para este paciente.")
-
-# 10. INVENTARIO - VERSIÓN MEJORADA (Sin borrar nada)
+# 10. INVENTARIO - VERSIÓN MEJORADA Y CORREGIDA
 with tabs[menu.index("📦 Inventario")]:
     st.subheader("📦 Gestión de Inventario y Stock de Farmacia")
 
@@ -1651,7 +1650,7 @@ with tabs[menu.index("📦 Inventario")]:
             if item_final and item_final != "-- Seleccionar del Vademécum --":
                 encontrado = False
                 for i in st.session_state["inventario_db"]:
-                    if i["item"].lower() == item_final.lower() and i.get("empresa") == mi_empresa:
+                    if i.get("item", "").lower() == item_final.lower() and i.get("empresa") == mi_empresa:
                         i["stock"] = i.get("stock", 0) + cantidad
                         encontrado = True
                         break
@@ -1664,7 +1663,7 @@ with tabs[menu.index("📦 Inventario")]:
                     })
                 
                 guardar_datos()
-                st.success(f"✅ Se agregaron **{cantidad}** unidades de **{item_final}** al stock.")
+                st.success(f"✅ Se agregaron **{cantidad}** unidades de **{item_final}**.")
                 st.rerun()
 
     st.divider()
@@ -1676,7 +1675,7 @@ with tabs[menu.index("📦 Inventario")]:
         df_stock = pd.DataFrame(inv_mio)
         df_stock = df_stock.rename(columns={"item": "Insumo", "stock": "Stock Actual"})
 
-        # Colorear según nivel de stock
+        # Función para colorear el stock
         def highlight_stock(val):
             if val <= 10:
                 return 'background-color: #ffebee; color: #c62828; font-weight: bold'
@@ -1684,8 +1683,13 @@ with tabs[menu.index("📦 Inventario")]:
                 return 'background-color: #fff3e0; color: #ef6c00'
             return ''
 
+        # Aplicar estilo correctamente (usando .map en lugar de applymap)
+        styled_df = df_stock[["Insumo", "Stock Actual"]].style.map(
+            highlight_stock, subset=["Stock Actual"]
+        )
+
         st.dataframe(
-            df_stock[["Insumo", "Stock Actual"]].style.applymap(highlight_stock, subset=["Stock Actual"]),
+            styled_df,
             use_container_width=True,
             hide_index=True
         )
