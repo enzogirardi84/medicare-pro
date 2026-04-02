@@ -1634,6 +1634,14 @@ with tabs[menu.index("💊 Recetas")]:
                 pdf.line(10, pdf.get_y()+2, 138, pdf.get_y()+2)
                 pdf.ln(8)
                 
+                # ¡NUEVO!: SI ESTÁ SUSPENDIDA, EL PDF SALE CON MARCA DE ANULADA
+                estado_pdf = r_data.get("estado_receta", "Activa")
+                if estado_pdf != "Activa":
+                    pdf.set_text_color(220, 38, 38) # Color rojo
+                    pdf.set_font("Arial", 'B', 14)
+                    pdf.cell(0, 8, t(f"ANULADA / {estado_pdf.upper()}"), ln=True, align='C')
+                    pdf.set_text_color(0, 0, 0) # Vuelve al negro
+                
                 pdf.set_font("Arial", 'B', 12)
                 pdf.cell(0, 8, t("Rp/"), ln=True)
                 pdf.set_font("Arial", '', 11)
@@ -1670,26 +1678,26 @@ with tabs[menu.index("💊 Recetas")]:
                             c_info.markdown(f"✅ **{r.get('fecha', '—')}**")
                             c_info.markdown(f"**Indicado por:** {r.get('medico_nombre', '—')} | **Matrícula:** {r.get('medico_matricula', '—')}")
                             c_info.markdown(f"*{r.get('med', '')}*")
-                            
-                            if FPDF_DISPONIBLE:
-                                pdf_bytes = generar_pdf_receta(r)
-                                b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
-                                nombre_arch = f"Receta_{paciente_sel.split(' (')[0]}_{r.get('fecha', '')[:10].replace('/','')}.pdf"
-                                
-                                html_btn_receta = f'''
-                                <a href="data:application/pdf;base64,{b64_pdf}" download="{nombre_arch}" 
-                                   style="display: block; width: 100%; text-align: center; background-color: #2563eb; 
-                                          color: white; padding: 10px; border-radius: 6px; text-decoration: none; 
-                                          font-weight: 600; font-size: 14px; font-family: sans-serif; margin-top: 15px;">
-                                   📄 Imprimir PDF
-                                </a>
-                                '''
-                                c_btn.markdown(html_btn_receta, unsafe_allow_html=True)
                         else:
-                            # SI ESTÁ SUSPENDIDA O MODIFICADA, SE MUESTRA EN ROJO Y TACHADA
                             c_info.markdown(f"❌ **{r.get('fecha', '—')}** *(ESTADO: {estado_actual.upper()} el {r.get('fecha_suspension', 'S/D')})*")
                             c_info.markdown(f"**Indicado por:** {r.get('medico_nombre', '—')} | **Matrícula:** {r.get('medico_matricula', '—')}")
                             c_info.markdown(f"~~*{r.get('med', '')}*~~")
+                            
+                        # ¡MAGIA!: EL BOTON AZUL AHORA ESTA AFUERA DEL IF, SE DIBUJA SIEMPRE
+                        if FPDF_DISPONIBLE:
+                            pdf_bytes = generar_pdf_receta(r)
+                            b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+                            nombre_arch = f"Receta_{paciente_sel.split(' (')[0]}_{r.get('fecha', '')[:10].replace('/','')}.pdf"
+                            
+                            html_btn_receta = f'''
+                            <a href="data:application/pdf;base64,{b64_pdf}" download="{nombre_arch}" 
+                               style="display: block; width: 100%; text-align: center; background-color: #2563eb; 
+                                      color: white; padding: 10px; border-radius: 6px; text-decoration: none; 
+                                      font-weight: 600; font-size: 14px; font-family: sans-serif; margin-top: 15px;">
+                               📄 Imprimir PDF
+                            </a>
+                            '''
+                            c_btn.markdown(html_btn_receta, unsafe_allow_html=True)
 # 9. BALANCE HÍDRICO
 with tabs[menu.index("⚖️ Balance")]:
     if not paciente_sel:
