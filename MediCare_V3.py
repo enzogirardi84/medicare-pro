@@ -1362,7 +1362,8 @@ with tabs[menu.index("💉 Materiales")]:
                 )
         else:
             st.info("Aún no se han registrado consumos de materiales para este paciente.")
-# 8. RECETAS - VERSIÓN COMPLETA CON HISTORIAL
+            
+# 8. RECETAS - VERSIÓN FINAL CON VADEMÉCUM COMPLETO + HORARIOS 00-23
 with tabs[menu.index("💊 Recetas")]:
     if not paciente_sel:
         st.info("👈 Seleccioná un paciente en el menú lateral.")
@@ -1371,46 +1372,50 @@ with tabs[menu.index("💊 Recetas")]:
 
         # ====================== AGREGAR NUEVA MEDICACIÓN ======================
         with st.form("recet", clear_on_submit=True):
-            col1, col2 = st.columns([3, 1])
-            lista_vademecum = ["-- Seleccionar del Vademécum --"] + VADEMECUM_BASE
-            med = col1.selectbox("Medicamento", lista_vademecum)
-            manual = col2.text_input("O manualmente")
+            c1, c2 = st.columns([3, 1])
+            lista_vademecum_receta = ["-- Seleccionar del Vademécum --"] + VADEMECUM_BASE
+            
+            med_vademecum = c1.selectbox("1. Medicamento (Vademécum):", lista_vademecum_receta)
+            med_manual = c2.text_input("O 2. Escribir manualmente:")
 
-            col3, col4, col5 = st.columns([2, 2, 1])
-            via = col3.selectbox("Vía", ["Oral", "EV", "IM", "SC", "Tópica", "Inhalatoria", "Otro"])
-            frecuencia = col4.selectbox("Frecuencia", [
-                "Cada 1 hora", "Cada 2 horas", "Cada 4 horas", "Cada 6 horas", 
-                "Cada 8 horas", "Cada 12 horas", "Cada 24 horas", "Dosis única", "SOS"
+            c3, c4, c5 = st.columns([2, 2, 1])
+            via = c3.selectbox("Vía de Administración", ["Oral", "EV", "IM", "SC", "Tópica", "Inhalatoria", "Otro"])
+            frecuencia = c4.selectbox("Frecuencia", [
+                "Cada 1 hora", "Cada 2 horas", "Cada 4 horas", "Cada 6 horas", "Cada 8 horas", 
+                "Cada 12 horas", "Cada 24 horas", "Dosis única", "Según necesidad (SOS)"
             ])
-            dias = col5.number_input("Días", min_value=1, max_value=90, value=7)
+            dias = c5.number_input("Días de Tratamiento", min_value=1, max_value=90, value=7)
 
-            if st.form_submit_button("➕ Agregar al Plan", use_container_width=True, type="primary"):
-                medicamento = manual.strip().title() if manual.strip() else med
-                if medicamento and medicamento != "-- Seleccionar del Vademécum --":
-                    texto = f"{medicamento} | Vía: {via} | {frecuencia} | Durante {dias} días"
+            if st.form_submit_button("➕ Agregar al Plan Terapéutico", use_container_width=True, type="primary"):
+                med_final = med_manual.strip().title() if med_manual.strip() else med_vademecum
+                
+                if med_final and med_final != "-- Seleccionar del Vademécum --":
+                    texto_receta = f"{med_final} | Vía: {via} | {frecuencia} | Durante {dias} días"
+                    
                     st.session_state["indicaciones_db"].append({
                         "paciente": paciente_sel,
-                        "med": texto,
+                        "med": texto_receta,
                         "fecha": ahora().strftime("%d/%m/%Y %H:%M:%S"),
                         "dias_duracion": dias,
                         "firma": user["nombre"]
                     })
                     guardar_datos()
-                    st.success("✅ Medicación agregada")
+                    st.success("✅ Medicación agregada correctamente.")
                     st.rerun()
 
         st.divider()
 
-        # ====================== TABLA DEL DÍA ACTUAL ======================
+        # ====================== TABLA DEL DÍA ACTUAL (00:00 - 23:00) ======================
         recs = [r for r in st.session_state.get("indicaciones_db", []) if r.get("paciente") == paciente_sel]
 
         if recs:
-            st.markdown("#### 📅 Administración de Hoy")
+            st.markdown("#### 📅 Administración de Hoy (00:00 a 23:00)")
 
             fecha_hoy = ahora().strftime("%d/%m/%Y")
             admin_hoy = [a for a in st.session_state.get("administracion_med_db", []) 
                         if a.get("paciente") == paciente_sel and a.get("fecha") == fecha_hoy]
 
+            # Todos los horarios de 00:00 a 23:00
             all_horarios = [f"{h:02d}:00" for h in range(24)]
 
             table_data = []
@@ -1431,15 +1436,16 @@ with tabs[menu.index("💊 Recetas")]:
 
                 table_data.append(fila)
 
-            df_hoy = pd.DataFrame(table_data)
-            fixed = ["Medicamento", "Vía", "Frecuencia"]
-            horario_cols = [col for col in df_hoy.columns if col not in fixed]
+            if table_data:
+                df = pd.DataFrame(table_data)
+                fixed = ["Medicamento", "Vía", "Frecuencia"]
+                horario_cols = [col for col in df.columns if col not in fixed]
 
-            st.dataframe(
-                df_hoy[fixed + horario_cols],
-                use_container_width=True,
-                hide_index=True
-            )
+                st.dataframe(
+                    df[fixed + horario_cols],
+                    use_container_width=True,
+                    hide_index=True
+                )
 
             # ====================== REGISTRO RÁPIDO ======================
             st.divider()
@@ -1464,8 +1470,10 @@ with tabs[menu.index("💊 Recetas")]:
 
                         st.session_state["administracion_med_db"] = [
                             a for a in st.session_state.get("administracion_med_db", [])
-                            if not (a.get("paciente") == paciente_sel and a.get("fecha") == fecha_hoy 
-                                   and a.get("med") == med_sel and a.get("hora") == hora_sel)
+                            if not (a.get("paciente") == paciente_sel and 
+                                   a.get("fecha") == fecha_hoy and 
+                                   a.get("med") == med_sel and 
+                                   a.get("hora") == hora_sel)
                         ]
 
                         st.session_state["administracion_med_db"].append({
@@ -1478,34 +1486,33 @@ with tabs[menu.index("💊 Recetas")]:
                             "firma": user["nombre"]
                         })
                         guardar_datos()
-                        st.success(f"Registro guardado: {med_sel} - {hora_sel}")
+                        st.success(f"✅ Registro guardado: {med_sel} a las {hora_sel}")
                         st.rerun()
 
             # ====================== HISTORIAL DE DÍAS ANTERIORES ======================
             st.divider()
             st.markdown("#### 🕰️ Historial de Administraciones Anteriores")
 
-            with st.expander("Consultar administraciones de días previos", expanded=True):
-                col_f1, col_f2 = st.columns([1, 2])
-                fecha_consulta = col_f1.date_input(
-                    "Seleccionar fecha:", 
-                    value=(ahora() - timedelta(days=1)).date(), 
-                    max_value=ahora().date()
-                )
-                fecha_str = fecha_consulta.strftime("%d/%m/%Y")
+            col_f1, _ = st.columns([1, 3])
+            fecha_consulta = col_f1.date_input(
+                "Ver administraciones del día:", 
+                value=(ahora() - timedelta(days=1)).date(), 
+                max_value=ahora().date()
+            )
+            fecha_str = fecha_consulta.strftime("%d/%m/%Y")
 
-                admin_hist = [a for a in st.session_state.get("administracion_med_db", []) 
-                             if a.get("paciente") == paciente_sel and a.get("fecha") == fecha_str]
+            admin_hist = [a for a in st.session_state.get("administracion_med_db", []) 
+                         if a.get("paciente") == paciente_sel and a.get("fecha") == fecha_str]
 
-                if admin_hist:
-                    df_hist = pd.DataFrame(admin_hist)
-                    df_hist = df_hist[["hora", "med", "estado", "motivo", "firma"]]
-                    df_hist.columns = ["Hora", "Medicamento", "Estado", "Justificación", "Enfermero/a"]
-                    df_hist = df_hist.sort_values(by="Hora")
+            if admin_hist:
+                df_hist = pd.DataFrame(admin_hist)
+                df_hist = df_hist[["hora", "med", "estado", "motivo", "firma"]]
+                df_hist.columns = ["Hora", "Medicamento", "Estado", "Justificación", "Enfermero/a"]
+                df_hist = df_hist.sort_values(by="Hora")
 
-                    st.dataframe(df_hist, use_container_width=True, hide_index=True)
-                else:
-                    st.info(f"No hay registros de administración para el día {fecha_str}.")
+                st.dataframe(df_hist, use_container_width=True, hide_index=True)
+            else:
+                st.info(f"No hay registros para el día {fecha_str}.")
 
         else:
             st.info("Aún no hay medicación indicada para este paciente.")
