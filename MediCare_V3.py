@@ -2550,7 +2550,6 @@ with tabs[menu.index("📹 Telemedicina")]:
                         i += 1
             else:
                 st.warning("Aún no hay signos vitales registrados para este paciente.")
- else:
         else:
             st.info("👈 Seleccione un paciente en el panel lateral para iniciar una teleconsulta.")
 
