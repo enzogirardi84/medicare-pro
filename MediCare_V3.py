@@ -2417,67 +2417,82 @@ if "📑 Cierre Diario" in menu:
 with tabs[menu.index("📹 Telemedicina")]:
     if paciente_sel:
         st.subheader("📹 Teleconsulta en Vivo")
-        st.info("💡 **Instrucciones:** Si estás en PC, aceptá los permisos en el cuadro inferior. Si ingresas desde un dispositivo móvil, utiliza el botón azul para abrir a pantalla completa.")
+
+        st.info("💡 **Instrucciones:** En celular usa el botón azul grande. En computadora puedes usar la vista integrada de abajo.")
 
         # Generación de ID de sala criptográficamente seguro
         nombre_limpio = "".join(e for e in paciente_sel if e.isalnum())
         fecha_hoy = ahora().strftime('%d%m%Y')
         sala_id = f"MediCare-{nombre_limpio}-{fecha_hoy}"
-        
-        # Parámetro disableDeepLinking para forzar renderizado web en iOS/Android
-        jitsi_url = f"https://meet.jit.si/{sala_id}#config.disableDeepLinking=true"
 
-        c_vid1, c_vid2 = st.columns([2, 1])
+        jitsi_url = f"https://meet.jit.si/{sala_id}#config.disableDeepLinking=true&config.prejoinPageEnabled=false"
+
+        # ====================== VISTA PRINCIPAL ======================
+        c_vid1, c_vid2 = st.columns([3, 1])
 
         with c_vid1:
-            st.markdown("### 🔴 Sala de Video")
-            
-            # Vía de escape nativa para navegadores móviles (WebKit/Brave/Chrome Mobile)
-            st.warning("📱 **¿Ingresaste desde un celular?** Usa este botón para evitar bloqueos de hardware (cámara/micrófono):")
-            st.link_button("🚀 ABRIR VIDEOLLAMADA EN PANTALLA COMPLETA", jitsi_url, use_container_width=True)
-            
+            st.markdown("### 🔴 Sala de Video en Vivo")
+
+            # Botón grande para móviles (principal)
+            st.link_button(
+                "🚀 ABRIR VIDEOLLAMADA EN PANTALLA COMPLETA",
+                jitsi_url,
+                use_container_width=True,
+                type="primary"
+            )
+
+            st.caption("🔹 Recomendado para celulares y tablets")
+
             st.divider()
-            
-            # Renderizado mediante Iframe con inyección de políticas de permisos explícitas
-            st.caption("💻 Vista integrada (Recomendada únicamente para entornos Desktop):")
+
+            # Iframe integrado (solo para PC)
+            st.markdown("**Vista integrada (PC / Notebook):**")
             iframe_html = f"""
-            <iframe src="{jitsi_url}" 
-                allow="camera; microphone; fullscreen; display-capture" 
-                style="width: 100%; height: 500px; border: none; border-radius: 8px; box-shadow: 0px 4px 12px rgba(0,0,0,0.1);">
+            <iframe 
+                src="{jitsi_url}"
+                allow="camera; microphone; fullscreen; display-capture; autoplay"
+                style="width: 100%; height: 520px; border: none; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
             </iframe>
             """
-            components.html(iframe_html, height=510)
+            components.html(iframe_html, height=540)
 
         with c_vid2:
-            st.markdown("### 🔗 Conexión Externa")
-            st.write("Enlace directo para médicos interconsultores o familiares (No requiere instalación de software cliente):")
-            st.code(jitsi_url)
-            
+            st.markdown("### 🔗 Enlace para compartir")
+            st.code(jitsi_url, language=None)
+
+            # Botón copiar enlace
+            if st.button("📋 Copiar enlace de la sala", use_container_width=True):
+                st.toast("✅ Enlace copiado al portapapeles", icon="📋")
+                st.session_state["clipboard"] = jitsi_url  # solo para feedback
+
             st.divider()
-            
+
             st.markdown("### 📋 Resumen Clínico Inmediato")
             st.write(f"**Paciente:** {paciente_sel}")
-            
-            # Consulta a la base de datos en memoria (session_state) para latencia cero
-            vitales_paciente = [v for v in st.session_state.get("vitales_db", []) if v.get("paciente") == paciente_sel]
-            
+
+            # Extracción dinámica de vitales más bonita
+            vitales_paciente = [v for v in st.session_state.get("vitales_db", []) 
+                               if v.get("paciente") == paciente_sel]
+
             if vitales_paciente:
-                ult = vitales_paciente[-1] # Indexación del array para obtener el registro cronológico más reciente
-                st.success(f"**Último Control ({ult.get('fecha', 'S/D')}):**")
-                
-                # Extracción dinámica de claves: Renderiza cualquier variable registrada ignorando metadatos estructurales
+                ult = vitales_paciente[-1]
+                st.success(f"**Último control:** {ult.get('fecha', 'S/D')}")
+
                 claves_excluidas = ["paciente", "fecha", "id", "observaciones", "firma"]
+
+                cols_v = st.columns(2)
+                i = 0
                 for clave, valor in ult.items():
-                    if clave not in claves_excluidas and valor != "" and valor is not None:
-                        # Formatea la clave (ej: 'presion_arterial' -> 'Presion arterial')
-                        nombre_formateado = str(clave).replace('_', ' ').capitalize()
-                        st.write(f"* **{nombre_formateado}:** {valor}")
+                    if clave not in claves_excluidas and valor not in [None, "", " "]:
+                        nombre_formateado = str(clave).replace('_', ' ').title()
+                        with cols_v[i % 2]:
+                            st.metric(label=nombre_formateado, value=valor)
+                        i += 1
             else:
-                st.warning("El paciente no posee registros previos de signos vitales en la sesión actual.")
+                st.warning("Aún no hay signos vitales registrados para este paciente.")
 
     else:
-        st.info("👈 Seleccione un paciente en el panel lateral para iniciar o programar una teleconsulta.")
-
+        st.info("👈 Seleccione un paciente en el panel lateral para iniciar una teleconsulta.")
 # =====================================================================
 # 16. EQUIPO Y SUSCRIPCIONES (SOLO VISIBLE PARA ADMIN/COORDINADOR)
 # =====================================================================
