@@ -1373,10 +1373,9 @@ with tabs[menu.index("💳 Caja")]:
         
         st.divider()
         
-        # --- 2. FORMULARIO DE CARGA AVANZADO ---
+        # --- 2. FORMULARIO DE CARGA ---
         with st.form("caja_form", clear_on_submit=True):
             st.markdown("##### 📝 Registrar Nuevo Movimiento")
-            
             c1, c2 = st.columns([2, 1])
             practicas_comunes = [
                 "Consulta Médica Domiciliaria", "Aplicación IM/SC", "Curación de Heridas", 
@@ -1413,10 +1412,10 @@ with tabs[menu.index("💳 Caja")]:
                     st.rerun()
                 else:
                     st.error("🚨 Debe ingresar una descripción y un monto mayor a 0.")
-                    
+        
         st.divider()
 
-        # --- 3. HISTORIAL DE RECIBOS DEL PACIENTE (CUENTA CORRIENTE) ---
+        # --- 3. HISTORIAL DE RECIBOS DEL PACIENTE ---
         st.markdown("#### 🧾 Historial de Recibos del Paciente")
         if fact_paciente:
             def generar_recibo_pdf(mov):
@@ -1463,69 +1462,68 @@ with tabs[menu.index("💳 Caja")]:
                         
                         if FPDF_DISPONIBLE:
                             pdf_bytes = generar_recibo_pdf(mov)
-                            # --- BOTON HTML ANTI-404 PARA RECIBOS ---
                             b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
                             file_name_safe = f"Recibo_{mov['fecha'][:10].replace('/','-')}_{i}.pdf"
                             html_btn_recibo = f'''
                             <a href="data:application/pdf;base64,{b64_pdf}" download="{file_name_safe}" 
                                style="display: block; width: 100%; text-align: center; background-color: #2563eb; 
-                                      color: white; padding: 8px; border-radius: 6px; text-decoration: none; 
-                                      font-weight: 600; font-size: 14px; font-family: sans-serif;">
+                               color: white; padding: 8px; border-radius: 6px; text-decoration: none; 
+                               font-weight: 600; font-size: 14px; font-family: sans-serif;">
                                📄 Descargar PDF
                             </a>
                             '''
                             col_r2.markdown(html_btn_recibo, unsafe_allow_html=True)
         else:
-            st.info("No hay facturación ni recibos registrados para este paciente.")
+            st.info("👈 Seleccione un paciente para registrar un cobro o ver su cuenta corriente.")
 
-    else:
-        st.info("👈 Seleccione un paciente para registrar un cobro o ver su cuenta corriente.")
-
-    # --- 4. AUDITORÍA GENERAL (Visible para Admin/Coord) ---
-    if rol in ["SuperAdmin", "Coordinador"]:
-        st.divider()
-        st.markdown("#### 🔍 Auditoría de Facturación General")
-        df_caja = pd.DataFrame([f for f in st.session_state.get("facturacion_db", []) if f.get("empresa", "") == mi_empresa])
-        
-        if not df_caja.empty:
-            filtro_caja = st.text_input("Filtrar por paciente, fecha, práctica o estado:")
+        # --- 4. AUDITORÍA GENERAL + DESCARGA EXCEL (AQUÍ ESTABA LA FALLA PRINCIPAL) ---
+        if rol in ["SuperAdmin", "Coordinador"]:
+            st.divider()
+            st.markdown("#### 🔍 Auditoría de Facturación General")
+            df_caja = pd.DataFrame([f for f in st.session_state.get("facturacion_db", []) if f.get("empresa", "") == mi_empresa])
             
-            if filtro_caja:
-                mask = df_caja.astype(str).apply(lambda x: x.str.contains(filtro_caja, case=False, na=False)).any(axis=1)
-                df_caja_filtrada = df_caja[mask]
+            if not df_caja.empty:
+                filtro_caja = st.text_input("Filtrar por paciente, fecha, práctica o estado:")
+                
+                if filtro_caja:
+                    mask = df_caja.astype(str).apply(lambda x: x.str.contains(filtro_caja, case=False, na=False)).any(axis=1)
+                    df_caja_filtrada = df_caja[mask]
+                else:
+                    df_caja_filtrada = df_caja
+
+                df_mostrar = df_caja_filtrada.copy()
+                if "empresa" in df_mostrar.columns: 
+                    df_mostrar = df_mostrar.drop(columns=["empresa"])
+                
+                df_mostrar = df_mostrar.rename(columns={
+                    "fecha": "Fecha", "paciente": "Paciente", "serv": "Concepto", 
+                    "monto": "Monto ($)", "metodo": "Medio de Pago", "estado": "Estado", 
+                    "operador": "Registró", "operador_dni": "DNI Registró"
+                })
+                
+                st.dataframe(df_mostrar.iloc[::-1], use_container_width=True, hide_index=True)
+                
+                # ==================== DESCARGA SEGURA EXCEL (CORREGIDO) ====================
+                output = io.BytesIO()
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    df_mostrar.to_excel(writer, index=False, sheet_name='Caja_MediCare')
+                
+                output.seek(0)
+                b64_excel = base64.b64encode(output.getvalue()).decode('utf-8')
+                file_name_excel = f"Caja_General_{ahora().strftime('%d_%m_%Y')}.xlsx"
+
+                html_btn_excel = f'''
+                <a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64_excel}" 
+                   download="{file_name_excel}" 
+                   style="display: block; width: 100%; text-align: center; background-color: #10b981; 
+                          color: white; padding: 12px; border-radius: 8px; text-decoration: none; 
+                          font-weight: 600; font-family: sans-serif; margin-top: 10px;">
+                   📊 DESCARGAR EXCEL DE CAJA GENERAL (Seguro)
+                </a>
+                '''
+                st.markdown(html_btn_excel, unsafe_allow_html=True)
             else:
-                df_caja_filtrada = df_caja
-
-            df_mostrar = df_caja_filtrada.copy()
-            if "empresa" in df_mostrar.columns: df_mostrar = df_mostrar.drop(columns=["empresa"])
-            
-            df_mostrar = df_mostrar.rename(columns={
-                "fecha": "Fecha", "paciente": "Paciente", "serv": "Concepto", 
-                "monto": "Monto ($)", "metodo": "Medio de Pago", "estado": "Estado", 
-                "operador": "Registró", "operador_dni": "DNI Registró"
-            })
-            
-            st.dataframe(df_mostrar.iloc[::-1], use_container_width=True, hide_index=True)
-            
-            # --- BOTON HTML ANTI-404 PARA EXCEL DE CAJA ---
-            output = io.BytesIO()
-            with pd.ExcelWriter(output, engine='openpyxl') as writer: 
-                df_mostrar.to_excel(writer, index=False, sheet_name='Caja_MediCare')
-            
-            b64_excel = base64.b64encode(output.getvalue()).decode('utf-8')
-            file_name_excel = f"Caja_General_{ahora().strftime('%d_%m_%Y')}.xlsx"
-            
-            html_btn_excel = f'''
-            <a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64_excel}" download="{file_name_excel}" 
-               style="display: block; width: 100%; text-align: center; background-color: #10b981; 
-                      color: white; padding: 12px; border-radius: 8px; text-decoration: none; 
-                      font-weight: 600; font-family: sans-serif; margin-top: 10px;">
-               📊 DESCARGAR EXCEL DE CAJA GENERAL (Seguro)
-            </a>
-            '''
-            st.markdown(html_btn_excel, unsafe_allow_html=True)
-        else:
-            st.info("No hay registros de facturación en la base de datos general.")
+                st.info("No hay registros de facturación en la base de datos general.")
 
 # 12. HISTORIAL COMPLETO (CONTENEDORES CON SCROLL MÓVIL)
 with tabs[menu.index("📚 Historial")]:
