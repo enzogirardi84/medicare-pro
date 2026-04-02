@@ -1772,51 +1772,59 @@ with tabs[menu.index("📦 Inventario")]:
                 guardar_datos()
                 st.success(f"Insumo **{del_item}** eliminado definitivamente.")
                 st.rerun()
-# 11. CAJA - VERSIÓN CORREGIDA (SIN ERRORES 404)
+# 11. CAJA - VERSIÓN MEJORADA (PROFESIONAL + VISUAL)
 with tabs[menu.index("💳 Caja")]:
     if paciente_sel:
         st.subheader("💳 Facturación y Caja Diaria")
-        
-        # --- 1. MÉTRICAS RÁPIDAS ---
-        fact_paciente = [f for f in st.session_state.get("facturacion_db", []) 
+
+        # --- 1. MÉTRICAS RÁPIDAS (más elegantes) ---
+        fact_paciente = [f for f in st.session_state.get("facturacion_db", [])
                         if f.get("paciente") == paciente_sel and f.get("empresa") == mi_empresa]
-        
-        total_cobrado = sum([f['monto'] for f in fact_paciente if "✅" in f.get('estado', '✅')])
-        total_pendiente = sum([f['monto'] for f in fact_paciente if "⏳" in f.get('estado', '')])
-        
+
+        total_cobrado = sum(f['monto'] for f in fact_paciente if "✅" in f.get('estado', '✅'))
+        total_pendiente = sum(f['monto'] for f in fact_paciente if "⏳" in f.get('estado', ''))
+
         col_m1, col_m2, col_m3 = st.columns(3)
-        col_m1.metric("💰 Total Cobrado (Histórico)", f"${total_cobrado:,.2f}")
-        col_m2.metric("⏳ Deuda Pendiente", f"${total_pendiente:,.2f}", delta="-A Cobrar", delta_color="inverse")
+        col_m1.metric("💰 Total Cobrado", f"${total_cobrado:,.2f}", delta=None)
+        col_m2.metric("⏳ Pendiente de Cobro", f"${total_pendiente:,.2f}", 
+                     delta="-A Cobrar" if total_pendiente > 0 else None, delta_color="inverse")
         col_m3.metric("🧾 Prácticas Registradas", len(fact_paciente))
-        
+
         st.divider()
-        
-        # --- 2. FORMULARIO DE CARGA ---
+
+        # --- 2. FORMULARIO DE CARGA (más limpio y usable) ---
         with st.form("caja_form", clear_on_submit=True):
             st.markdown("##### 📝 Registrar Nuevo Movimiento")
-            c1, c2 = st.columns([2, 1])
+            
+            c1, c2 = st.columns([3, 1])
             practicas_comunes = [
                 "Consulta Médica Domiciliaria", "Aplicación IM/SC", "Curación de Heridas",
-                "Colocación/Cambio de Sonda", "Control de Signos Vitales", "Guardia de Enfermería (12hs)",
-                "Guardia de Enfermería (24hs)", "Sesión de Kinesiología", "Insumos Extras",
+                "Colocación/Cambio de Sonda", "Control de Signos Vitales", 
+                "Guardia de Enfermería (12hs)", "Guardia de Enfermería (24hs)",
+                "Sesión de Kinesiología", "Insumos Extras",
                 "-- Otro (Especificar manualmente) --"
             ]
             practica_sel = c1.selectbox("Tipo de Servicio / Nomenclador:", practicas_comunes)
-            practica_manual = c1.text_input("Detalle adicional (Opcional o si eligió 'Otro'):")
-            
-            mon = c2.number_input("Monto a Facturar ($)", min_value=0.0, step=1000.0)
-            
+            practica_manual = c1.text_input("Detalle adicional (solo si elegiste 'Otro'):", 
+                                          placeholder="Ej: Cambio de apósito especial...")
+
+            mon = c2.number_input("Monto a Facturar ($)", min_value=0.0, step=500.0, value=0.0)
+
             c3, c4 = st.columns(2)
-            metodo = c3.selectbox("Método de Pago", ["Efectivo", "Transferencia / CBU", "Tarjeta Débito/Crédito", "Billetera Virtual", "Cobertura / Obra Social"])
-            estado = c4.radio("Estado del Cobro", ["✅ Cobrado", "⏳ Pendiente / A Facturar"], horizontal=True)
-            
-            if st.form_submit_button("Registrar Cobro / Práctica", width="stretch"):
+            metodo = c3.selectbox("Método de Pago", 
+                                ["Efectivo", "Transferencia / CBU", "Tarjeta Débito/Crédito", 
+                                 "Billetera Virtual", "Cobertura / Obra Social"])
+            estado = c4.radio("Estado del Cobro", ["✅ Cobrado", "⏳ Pendiente / A Facturar"], 
+                            horizontal=True)
+
+            if st.form_submit_button("💾 Registrar Cobro / Práctica", 
+                                   use_container_width=True, type="primary"):
                 desc_final = practica_manual.strip() if practica_sel == "-- Otro (Especificar manualmente) --" else f"{practica_sel} {('- ' + practica_manual.strip()) if practica_manual.strip() else ''}"
-                
-                if desc_final and mon > 0:
+
+                if desc_final.strip() and mon > 0:
                     st.session_state["facturacion_db"].append({
                         "paciente": paciente_sel,
-                        "serv": desc_final,
+                        "serv": desc_final.strip(),
                         "monto": mon,
                         "metodo": metodo,
                         "estado": estado,
@@ -1826,122 +1834,127 @@ with tabs[menu.index("💳 Caja")]:
                         "operador_dni": user.get("dni", "S/D")
                     })
                     guardar_datos()
-                    st.success("✅ Movimiento de caja registrado exitosamente.")
+                    st.success(f"✅ **${mon:,.2f}** registrado correctamente.")
                     st.rerun()
                 else:
-                    st.error("🚨 Debe ingresar una descripción y un monto mayor a 0.")
-        
+                    st.error("🚨 Debe ingresar una descripción válida y un monto mayor a $0.")
+
         st.divider()
 
-        # --- 3. HISTORIAL DE RECIBOS DEL PACIENTE ---
+        # --- 3. HISTORIAL DE RECIBOS DEL PACIENTE (más bonito) ---
         st.markdown("#### 🧾 Historial de Recibos del Paciente")
         if fact_paciente:
             def generar_recibo_pdf(mov):
-                if not FPDF_DISPONIBLE: return b""
-                def t(txt): return str(txt).replace('✅', '').replace('⏳', '').encode('latin-1', 'replace').decode('latin-1')
-                
+                if not FPDF_DISPONIBLE:
+                    return b""
                 pdf = FPDF(format='A5')
                 pdf.add_page()
                 pdf.set_font("Arial", 'B', 16)
-                pdf.cell(0, 10, t(f"RECIBO DE PAGO - {mi_empresa}"), ln=True, align='C')
+                pdf.cell(0, 10, f"RECIBO - {mi_empresa}", ln=True, align='C')
                 pdf.set_font("Arial", '', 10)
-                pdf.cell(0, 5, t(f"Fecha de Emision: {mov['fecha']}"), ln=True, align='C')
-                pdf.cell(0, 5, t(f"Profesional / Operador: {mov.get('operador', 'S/D')} (DNI: {mov.get('operador_dni', 'S/D')})"), ln=True, align='C')
-                pdf.ln(8)
-                
+                pdf.cell(0, 6, f"Fecha: {mov['fecha']}", ln=True, align='C')
+                pdf.cell(0, 6, f"Operador: {mov.get('operador', 'S/D')} (DNI: {mov.get('operador_dni', 'S/D')})", ln=True, align='C')
+                pdf.ln(10)
+
                 pdf.set_font("Arial", 'B', 12)
-                pdf.cell(0, 8, t(f"Recibimos de: {mov['paciente']}"), ln=True)
-                pdf.line(10, pdf.get_y(), 138, pdf.get_y())
-                pdf.ln(5)
-                
-                pdf.set_font("Arial", '', 12)
-                pdf.multi_cell(0, 8, t(f"Concepto de la practica: {mov['serv']}"))
-                pdf.cell(0, 8, t(f"Medio de Pago: {mov.get('metodo', 'S/D')}"), ln=True)
-                pdf.cell(0, 8, t(f"Estado: {mov.get('estado', 'Cobrado')}"), ln=True)
-                pdf.ln(5)
-                
+                pdf.cell(0, 8, f"Recibimos de: {mov['paciente']}", ln=True)
+                pdf.ln(4)
+
+                pdf.set_font("Arial", '', 11)
+                pdf.multi_cell(0, 8, f"Concepto: {mov['serv']}")
+                pdf.cell(0, 8, f"Medio de pago: {mov.get('metodo', 'S/D')}", ln=True)
+                pdf.cell(0, 8, f"Estado: {mov.get('estado', 'Cobrado')}", ln=True)
+                pdf.ln(8)
+
                 pdf.set_fill_color(240, 240, 240)
-                pdf.set_font("Arial", 'B', 16)
-                pdf.cell(0, 12, t(f"TOTAL: ${mov['monto']:,.2f}"), 1, 1, 'C', True)
-                
-                pdf.ln(15)
+                pdf.set_font("Arial", 'B', 18)
+                pdf.cell(0, 14, f"TOTAL: ${mov['monto']:,.2f}", 1, 1, 'C', True)
+
+                pdf.ln(12)
                 pdf.set_font("Arial", '', 9)
-                pdf.cell(0, 5, t("Documento no valido como factura fiscal. Comprobante de control interno."), ln=True, align='C')
-                
+                pdf.cell(0, 5, "Comprobante interno - No válido como factura fiscal", ln=True, align='C')
+
                 return pdf.output(dest='S').encode('latin-1')
 
-            with st.container(height=350):
-                for i, mov in enumerate(reversed(fact_paciente)):
-                    with st.container(border=True):
-                        col_r1, col_r2 = st.columns([3, 1])
-                        estado_color = "🟢" if "✅" in mov.get("estado", "") else "🟡"
-                        col_r1.markdown(f"**{mov['fecha']}** | {mov['serv']} | **${mov['monto']:,.2f}**")
-                        col_r1.caption(f"{estado_color} {mov.get('estado', 'S/D')} | Medio: {mov.get('metodo', 'S/D')} | Profesional: {mov.get('operador', 'S/D')}")
+            # Mostrar historial en tarjetas
+            for i, mov in enumerate(reversed(fact_paciente)):
+                with st.container(border=True):
+                    col_r1, col_r2 = st.columns([4, 1])
+                    estado_color = "🟢" if "✅" in mov.get("estado", "") else "🟡"
+                    
+                    with col_r1:
+                        st.markdown(f"**{mov['fecha']}** — {mov['serv']}")
+                        st.caption(f"{estado_color} {mov.get('estado', 'S/D')} | {mov.get('metodo', 'S/D')} | ${mov['monto']:,.2f}")
+                    
+                    if FPDF_DISPONIBLE:
+                        pdf_bytes = generar_recibo_pdf(mov)
+                        b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+                        file_name = f"Recibo_{mov['fecha'][:10].replace('/','-')}_{i+1}.pdf"
                         
-                        if FPDF_DISPONIBLE:
-                            pdf_bytes = generar_recibo_pdf(mov)
-                            b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
-                            file_name_safe = f"Recibo_{mov['fecha'][:10].replace('/','-')}_{i}.pdf"
-                            html_btn_recibo = f'''
-                            <a href="data:application/pdf;base64,{b64_pdf}" download="{file_name_safe}"
-                               style="display: block; width: 100%; text-align: center; background-color: #2563eb;
-                               color: white; padding: 8px; border-radius: 6px; text-decoration: none;
-                               font-weight: 600; font-size: 14px; font-family: sans-serif;">
-                               📄 Descargar PDF
-                            </a>
-                            '''
-                            col_r2.markdown(html_btn_recibo, unsafe_allow_html=True)
-        else:
-            st.info("👈 Seleccione un paciente para registrar un cobro o ver su cuenta corriente.")
+                        html_btn = f'''
+                        <a href="data:application/pdf;base64,{b64_pdf}" download="{file_name}"
+                           style="display:block; width:100%; text-align:center; background:#2563eb; color:white; 
+                                  padding:10px; border-radius:8px; text-decoration:none; font-weight:600;">
+                           📄 Descargar PDF
+                        </a>
+                        '''
+                        col_r2.markdown(html_btn, unsafe_allow_html=True)
 
-        # --- 4. AUDITORÍA GENERAL + EXCEL SEGURO ---
+        else:
+            st.info("No hay movimientos registrados para este paciente aún.")
+
+        # --- 4. AUDITORÍA GENERAL (Solo SuperAdmin / Coordinador) ---
         if rol in ["SuperAdmin", "Coordinador"]:
             st.divider()
             st.markdown("#### 🔍 Auditoría de Facturación General")
-            df_caja = pd.DataFrame([f for f in st.session_state.get("facturacion_db", []) if f.get("empresa", "") == mi_empresa])
-            
+
+            df_caja = pd.DataFrame([f for f in st.session_state.get("facturacion_db", []) 
+                                  if f.get("empresa") == mi_empresa])
+
             if not df_caja.empty:
-                filtro_caja = st.text_input("Filtrar por paciente, fecha, práctica o estado:")
-                
+                filtro_caja = st.text_input("🔎 Buscar por paciente, práctica, fecha o estado...", "")
+
                 if filtro_caja:
                     mask = df_caja.astype(str).apply(lambda x: x.str.contains(filtro_caja, case=False, na=False)).any(axis=1)
                     df_caja_filtrada = df_caja[mask]
                 else:
                     df_caja_filtrada = df_caja
 
+                # Renombrar columnas para que sea más legible
                 df_mostrar = df_caja_filtrada.copy()
-                if "empresa" in df_mostrar.columns:
-                    df_mostrar = df_mostrar.drop(columns=["empresa"])
-                
                 df_mostrar = df_mostrar.rename(columns={
                     "fecha": "Fecha", "paciente": "Paciente", "serv": "Concepto",
                     "monto": "Monto ($)", "metodo": "Medio de Pago", "estado": "Estado",
-                    "operador": "Registró", "operador_dni": "DNI Registró"
+                    "operador": "Registró"
                 })
-                
+                if "empresa" in df_mostrar.columns:
+                    df_mostrar = df_mostrar.drop(columns=["empresa", "operador_dni"], errors='ignore')
+
                 st.dataframe(df_mostrar.iloc[::-1], use_container_width=True, hide_index=True)
-                
-                # DESCARGA SEGURA DE EXCEL
+
+                # Descarga Excel segura
                 output = io.BytesIO()
                 with pd.ExcelWriter(output, engine='openpyxl') as writer:
                     df_mostrar.to_excel(writer, index=False, sheet_name='Caja_MediCare')
-                
+
                 output.seek(0)
                 b64_excel = base64.b64encode(output.getvalue()).decode('utf-8')
-                file_name_excel = f"Caja_General_{ahora().strftime('%d_%m_%Y')}.xlsx"
-                
-                html_btn_excel = f'''
-                <a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64_excel}" 
+                file_name_excel = f"Caja_General_{mi_empresa}_{ahora().strftime('%d_%m_%Y')}.xlsx"
+
+                html_excel = f'''
+                <a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64_excel}"
                    download="{file_name_excel}"
-                   style="display: block; width: 100%; text-align: center; background-color: #10b981;
-                          color: white; padding: 12px; border-radius: 8px; text-decoration: none;
-                          font-weight: 600; font-family: sans-serif; margin-top: 10px;">
-                   📊 DESCARGAR EXCEL DE CAJA GENERAL (Seguro)
+                   style="display:block; width:100%; text-align:center; background:#10b981; color:white; 
+                          padding:14px; border-radius:10px; text-decoration:none; font-weight:600; margin-top:10px;">
+                   📊 DESCARGAR EXCEL COMPLETO DE CAJA
                 </a>
                 '''
-                st.markdown(html_btn_excel, unsafe_allow_html=True)
+                st.markdown(html_excel, unsafe_allow_html=True)
             else:
-                st.info("No hay registros de facturación en la base de datos general.")
+                st.info("No hay registros de facturación aún.")
+
+    else:
+        st.info("👈 Seleccioná un paciente en el menú lateral para ver su cuenta corriente.")
 
 # 12. HISTORIAL COMPLETO (CONTENEDORES CON SCROLL MÓVIL)
 with tabs[menu.index("📚 Historial")]:
