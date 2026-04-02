@@ -1981,7 +1981,7 @@ with tabs[menu.index("📹 Telemedicina")]:
 
         with c_vid2:
             st.markdown("### 🔗 Conexión Externa")
-            st.write("Enlace directo para médicos interconsultores o familiares:")
+            st.write("Enlace directo para médicos interconsultores o familiares (No requiere instalación de software cliente):")
             st.code(jitsi_url)
             
             st.divider()
@@ -1989,16 +1989,18 @@ with tabs[menu.index("📹 Telemedicina")]:
             st.markdown("### 📋 Resumen Clínico Inmediato")
             st.write(f"**Paciente:** {paciente_sel}")
             
-            # Consulta a la base de datos en memoria
+            # Consulta a la base de datos en memoria (session_state) para latencia cero
             vitales_paciente = [v for v in st.session_state.get("vitales_db", []) if v.get("paciente") == paciente_sel]
             
             if vitales_paciente:
-                ult = vitales_paciente[-1] 
+                ult = vitales_paciente[-1] # Indexación del array para obtener el registro cronológico más reciente
                 st.success(f"**Último Control ({ult.get('fecha', 'S/D')}):**")
                 
+                # Extracción dinámica de claves: Renderiza cualquier variable registrada ignorando metadatos estructurales
                 claves_excluidas = ["paciente", "fecha", "id", "observaciones", "firma"]
                 for clave, valor in ult.items():
                     if clave not in claves_excluidas and valor != "" and valor is not None:
+                        # Formatea la clave (ej: 'presion_arterial' -> 'Presion arterial')
                         nombre_formateado = str(clave).replace('_', ' ').capitalize()
                         st.write(f"* **{nombre_formateado}:** {valor}")
             else:
@@ -2060,6 +2062,46 @@ if "🕵️ Auditoría" in menu:
             st.download_button("📥 DESCARGAR RESULTADOS A EXCEL", data=out_logs.getvalue(), file_name=f"Reporte_Logs_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         else:
             st.info("No hay registros en la auditoría.")
+        
+        st.divider()
+        st.subheader("📄 Reporte RRHH (Auditoría de Asistencia por Profesional)")
+        if FPDF_DISPONIBLE:
+            profesionales_lista = list(set([v['nombre'] for k, v in st.session_state["usuarios_db"].items()]))
+            profesionales_historicos = list(set([c.get("profesional", "") for c in st.session_state["checkin_db"]]))
+            profesionales_lista = list(set(profesionales_lista + profesionales_historicos))
+            
+            if profesionales_lista:
+                profesionales_lista.sort()
+                prof_sel = st.selectbox("Seleccionar Profesional para liquidación:", profesionales_lista)
+                
+                def t(txt): return str(txt).replace('⚖️', '').replace('⚠️', '').replace('📌', '').replace('📅', '').replace('📸', '').replace('🗄️', '').encode('latin-1', 'replace').decode('latin-1')
+
+                def crear_pdf_rrhh(profesional):
+                    pdf = FPDF(); pdf.add_page()
+                    pdf.set_font("Arial", 'B', 14)
+                    pdf.cell(0, 10, t(f"REPORTE DE ASISTENCIA Y GPS - {mi_empresa}"), ln=True, align='C')
+                    pdf.set_font("Arial", 'B', 11)
+                    pdf.cell(0, 10, t(f"Profesional Auditado: {profesional}"), ln=True)
+                    pdf.set_font("Arial", 'I', 9)
+                    pdf.cell(0, 5, t(f"Fecha de emisión: {ahora().strftime('%d/%m/%Y %H:%M')}"), ln=True)
+                    pdf.ln(5)
+                    
+                    pdf.set_font("Arial", '', 9)
+                    chks_prof = [c for c in st.session_state["checkin_db"] if c.get("profesional", "") == profesional]
+                    
+                    if not chks_prof:
+                        pdf.cell(0, 10, t("No hay registros de visitas (Llegada/Salida) para este profesional."), ln=True)
+                    else:
+                        for c in reversed(chks_prof):
+                            texto_linea = f"[{c.get('fecha_hora', '')}] PACIENTE: {c.get('paciente', '')} | ACCION: {c.get('tipo', '')}"
+                            pdf.multi_cell(0, 6, t(texto_linea), border=1)
+                            pdf.ln(2)
+                            
+                    return pdf.output(dest='S').encode('latin-1')
+
+                st.download_button("📥 DESCARGAR REPORTE RRHH (PDF)", crear_pdf_rrhh(prof_sel), f"Auditoria_RRHH_{prof_sel}.pdf", "application/pdf")
+        else:
+            st.error("Librería FPDF no disponible. Instalar para generar reportes.")
 
 # =====================================================================
 # 17. CONTROL DE ASISTENCIA EN VIVO (SOLO ADMIN/COORD)
