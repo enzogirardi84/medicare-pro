@@ -1530,7 +1530,7 @@ with tabs[menu.index("💊 Recetas")]:
             # ====================== HISTORIAL DE PRESCRIPCIONES ======================
             st.markdown("#### 🕰️ Historial de Prescripciones Médicas")
             
-            # Últimas 10 prescripciones (seguro - sin KeyError)
+            # Últimas 10 prescripciones (seguro)
             for r in reversed(recs[-10:]):
                 st.success(f"""
                 📌 **{r.get('fecha', '—')}**  
