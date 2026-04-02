@@ -397,8 +397,8 @@ if rol in ["SuperAdmin", "Coordinador"]:
     menu.insert(1, "📈 Dashboard") 
     menu.append("📑 Cierre Diario")
     menu.append("⚙️ Mi Equipo")
-    menu.append("⏱️ Asistencia en Vivo")
-    menu.append("🧑‍⚕️ RRHH y Fichajes") # <--- NUEVA PESTAÑA AGREGADA
+    menu.append("⏱️ Asistencia en Vivo") # <-- Pestaña 17
+    menu.append("🧑‍⚕️ RRHH y Fichajes") # <-- Pestaña 18
     menu.append("🕵️ Auditoría")
 
 tabs = st.tabs(menu)
