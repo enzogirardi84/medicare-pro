@@ -1406,7 +1406,7 @@ with tabs[menu.index("💳 Caja")]:
                         "fecha": ahora().strftime("%d/%m/%Y %H:%M"), 
                         "empresa": mi_empresa,
                         "operador": user["nombre"],
-                        "operador_dni": user.get("dni", "S/D") # AGREGADO: Trazabilidad del DNI
+                        "operador_dni": user.get("dni", "S/D")
                     })
                     guardar_datos()
                     st.success("✅ Movimiento de caja registrado exitosamente.")
@@ -1419,7 +1419,6 @@ with tabs[menu.index("💳 Caja")]:
         # --- 3. HISTORIAL DE RECIBOS DEL PACIENTE (CUENTA CORRIENTE) ---
         st.markdown("#### 🧾 Historial de Recibos del Paciente")
         if fact_paciente:
-            # Función auxiliar para crear el PDF en el momento
             def generar_recibo_pdf(mov):
                 if not FPDF_DISPONIBLE: return b""
                 def t(txt): return str(txt).replace('✅', '').replace('⏳', '').encode('latin-1', 'replace').decode('latin-1')
@@ -1454,7 +1453,6 @@ with tabs[menu.index("💳 Caja")]:
                 
                 return pdf.output(dest='S').encode('latin-1')
 
-            # Contenedor con scroll para que no ocupe toda la pantalla
             with st.container(height=350):
                 for i, mov in enumerate(reversed(fact_paciente)):
                     with st.container(border=True):
@@ -1465,8 +1463,18 @@ with tabs[menu.index("💳 Caja")]:
                         
                         if FPDF_DISPONIBLE:
                             pdf_bytes = generar_recibo_pdf(mov)
+                            # --- BOTON HTML ANTI-404 PARA RECIBOS ---
+                            b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
                             file_name_safe = f"Recibo_{mov['fecha'][:10].replace('/','-')}_{i}.pdf"
-                            col_r2.download_button("📄 Descargar PDF", pdf_bytes, file_name=file_name_safe, mime="application/pdf", key=f"dl_recibo_{i}_{mov['fecha']}", use_container_width=True)
+                            html_btn_recibo = f'''
+                            <a href="data:application/pdf;base64,{b64_pdf}" download="{file_name_safe}" 
+                               style="display: block; width: 100%; text-align: center; background-color: #2563eb; 
+                                      color: white; padding: 8px; border-radius: 6px; text-decoration: none; 
+                                      font-weight: 600; font-size: 14px; font-family: sans-serif;">
+                               📄 Descargar PDF
+                            </a>
+                            '''
+                            col_r2.markdown(html_btn_recibo, unsafe_allow_html=True)
         else:
             st.info("No hay facturación ni recibos registrados para este paciente.")
 
@@ -1488,11 +1496,9 @@ with tabs[menu.index("💳 Caja")]:
             else:
                 df_caja_filtrada = df_caja
 
-            # Reordenar y limpiar columnas para visualización
             df_mostrar = df_caja_filtrada.copy()
             if "empresa" in df_mostrar.columns: df_mostrar = df_mostrar.drop(columns=["empresa"])
             
-            # Renombrar para que quede prolijo
             df_mostrar = df_mostrar.rename(columns={
                 "fecha": "Fecha", "paciente": "Paciente", "serv": "Concepto", 
                 "monto": "Monto ($)", "metodo": "Medio de Pago", "estado": "Estado", 
@@ -1501,11 +1507,23 @@ with tabs[menu.index("💳 Caja")]:
             
             st.dataframe(df_mostrar.iloc[::-1], use_container_width=True, hide_index=True)
             
-            # Exportación Excel General
+            # --- BOTON HTML ANTI-404 PARA EXCEL DE CAJA ---
             output = io.BytesIO()
             with pd.ExcelWriter(output, engine='openpyxl') as writer: 
                 df_mostrar.to_excel(writer, index=False, sheet_name='Caja_MediCare')
-            st.download_button("📊 DESCARGAR EXCEL DE CAJA GENERAL", data=output.getvalue(), file_name=f"Caja_General_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            
+            b64_excel = base64.b64encode(output.getvalue()).decode('utf-8')
+            file_name_excel = f"Caja_General_{ahora().strftime('%d_%m_%Y')}.xlsx"
+            
+            html_btn_excel = f'''
+            <a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64_excel}" download="{file_name_excel}" 
+               style="display: block; width: 100%; text-align: center; background-color: #10b981; 
+                      color: white; padding: 12px; border-radius: 8px; text-decoration: none; 
+                      font-weight: 600; font-family: sans-serif; margin-top: 10px;">
+               📊 DESCARGAR EXCEL DE CAJA GENERAL (Seguro)
+            </a>
+            '''
+            st.markdown(html_btn_excel, unsafe_allow_html=True)
         else:
             st.info("No hay registros de facturación en la base de datos general.")
 
@@ -1976,17 +1994,23 @@ if "🕵️ Auditoría" in menu:
                 
             st.dataframe(df_logs_filtrado, use_container_width=True)
             
-            # --- ESCUDO ANTI-ERROR 404 PARA EXCEL ---
-            @st.cache_data(show_spinner=False)
-            def exportar_logs_excel(data_dict):
-                df_export = pd.DataFrame(data_dict)
-                out_logs = io.BytesIO()
-                with pd.ExcelWriter(out_logs, engine='openpyxl') as writer: 
-                    df_export.to_excel(writer, index=False, sheet_name='Logs_MediCare')
-                return out_logs.getvalue()
-                
-            excel_logs_bytes = exportar_logs_excel(df_logs_filtrado.to_dict('records'))
-            st.download_button("📥 DESCARGAR RESULTADOS A EXCEL", data=excel_logs_bytes, file_name=f"Reporte_Logs_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            # --- BOTÓN HTML ANTI-404 PARA EXCEL DE AUDITORÍA ---
+            out_logs = io.BytesIO()
+            with pd.ExcelWriter(out_logs, engine='openpyxl') as writer: 
+                df_logs_filtrado.to_excel(writer, index=False, sheet_name='Logs_MediCare')
+            
+            b64_excel_logs = base64.b64encode(out_logs.getvalue()).decode('utf-8')
+            nombre_arch_excel_logs = f"Reporte_Logs_{ahora().strftime('%d_%m_%Y')}.xlsx"
+            
+            html_btn_excel_logs = f'''
+            <a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64_excel_logs}" download="{nombre_arch_excel_logs}" 
+               style="display: block; width: 100%; text-align: center; background-color: #10b981; 
+                      color: white; padding: 12px; border-radius: 8px; text-decoration: none; 
+                      font-weight: 600; font-family: sans-serif; margin-top: 10px;">
+               📥 DESCARGAR RESULTADOS A EXCEL (Seguro)
+            </a>
+            '''
+            st.markdown(html_btn_excel_logs, unsafe_allow_html=True)
         else:
             st.info("No hay registros en la auditoría.")
             
@@ -2001,33 +2025,44 @@ if "🕵️ Auditoría" in menu:
                 profesionales_lista.sort()
                 prof_sel = st.selectbox("Seleccionar Profesional para liquidación:", profesionales_lista)
                 
-                # --- ESCUDO ANTI-ERROR 404 PARA PDF ---
-                @st.cache_data(show_spinner=False)
-                def crear_pdf_rrhh_audit(profesional, empresa_nombre, chks_list, fecha_emision_str):
-                    def t(txt): return str(txt).replace('⚖️', '').replace('⚠️', '').replace('📌', '').replace('📅', '').replace('📸', '').replace('🗄️', '').encode('latin-1', 'replace').decode('latin-1')
-                    pdf = FPDF(); pdf.add_page()
-                    pdf.set_font("Arial", 'B', 14)
-                    pdf.cell(0, 10, t(f"REPORTE DE ASISTENCIA Y GPS - {empresa_nombre}"), ln=True, align='C')
-                    pdf.set_font("Arial", 'B', 11)
-                    pdf.cell(0, 10, t(f"Profesional Auditado: {profesional}"), ln=True)
-                    pdf.set_font("Arial", 'I', 9)
-                    pdf.cell(0, 5, t(f"Fecha de emisión: {fecha_emision_str}"), ln=True)
-                    pdf.ln(5)
-                    
-                    pdf.set_font("Arial", '', 9)
-                    if not chks_list:
-                        pdf.cell(0, 10, t("No hay registros de visitas (Llegada/Salida) para este profesional."), ln=True)
-                    else:
-                        for c in reversed(chks_list):
-                            texto_linea = f"[{c.get('fecha_hora', '')}] PACIENTE: {c.get('paciente', '')} | ACCION: {c.get('tipo', '')}"
-                            pdf.multi_cell(0, 6, t(texto_linea), border=1)
-                            pdf.ln(2)
-                            
-                    return pdf.output(dest='S').encode('latin-1')
+                def t(txt): return str(txt).replace('⚖️', '').replace('⚠️', '').replace('📌', '').replace('📅', '').replace('📸', '').replace('🗄️', '').encode('latin-1', 'replace').decode('latin-1')
 
+                pdf = FPDF(); pdf.add_page()
+                pdf.set_font("Arial", 'B', 14)
+                pdf.cell(0, 10, t(f"REPORTE DE ASISTENCIA Y GPS - {mi_empresa}"), ln=True, align='C')
+                pdf.set_font("Arial", 'B', 11)
+                pdf.cell(0, 10, t(f"Profesional Auditado: {prof_sel}"), ln=True)
+                pdf.set_font("Arial", 'I', 9)
+                pdf.cell(0, 5, t(f"Fecha de emisión: {ahora().strftime('%d/%m/%Y %H:%M')}"), ln=True)
+                pdf.ln(5)
+                
+                pdf.set_font("Arial", '', 9)
                 chks_prof = [c for c in st.session_state["checkin_db"] if c.get("profesional", "") == prof_sel]
-                pdf_audit_bytes = crear_pdf_rrhh_audit(prof_sel, mi_empresa, chks_prof, ahora().strftime('%d/%m/%Y'))
-                st.download_button("📥 DESCARGAR REPORTE RRHH (PDF)", pdf_audit_bytes, f"Auditoria_RRHH_{prof_sel}.pdf", "application/pdf")
+                
+                if not chks_prof:
+                    pdf.cell(0, 10, t("No hay registros de visitas (Llegada/Salida) para este profesional."), ln=True)
+                else:
+                    for c in reversed(chks_prof):
+                        texto_linea = f"[{c.get('fecha_hora', '')}] PACIENTE: {c.get('paciente', '')} | ACCION: {c.get('tipo', '')}"
+                        pdf.multi_cell(0, 6, t(texto_linea), border=1)
+                        pdf.ln(2)
+                        
+                pdf_bytes_rrhh = pdf.output(dest='S').encode('latin-1')
+                
+                # --- BOTÓN HTML ANTI-404 PARA PDF RRHH ---
+                b64_pdf_rrhh = base64.b64encode(pdf_bytes_rrhh).decode('utf-8')
+                nombre_arch_pdf_rrhh = f"Auditoria_RRHH_{prof_sel.replace(' ', '_')}.pdf"
+                
+                html_btn_pdf_rrhh = f'''
+                <a href="data:application/pdf;base64,{b64_pdf_rrhh}" download="{nombre_arch_pdf_rrhh}" 
+                   style="display: block; width: 100%; text-align: center; background-color: #2563eb; 
+                          color: white; padding: 12px; border-radius: 8px; text-decoration: none; 
+                          font-weight: 600; font-family: sans-serif; margin-top: 10px;">
+                   📥 DESCARGAR REPORTE RRHH (Seguro)
+                </a>
+                '''
+                st.markdown(html_btn_pdf_rrhh, unsafe_allow_html=True)
+
         else:
             st.error("Librería FPDF no disponible. Instalar para generar reportes.")
 
