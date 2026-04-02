@@ -1039,11 +1039,10 @@ with tabs[menu.index("📝 Evolución")]:
                 height=180,
                 width=500,
                 drawing_mode="freedraw",
-                key="canvas_firma_evolucion"   # clave única
+                key="canvas_firma_evolucion"
             )
 
-            col_f1, col_f2 = st.columns([1, 1])
-            if col_f1.button("💾 Guardar Firma Digital", use_container_width=True, type="primary"):
+            if st.button("💾 Guardar Firma Digital", use_container_width=True, type="primary"):
                 if canvas_result.image_data is not None:
                     img = Image.fromarray(canvas_result.image_data.astype('uint8'), 'RGBA')
                     bg = Image.new("RGB", img.size, (255, 255, 255))
@@ -1061,15 +1060,16 @@ with tabs[menu.index("📝 Evolución")]:
                     st.success("✅ Firma guardada correctamente.")
                     st.rerun()
         else:
-            st.warning("⚠️ Firma táctil no disponible (instala streamlit-drawable-canvas)")
+            st.warning("⚠️ Firma táctil no disponible.")
 
         st.divider()
 
         # === FORMULARIO DE EVOLUCIÓN ===
         with st.form("evol", clear_on_submit=True):
-            nota = st.text_area("Nota médica / Evolución clínica", height=180, placeholder="Escribir aquí la evolución del paciente...")
+            nota = st.text_area("Nota médica / Evolución clínica", height=200, 
+                              placeholder="Escribir aquí la evolución del paciente...")
 
-            col_foto1, col_foto2 = st.columns([2, 1])
+            col_foto1, col_foto2 = st.columns([3, 1])
             desc_w = col_foto1.text_input("Descripción de la herida / lesión (opcional)")
             
             with col_foto2:
@@ -1103,28 +1103,31 @@ with tabs[menu.index("📝 Evolución")]:
                 else:
                     st.error("❌ La nota médica no puede estar vacía.")
 
-        # === HISTORIAL DE EVOLUCIONES ===
+        # === HISTORIAL DE EVOLUCIONES (SIN COLAPSAR) ===
         evs_paciente = [e for e in st.session_state.get("evoluciones_db", []) if e.get("paciente") == paciente_sel]
+
         if evs_paciente:
             st.divider()
-            col_tit, col_btn = st.columns([3, 1])
-            col_tit.markdown("#### 📋 Historial de Evoluciones")
+            st.markdown("#### 📋 Historial de Evoluciones Clínicas")
 
-            if col_btn.button("🗑️ Borrar última evolución", 
-                            key="borrar_ultima_evolucion", 
-                            use_container_width=True,
-                            help="Elimina solo la última evolución"):
-                if st.checkbox("¿Confirmar borrado? No se puede deshacer", key="conf_del_evol"):
+            # Botón de borrado con clave única
+            if st.button("🗑️ Borrar última evolución", 
+                        key="borrar_ultima_evolucion", 
+                        use_container_width=True):
+                if st.checkbox("¿Confirmar borrado? Esta acción no se puede deshacer", 
+                              key="conf_del_evol"):
                     st.session_state["evoluciones_db"].remove(evs_paciente[-1])
                     guardar_datos()
                     st.success("Evolución eliminada.")
                     st.rerun()
 
-            with st.container(height=420):
-                for ev in reversed(evs_paciente):
-                    with st.container(border=True):
-                        st.markdown(f"**📅 {ev['fecha']}** | 👨‍⚕️ **{ev['firma']}**")
-                        st.write(ev['nota'])
+            # ←←← AQUÍ ESTÁ EL CAMBIO: sin altura fija, se expande completamente ←←←
+            for ev in reversed(evs_paciente):
+                with st.container(border=True):
+                    st.markdown(f"**📅 {ev['fecha']}** | 👨‍⚕️ **{ev['firma']}**")
+                    st.write(ev['nota'])          # Texto completo visible
+                    st.caption("─" * 40)          # Separador visual
+
         else:
             st.info("Aún no hay evoluciones registradas para este paciente.")
 
