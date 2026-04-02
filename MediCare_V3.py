@@ -1472,7 +1472,7 @@ with tabs[menu.index("💊 Recetas")]:
 
         st.divider()
 
-        # ====================== TABLA COMPLETA 00:00 - 23:00 ======================
+        # ====================== TABLA 00:00 - 23:00 ======================
         recs = [r for r in st.session_state.get("indicaciones_db", []) if r.get("paciente") == paciente_sel]
 
         if recs:
@@ -1528,51 +1528,13 @@ with tabs[menu.index("💊 Recetas")]:
 
             st.divider()
 
-            # ====================== REGISTRO RÁPIDO ======================
-            st.markdown("#### 📝 Registrar Administración (Hoy)")
-            with st.form("registro_dosis", clear_on_submit=True):
-                meds_activas = [r['med'].split(" |")[0].strip() for r in recs]
-                med_sel = st.selectbox("Medicamento a registrar:", meds_activas)
-
-                col_h, col_e = st.columns(2)
-                hora_sel = col_h.selectbox("Hora exacta:", [f"{h:02d}:00" for h in range(24)], index=ahora().hour)
-                estado = col_e.radio("Estado de la dosis:", ["✅ Realizada", "❌ No realizada"], horizontal=True)
-
-                justif = st.text_input("Justificación (solo si ❌)", placeholder="Ej: Paciente dormido, rechazo...")
-
-                if st.form_submit_button("💾 Guardar Registro", use_container_width=True, type="primary"):
-                    if "❌" in estado and not justif.strip():
-                        st.error("⚠️ Debes justificar cuando la dosis no se administra.")
-                    else:
-                        st.session_state["administracion_med_db"] = [
-                            a for a in st.session_state.get("administracion_med_db", [])
-                            if not (a.get("paciente") == paciente_sel and
-                                   a.get("fecha") == fecha_hoy and
-                                   a.get("med") == med_sel and
-                                   a.get("hora") == hora_sel)
-                        ]
-                        st.session_state["administracion_med_db"].append({
-                            "paciente": paciente_sel,
-                            "med": med_sel,
-                            "fecha": fecha_hoy,
-                            "hora": hora_sel,
-                            "estado": estado,
-                            "motivo": justif.strip() if "❌" in estado else "",
-                            "firma": user["nombre"]
-                        })
-                        guardar_datos()
-                        st.success(f"✅ {med_sel} registrado a las {hora_sel}")
-                        st.rerun()
-
-            st.divider()
-
-            # ====================== HISTORIAL ======================
-            st.markdown("#### 🕰️ Historial de Prescripciones")
+            # ====================== HISTORIAL DE PRESCRIPCIONES ======================
+            st.markdown("#### 🕰️ Historial de Prescripciones Médicas")
             for r in reversed(recs[-10:]):   # últimas 10 prescripciones
                 st.success(f"""
                 📌 **{r.get('fecha', '—')}**  
                 Indicado por: **{r.get('medico_nombre', '—')}** (Matrícula: {r.get('medico_matricula', '—')})  
-                {r['med']}
+                {r.get('med', '')}
                 """)
 
         else:
