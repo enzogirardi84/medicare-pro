@@ -1617,7 +1617,7 @@ with tabs[menu.index("⚖️ Balance")]:
             )
         else:
             st.info("Aún no hay balances hídricos registrados para este paciente.")
-# 10. INVENTARIO - VERSIÓN CON TARJETAS (Más limpia y moderna)
+# 10. INVENTARIO - VERSIÓN CON TARJETAS EN 3 COLUMNAS + UNIFICADO
 with tabs[menu.index("📦 Inventario")]:
     st.subheader("📦 Gestión de Inventario y Stock de Farmacia")
 
@@ -1667,32 +1667,42 @@ with tabs[menu.index("📦 Inventario")]:
 
     st.divider()
 
-    # ====================== STOCK ACTUAL CON TARJETAS (ESTO ES LO QUE CAMBIA) ======================
+    # ====================== STOCK ACTUAL CON TARJETAS (3 COLUMNAS) ======================
     if inv_mio:
         st.markdown("#### 📋 Stock Actual en Farmacia")
 
-        cols = st.columns(2)  # 2 columnas para que se vea más ordenado
+        # Usamos 3 columnas para que no se haga tan largo
+        cols = st.columns(3)
 
         for idx, item in enumerate(inv_mio):
             stock = item.get("stock", 0)
             
-            # Color según stock
+            # Color unificado (rojo suave para crítico, verde suave para normal)
             if stock <= 10:
                 color = "#ff5252"
-                bg = "#4a1f1f"
+                bg_color = "#3a1f1f"
             elif stock <= 25:
                 color = "#ffb300"
-                bg = "#4a3a1f"
+                bg_color = "#3a2f1f"
             else:
                 color = "#4caf50"
-                bg = "#1e2f1e"
+                bg_color = "#1f2f1f"
 
-            with cols[idx % 2]:
+            with cols[idx % 3]:
                 st.markdown(f"""
-                <div style="background-color:{bg}; padding:15px; border-radius:12px; border:1px solid #424242; margin-bottom:10px;">
-                    <strong style="color:white;">{item['item']}</strong><br>
-                    <span style="font-size:28px; color:{color}; font-weight:bold;">{stock}</span>
-                    <span style="color:#aaaaaa; font-size:14px;">unidades</span>
+                <div style="background-color:{bg_color}; 
+                            padding:16px; 
+                            border-radius:12px; 
+                            border:1px solid #424242; 
+                            margin-bottom:12px; 
+                            text-align:center;">
+                    <div style="font-size:15px; color:#bbbbbb; margin-bottom:6px;">
+                        {item['item']}
+                    </div>
+                    <div style="font-size:28px; font-weight:bold; color:{color};">
+                        {stock}
+                    </div>
+                    <div style="font-size:13px; color:#888888;">unidades</div>
                 </div>
                 """, unsafe_allow_html=True)
     else:
