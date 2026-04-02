@@ -2551,7 +2551,9 @@ with tabs[menu.index("📹 Telemedicina")]:
             else:
                 st.warning("Aún no hay signos vitales registrados para este paciente.")
 
-    else:
+        else:
+            st.info("👈 Seleccione un paciente en el panel lateral para iniciar una teleconsulta.")
+
 # =====================================================================
 # 16. EQUIPO Y SUSCRIPCIONES (SOLO VISIBLE PARA ADMIN/COORDINADOR)
 # =====================================================================
@@ -2610,7 +2612,6 @@ if "⚙️ Mi Equipo" in menu:
         # ====================== LISTADO DE USUARIOS ======================
         st.subheader("👥 Control de Accesos")
 
-        # Buscador
         buscar_usuario = st.text_input("🔎 Buscar usuario por nombre, login o DNI...", "")
 
         usuarios_filtrados = {
@@ -2641,7 +2642,6 @@ if "⚙️ Mi Equipo" in menu:
                     with col2:
                         st.markdown(f"{estado_color} **{d.get('estado', 'Activo')}**")
 
-                    # Botones de acción
                     if rol == "SuperAdmin":
                         if d.get("estado") == "Activo":
                             if col3.button("⏸️ Suspender", key=f"susp_{u}", use_container_width=True):
@@ -2654,7 +2654,6 @@ if "⚙️ Mi Equipo" in menu:
                                 guardar_datos()
                                 st.rerun()
 
-                    # Eliminar con confirmación
                     if col4.button("❌ Bajar", key=f"del_{u}", use_container_width=True):
                         if st.checkbox(f"¿Estás seguro de eliminar a {d.get('nombre')}?", key=f"conf_del_{u}"):
                             del st.session_state["usuarios_db"][u]
