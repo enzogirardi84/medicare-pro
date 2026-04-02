@@ -1405,9 +1405,10 @@ with tabs[menu.index("💊 Recetas")]:
         st.subheader("💊 Prescripción Médica y Administración de Medicamentos")
 
         # ====================== NUEVA PRESCRIPCIÓN MÉDICA LEGAL ======================
-        with st.form("recet", clear_on_submit=True):
-            st.markdown("##### 👨‍⚕️ Nueva Prescripción Médica")
-
+        st.markdown("##### 👨‍⚕️ Nueva Prescripción Médica")
+        
+        # ARREGLO: Cambiamos st.form por st.container. Esto libera el canvas para la PC y el móvil.
+        with st.container(border=True):
             c1, c2 = st.columns([3, 1])
             lista_vademecum = ["-- Seleccionar del Vademécum --"] + VADEMECUM_BASE
             med_vademecum = c1.selectbox("1. Medicamento (Vademécum):", lista_vademecum)
@@ -1426,18 +1427,19 @@ with tabs[menu.index("💊 Recetas")]:
             medico_nombre = col_m1.text_input("Nombre completo del médico", value=user.get("nombre", ""))
             medico_matricula = col_m2.text_input("Matrícula profesional", placeholder="Ej: 123456")
 
-            st.markdown("##### Firma Digital del Médico")
+            st.markdown("##### 🖋️ Firma Digital del Médico")
             firma_canvas = st_canvas(
-                key="firma_receta",
-                background_color="#f8f9fa",
-                height=160,
+                key="firma_receta_activa", # Le cambié la key para forzar que se reinicie
+                background_color="#ffffff",
+                height=150,
                 drawing_mode="freedraw",
-                stroke_width=4,
+                stroke_width=3, # Trazo un poquito más fino, tipo lapicera
                 stroke_color="#000000",
                 display_toolbar=True
             )
 
-            if st.form_submit_button("✅ Guardar Prescripción Médica", use_container_width=True, type="primary"):
+            # Cambiamos form_submit_button por un st.button normal
+            if st.button("✅ Guardar Prescripción Médica", use_container_width=True, type="primary"):
                 med_final = med_manual.strip().title() if med_manual.strip() else med_vademecum
 
                 if med_final and med_final != "-- Seleccionar del Vademécum --":
