@@ -1617,7 +1617,7 @@ with tabs[menu.index("⚖️ Balance")]:
             )
         else:
             st.info("Aún no hay balances hídricos registrados para este paciente.")
-# 10. INVENTARIO - VERSIÓN LIMPIA Y PROFESIONAL
+# 10. INVENTARIO - VERSIÓN LIMPIA Y OSCURA (Sin barra blanca)
 with tabs[menu.index("📦 Inventario")]:
     st.subheader("📦 Gestión de Inventario y Stock de Farmacia")
 
@@ -1668,22 +1668,22 @@ with tabs[menu.index("📦 Inventario")]:
 
     st.divider()
 
-    # ====================== STOCK ACTUAL (VERSIÓN MÁS LINDA) ======================
+    # ====================== STOCK ACTUAL (VERSIÓN OSCURA Y LIMPIA) ======================
     if inv_mio:
         st.markdown("#### 📋 Stock Actual en Farmacia")
 
         df_stock = pd.DataFrame(inv_mio)
         df_stock = df_stock.rename(columns={"item": "Insumo", "stock": "Stock Actual"})
 
-        # Función para colorear según stock
+        # Función de color sin barra blanca
         def color_stock(val):
             if val <= 10:
-                return 'background-color: #ffebee; color: #d32f2f; font-weight: bold'
+                return 'background-color: #4a0000; color: #ff8a80'
             elif val <= 25:
-                return 'background-color: #fff8e1; color: #f57c00'
-            return ''
+                return 'background-color: #4a2f00; color: #ffd180'
+            return 'background-color: #1e1e1e; color: #ffffff'
 
-        # Aplicar estilo correctamente
+        # Aplicar estilo
         styled = df_stock[["Insumo", "Stock Actual"]].style.map(color_stock, subset=["Stock Actual"])
 
         st.dataframe(
