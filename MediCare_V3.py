@@ -449,33 +449,12 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
 
             st.divider()
             
-            agenda_paciente = [a for a in st.session_state["agenda_db"] if a["paciente"] == paciente_sel and a["empresa"] == mi_empresa and a["estado"] == "Pendiente"]
-            hora_turno_str = ""
-            if agenda_paciente:
-                turno_prox = agenda_paciente[-1]
-                hora_turno_str = f" a las {turno_prox['hora']} hs"
-            
-            if dire_paciente and dire_paciente != "No registrada":
-                st.info(f"🏠 **Domicilio Asignado del Paciente:** {dire_paciente}")
-                
-            if te:
-                num_limpio = ''.join(filter(str.isdigit, str(te)))
-                if len(num_limpio) >= 10: num_limpio = "549" + num_limpio[-10:]
-                if hora_turno_str:
-                    msg_text = f"Hola, soy {user['nombre']} de {mi_empresa}. Me comunico para confirmar la visita médica. Estaré llegando{hora_turno_str}. ¡Saludos!"
-                else:
-                    msg_text = f"Hola, soy {user['nombre']} de {mi_empresa}. Estoy en camino al domicilio."
-                msg = urllib.parse.quote(msg_text)
-                st.markdown(f'<a href="https://wa.me/{num_limpio}?text={msg}" target="_blank" class="wa-btn">📲 AVISAR LLEGADA POR WHATSAPP</a>', unsafe_allow_html=True)
-                if hora_turno_str:
-                    st.caption(f"*(El mensaje de WhatsApp incluirá automáticamente el horario programado: {hora_turno_str})*")
-
-            st.divider()
+            # --- NUEVO ORDEN: PRIMERO LA AGENDA ---
             st.subheader("📅 Agendar Próxima Visita")
             with st.form("agenda_form", clear_on_submit=True):
                 c1_ag, c2_ag = st.columns(2)
-                fecha_ag = c1_ag.date_input("Fecha programada")
-                hora_ag = c2_ag.time_input("Hora aproximada")
+                fecha_ag = c1_ag.date_input("Fecha programada", value=ahora().date())
+                hora_ag = c2_ag.time_input("Hora aproximada", value=ahora().time())
                 profesionales = [v['nombre'] for k, v in st.session_state["usuarios_db"].items() if v['empresa'] == mi_empresa or rol == "SuperAdmin"]
                 idx_prof = profesionales.index(user['nombre']) if user['nombre'] in profesionales else 0
                 prof_ag = st.selectbox("Asignar Profesional", profesionales, index=idx_prof)
@@ -488,6 +467,31 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
             if agenda_mia: 
                 st.caption("Próximas visitas agendadas para este paciente:")
                 st.dataframe(pd.DataFrame(agenda_mia).drop(columns=["empresa", "paciente"]).tail(3), use_container_width=True)
+
+            st.divider()
+
+            # --- SEGUNDO: EL DOMICILIO Y EL WHATSAPP ---
+            st.subheader("📲 Contacto y Ubicación")
+            if dire_paciente and dire_paciente != "No registrada":
+                st.info(f"🏠 **Domicilio Asignado del Paciente:** {dire_paciente}")
+            
+            agenda_paciente = [a for a in st.session_state["agenda_db"] if a["paciente"] == paciente_sel and a["empresa"] == mi_empresa and a["estado"] == "Pendiente"]
+            hora_turno_str = ""
+            if agenda_paciente:
+                turno_prox = agenda_paciente[-1]
+                hora_turno_str = f" a las {turno_prox['hora']} hs"
+            
+            if te:
+                num_limpio = ''.join(filter(str.isdigit, str(te)))
+                if len(num_limpio) >= 10: num_limpio = "549" + num_limpio[-10:]
+                if hora_turno_str:
+                    msg_text = f"Hola, soy {user['nombre']} de {mi_empresa}. Me comunico para confirmar la visita médica. Estaré llegando{hora_turno_str}. ¡Saludos!"
+                else:
+                    msg_text = f"Hola, soy {user['nombre']} de {mi_empresa}. Estoy en camino al domicilio."
+                msg = urllib.parse.quote(msg_text)
+                st.markdown(f'<a href="https://wa.me/{num_limpio}?text={msg}" target="_blank" class="wa-btn">AVISAR LLEGADA POR WHATSAPP</a>', unsafe_allow_html=True)
+                if hora_turno_str:
+                    st.caption(f"*(El mensaje de WhatsApp incluirá automáticamente el horario programado: {hora_turno_str})*")
 
 # 2. DASHBOARD (AHORA MIDE FICHADAS REALES POR GPS)
 if "📈 Dashboard" in menu:
