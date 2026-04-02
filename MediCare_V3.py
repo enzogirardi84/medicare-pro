@@ -852,6 +852,11 @@ with tabs[menu.index("🔬 Estudios")]:
                 })
                 guardar_datos(); st.success("✅ Estudio guardado correctamente."); st.rerun()
 
+        # --- ESCUDO ANTI-ERROR 404 ---
+        @st.cache_data(show_spinner=False)
+        def decodificar_estudio(b64_string):
+            return base64.b64decode(b64_string)
+
         estudios_pac = [e for e in st.session_state.get("estudios_db", []) if e["paciente"] == paciente_sel]
         if estudios_pac:
             st.divider()
@@ -859,10 +864,8 @@ with tabs[menu.index("🔬 Estudios")]:
             limite_est = st.selectbox("Mostrar últimos:", [10, 20, 50, "Todos"], key="lim_estudios_tab")
             estudios_mostrar = estudios_pac if limite_est == "Todos" else estudios_pac[-int(limite_est):]
             
-            # Cajita anti-colapso con scroll
             with st.container(height=500):
                 for idx, est in enumerate(reversed(estudios_mostrar)):
-                    # Diseño de Carpeta/Tarjeta individual
                     with st.container(border=True):
                         st.markdown(f"**📅 Fecha:** {est['fecha']} | 👨‍⚕️ **Profesional:** {est['firma']}")
                         st.markdown(f"**🔬 Estudio:** {est['tipo']}")
@@ -870,7 +873,8 @@ with tabs[menu.index("🔬 Estudios")]:
                         
                         if est.get('imagen'):
                             try:
-                                img_bytes = base64.b64decode(est['imagen'])
+                                # Usamos la función cacheada para que no falle la descarga
+                                img_bytes = decodificar_estudio(est['imagen'])
                                 if img_bytes.startswith(b'%PDF') or est.get('extension') == 'pdf':
                                     st.download_button("📥 Descargar PDF Adjunto", data=img_bytes, file_name=f"Estudio_{est['fecha'][:10].replace('/','-')}.pdf", mime="application/pdf", key=f"dl_pdf_tab_{idx}_{est['fecha']}")
                                 else:
@@ -1915,9 +1919,7 @@ if "⚙️ Mi Equipo" in menu:
                 elif d.get("estado", "Activo") != "Activo" and c2.button("▶️ Reactivar", key=f"reac_{u}"): st.session_state["usuarios_db"][u]["estado"] = "Activo"; guardar_datos(); st.rerun()
             if c3.button("❌ Bajar", key=f"del_{u}"): del st.session_state["usuarios_db"][u]; guardar_datos(); st.rerun()
 
-# =====================================================================
 # 17. AUDITORÍA (SOLO VISIBLE PARA ADMIN/COORDINADOR)
-# =====================================================================
 if "🕵️ Auditoría" in menu:
     with tabs[menu.index("🕵️ Auditoría")]:
         st.subheader("Auditoría General de Movimientos")
@@ -1935,9 +1937,17 @@ if "🕵️ Auditoría" in menu:
                 
             st.dataframe(df_logs_filtrado, use_container_width=True)
             
-            out_logs = io.BytesIO()
-            with pd.ExcelWriter(out_logs, engine='openpyxl') as writer: df_logs_filtrado.to_excel(writer, index=False, sheet_name='Logs_MediCare')
-            st.download_button("📥 DESCARGAR RESULTADOS A EXCEL", data=out_logs.getvalue(), file_name=f"Reporte_Logs_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            # --- ESCUDO ANTI-ERROR 404 PARA EXCEL ---
+            @st.cache_data(show_spinner=False)
+            def exportar_logs_excel(data_dict):
+                df_export = pd.DataFrame(data_dict)
+                out_logs = io.BytesIO()
+                with pd.ExcelWriter(out_logs, engine='openpyxl') as writer: 
+                    df_export.to_excel(writer, index=False, sheet_name='Logs_MediCare')
+                return out_logs.getvalue()
+                
+            excel_logs_bytes = exportar_logs_excel(df_logs_filtrado.to_dict('records'))
+            st.download_button("📥 DESCARGAR RESULTADOS A EXCEL", data=excel_logs_bytes, file_name=f"Reporte_Logs_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         else:
             st.info("No hay registros en la auditoría.")
             
@@ -1952,32 +1962,33 @@ if "🕵️ Auditoría" in menu:
                 profesionales_lista.sort()
                 prof_sel = st.selectbox("Seleccionar Profesional para liquidación:", profesionales_lista)
                 
-                def t(txt): return str(txt).replace('⚖️', '').replace('⚠️', '').replace('📌', '').replace('📅', '').replace('📸', '').replace('🗄️', '').encode('latin-1', 'replace').decode('latin-1')
-
-                def crear_pdf_rrhh(profesional):
+                # --- ESCUDO ANTI-ERROR 404 PARA PDF ---
+                @st.cache_data(show_spinner=False)
+                def crear_pdf_rrhh_audit(profesional, empresa_nombre, chks_list, fecha_emision_str):
+                    def t(txt): return str(txt).replace('⚖️', '').replace('⚠️', '').replace('📌', '').replace('📅', '').replace('📸', '').replace('🗄️', '').encode('latin-1', 'replace').decode('latin-1')
                     pdf = FPDF(); pdf.add_page()
                     pdf.set_font("Arial", 'B', 14)
-                    pdf.cell(0, 10, t(f"REPORTE DE ASISTENCIA Y GPS - {mi_empresa}"), ln=True, align='C')
+                    pdf.cell(0, 10, t(f"REPORTE DE ASISTENCIA Y GPS - {empresa_nombre}"), ln=True, align='C')
                     pdf.set_font("Arial", 'B', 11)
                     pdf.cell(0, 10, t(f"Profesional Auditado: {profesional}"), ln=True)
                     pdf.set_font("Arial", 'I', 9)
-                    pdf.cell(0, 5, t(f"Fecha de emisión: {ahora().strftime('%d/%m/%Y %H:%M')}"), ln=True)
+                    pdf.cell(0, 5, t(f"Fecha de emisión: {fecha_emision_str}"), ln=True)
                     pdf.ln(5)
                     
                     pdf.set_font("Arial", '', 9)
-                    chks_prof = [c for c in st.session_state["checkin_db"] if c.get("profesional", "") == profesional]
-                    
-                    if not chks_prof:
+                    if not chks_list:
                         pdf.cell(0, 10, t("No hay registros de visitas (Llegada/Salida) para este profesional."), ln=True)
                     else:
-                        for c in reversed(chks_prof):
+                        for c in reversed(chks_list):
                             texto_linea = f"[{c.get('fecha_hora', '')}] PACIENTE: {c.get('paciente', '')} | ACCION: {c.get('tipo', '')}"
                             pdf.multi_cell(0, 6, t(texto_linea), border=1)
                             pdf.ln(2)
                             
                     return pdf.output(dest='S').encode('latin-1')
 
-                st.download_button("📥 DESCARGAR REPORTE RRHH (PDF)", crear_pdf_rrhh(prof_sel), f"Auditoria_RRHH_{prof_sel}.pdf", "application/pdf")
+                chks_prof = [c for c in st.session_state["checkin_db"] if c.get("profesional", "") == prof_sel]
+                pdf_audit_bytes = crear_pdf_rrhh_audit(prof_sel, mi_empresa, chks_prof, ahora().strftime('%d/%m/%Y'))
+                st.download_button("📥 DESCARGAR REPORTE RRHH (PDF)", pdf_audit_bytes, f"Auditoria_RRHH_{prof_sel}.pdf", "application/pdf")
         else:
             st.error("Librería FPDF no disponible. Instalar para generar reportes.")
 
