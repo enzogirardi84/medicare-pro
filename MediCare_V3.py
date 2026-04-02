@@ -833,12 +833,12 @@ with tabs[menu.index("📝 Evolución")]:
         else:
             st.info("Aún no hay evoluciones registradas para este paciente.")
 
-# 6.5 ESTUDIOS COMPLEMENTARIOS (VERSIÓN CORREGIDA + BOTÓN PARA BORRAR)
+# 6.5 ESTUDIOS COMPLEMENTARIOS (VERSIÓN FINAL - DESCARGA SEGURA + BORRAR CUALQUIERA)
 with tabs[menu.index("🔬 Estudios")]:
     if paciente_sel:
         st.subheader("Órdenes y Resultados de Estudios")
         
-        # --- FORMULARIO PARA AGREGAR ESTUDIO ---
+        # Formulario para agregar nuevo estudio
         with st.form("form_estudios", clear_on_submit=True):
             col_e1, col_e2 = st.columns([1, 2])
             tipo_estudio = col_e1.selectbox("Tipo de Estudio", [
@@ -877,55 +877,60 @@ with tabs[menu.index("🔬 Estudios")]:
                 st.success("✅ Estudio guardado correctamente.")
                 st.rerun()
 
-        # --- LISTADO DE ESTUDIOS CON DESCARGA SEGURA Y BOTÓN PARA BORRAR ---
+        # --- LISTADO DE ESTUDIOS CON DESCARGA SEGURA Y BOTÓN DE BORRAR INDIVIDUAL ---
         estudios_pac = [e for e in st.session_state.get("estudios_db", []) if e["paciente"] == paciente_sel]
         
         if estudios_pac:
             st.divider()
             st.markdown("#### 📁 Archivo de Estudios del Paciente")
             
-            # Opción para borrar estudios
-            if st.button("🗑️ Borrar último estudio", type="secondary"):
-                if estudios_pac:
-                    st.session_state["estudios_db"].remove(estudios_pac[-1])
-                    guardar_datos()
-                    st.success("Estudio eliminado correctamente.")
-                    st.rerun()
-            
             limite_est = st.selectbox("Mostrar últimos:", [10, 20, 50, "Todos"], key="lim_estudios_tab")
             estudios_mostrar = estudios_pac if limite_est == "Todos" else estudios_pac[-int(limite_est):]
             
-            with st.container(height=520):
+            with st.container(height=550):
                 for idx, est in enumerate(reversed(estudios_mostrar)):
                     with st.container(border=True):
-                        st.markdown(f"**📅 Fecha:** {est['fecha']} | 👨‍⚕️ **Profesional:** {est['firma']}")
-                        st.markdown(f"**🔬 Estudio:** {est['tipo']}")
-                        if est.get('detalle'):
-                            st.markdown(f"**📝 Detalle:** {est['detalle']}")
+                        col1, col2 = st.columns([4, 1])
                         
+                        with col1:
+                            st.markdown(f"**📅 {est['fecha']}** | 👨‍⚕️ **{est['firma']}**")
+                            st.markdown(f"**🔬 {est['tipo']}**")
+                            if est.get('detalle'):
+                                st.caption(est['detalle'])
+                        
+                        with col2:
+                            # Botón para borrar ESTE estudio específico
+                            if st.button("🗑️", key=f"del_est_{est['fecha']}_{idx}", help="Eliminar este estudio"):
+                                st.session_state["estudios_db"] = [
+                                    e for e in st.session_state["estudios_db"] 
+                                    if not (e["paciente"] == paciente_sel and e["fecha"] == est["fecha"])
+                                ]
+                                guardar_datos()
+                                st.success("Estudio eliminado")
+                                st.rerun()
+                        
+                        # Descarga segura del PDF
                         if est.get('imagen'):
                             try:
                                 b64_str = est['imagen']
                                 img_bytes = base64.b64decode(b64_str)
                                 
-                                # DESCARGA SEGURA (esta es la corrección principal)
                                 if img_bytes.startswith(b'%PDF') or est.get('extension') == 'pdf':
-                                    nombre_arch = f"Estudio_{est['fecha'][:10].replace('/','-')}_{idx}.pdf"
-                                    html_boton = f'''
+                                    nombre_arch = f"Estudio_{est['fecha'][:10].replace('/','-')}.pdf"
+                                    html_btn = f'''
                                     <a href="data:application/pdf;base64,{b64_str}" 
                                        download="{nombre_arch}" 
-                                       style="display: block; width: 100%; text-align: center; 
-                                              background-color: #2563eb; color: white; padding: 12px; 
-                                              border-radius: 8px; text-decoration: none; 
-                                              font-weight: 600; margin-top: 8px;">
+                                       style="display:block; width:100%; text-align:center; background:#2563eb; 
+                                              color:white; padding:12px; border-radius:8px; text-decoration:none; 
+                                              font-weight:600; margin-top:8px;">
                                        📥 DESCARGAR PDF (Seguro)
                                     </a>
                                     '''
-                                    st.markdown(html_boton, unsafe_allow_html=True)
+                                    st.markdown(html_btn, unsafe_allow_html=True)
                                 else:
                                     st.image(img_bytes, caption="Documento Adjunto", use_container_width=True)
-                            except Exception as e:
-                                st.error(f"⚠️ Error al procesar archivo: {e}")
+                            except:
+                                st.error("⚠️ Error al leer el archivo")
         else:
             st.info("Aún no hay estudios guardados para este paciente.")
 
