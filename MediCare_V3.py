@@ -896,108 +896,138 @@ with tabs[menu.index("📊 Clínica")]:
 
 # 5. PEDIATRÍA (CON GRÁFICOS Y TABLA ANTI-COLAPSO)
 with tabs[menu.index("👶 Pediatría")]:
-    if paciente_sel:
+    if not paciente_sel:
+        st.info("👈 Seleccioná un paciente en el menú lateral.")
+    else:
+        st.subheader("👶 Control Pediátrico y Curvas de Crecimiento")
+
         det = st.session_state["detalles_pacientes_db"].get(paciente_sel, {})
-        se = det.get("sexo", "F"); f_n_str = det.get("fnac", "01/01/2000")
+        se = det.get("sexo", "F")
+        f_n_str = det.get("fnac", "01/01/2000")
         f_n = pd.to_datetime(f_n_str, format="%d/%m/%Y", errors='coerce')
-        if pd.isna(f_n): f_n = datetime(2000, 1, 1)
-        
+        if pd.isna(f_n):
+            f_n = datetime(2000, 1, 1)
+
+        # === RESUMEN ACTUAL ===
+        ped_actual = [x for x in st.session_state.get("pediatria_db", []) if x["paciente"] == paciente_sel]
+        if ped_actual:
+            ultimo_ped = sorted(ped_actual, key=lambda x: parse_fecha_hora(x.get("fecha", "")), reverse=True)[0]
+            st.markdown("##### 📊 Resumen Actual")
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Peso", f"{ultimo_ped.get('peso', '—')} kg")
+            c2.metric("Talla", f"{ultimo_ped.get('talla', '—')} cm")
+            c3.metric("IMC", f"{ultimo_ped.get('imc', '—')}")
+            c4.metric("Percentil", ultimo_ped.get("percentil_sug", "—"))
+
+        st.divider()
+
+        # === FORMULARIO NUEVO CONTROL ===
         with st.form("pedia", clear_on_submit=True):
-            st.markdown("##### ⏱️ Fecha y Hora del Control Pediátrico")
+            st.markdown("##### ⏱️ Nuevo Control Pediátrico")
             col_time1, col_time2 = st.columns(2)
             fecha_toma = col_time1.date_input("📅 Fecha del control", value=ahora().date(), key="fecha_ped")
-            hora_toma_str = col_time2.text_input("⏰ Hora exacta (Formato HH:MM)", value=ahora().strftime("%H:%M"), key="hora_ped")
+            hora_toma_str = col_time2.text_input("⏰ Hora (HH:MM)", value=ahora().strftime("%H:%M"), key="hora_ped")
+
             st.divider()
-            
             col_a, col_b = st.columns(2)
             pes = col_a.number_input("Peso Actual (kg)", min_value=0.0, format="%.2f")
             tal = col_b.number_input("Talla Actual (cm)", min_value=0.0, format="%.2f")
-            pc = col_a.number_input("Périm. Cefálico (cm)", min_value=0.0, format="%.2f")
-            desc = col_b.text_input("Descripción / Nota")
-            
-            if st.form_submit_button("💾 Guardar Control Pediátrico", width="stretch"):
-                if len(hora_toma_str) != 5 or ":" not in hora_toma_str:
-                    hora_toma_str = ahora().strftime("%H:%M")
-                    
-                fecha_str_toma = f"{fecha_toma.strftime('%d/%m/%Y')} {hora_toma_str}"
-                
-                try:
-                    dt_toma = datetime.strptime(fecha_str_toma, "%d/%m/%Y %H:%M")
-                except:
-                    dt_toma = datetime.combine(fecha_toma, ahora().time())
-                    
+            pc = col_a.number_input("Perímetro Cefálico (cm)", min_value=0.0, format="%.2f")
+            desc = col_b.text_input("Descripción / Nota (opcional)")
+
+            if st.form_submit_button("💾 Guardar Control Pediátrico", use_container_width=True, type="primary"):
+                hora_limpia = hora_toma_str.strip() if ":" in hora_toma_str else ahora().strftime("%H:%M")
+                fecha_str_toma = f"{fecha_toma.strftime('%d/%m/%Y')} {hora_limpia}"
+
+                # Cálculo preciso de edad en meses
+                dt_toma = parse_fecha_hora(fecha_str_toma)
                 eda_meses = round((dt_toma - f_n).days / 30.4375, 1)
-                if eda_meses < 0: eda_meses = 0.0
-                
-                imc = round(pes / ((tal/100)**2), 2) if tal > 0 else 0
-                percentil_sug = ""
-                if se == "F": percentil_sug = "⚖️ P3 - Bajo Peso" if imc < 14 else "⚖️ P50 - Peso Normal" if imc < 18 else "⚠️ P97 - Sobrepeso"
-                else: percentil_sug = "⚖️ P3 - Bajo Peso" if imc < 14.5 else "⚖️ P50 - Peso Normal" if imc < 18.5 else "⚠️ P97 - Sobrepeso"
-                
+                if eda_meses < 0:
+                    eda_meses = 0.0
+
+                imc = round(pes / ((tal / 100) ** 2), 2) if tal > 0 else 0.0
+
+                # Percentil simplificado pero más claro
+                if se == "F":
+                    percentil_sug = "🟢 P3 - Bajo peso" if imc < 14 else "🟡 P50 - Normal" if imc < 18 else "🔴 P97 - Sobrepeso"
+                else:
+                    percentil_sug = "🟢 P3 - Bajo peso" if imc < 14.5 else "🟡 P50 - Normal" if imc < 18.5 else "🔴 P97 - Sobrepeso"
+
                 st.session_state["pediatria_db"].append({
-                    "paciente": paciente_sel, 
-                    "fecha": fecha_str_toma, 
-                    "edad_meses": eda_meses, 
-                    "peso": pes, 
-                    "talla": tal, 
-                    "pc": pc, 
-                    "imc": imc, 
-                    "percentil_sug": percentil_sug, 
+                    "paciente": paciente_sel,
+                    "fecha": fecha_str_toma,
+                    "edad_meses": eda_meses,
+                    "peso": pes,
+                    "talla": tal,
+                    "pc": pc,
+                    "imc": imc,
+                    "percentil_sug": percentil_sug,
                     "nota": desc,
                     "firma": user["nombre"]
                 })
-                guardar_datos(); st.rerun()
-                
-        ped = [x for x in st.session_state["pediatria_db"] if x["paciente"] == paciente_sel]
+                guardar_datos()
+                st.success("✅ Control pediátrico guardado correctamente.")
+                st.rerun()
+
+        # === GRÁFICOS DE CRECIMIENTO ===
+        ped = [x for x in st.session_state.get("pediatria_db", []) if x["paciente"] == paciente_sel]
         if ped:
             st.divider()
             st.markdown("#### 📈 Curvas de Crecimiento")
+
             df_g = pd.DataFrame(ped)
-            try:
-                df_g['fecha_dt'] = pd.to_datetime(df_g['fecha'], format="%d/%m/%Y %H:%M")
-                df_g = df_g.sort_values(by='fecha_dt')
-            except:
-                pass
-            df_g = df_g.set_index("fecha")
-            
-            c1, c2 = st.columns(2)
-            if "peso" in df_g.columns: c1.line_chart(df_g["peso"], color="#3b82f6")
-            if "talla" in df_g.columns: c2.line_chart(df_g["talla"], color="#10b981")
-            
+            df_g['fecha_dt'] = df_g['fecha'].apply(parse_fecha_hora)
+            df_g = df_g.sort_values(by='fecha_dt')
+
+            col_g1, col_g2 = st.columns(2)
+            with col_g1:
+                st.caption("📏 Peso (kg)")
+                st.line_chart(df_g.set_index("fecha")["peso"], color="#3b82f6", use_container_width=True)
+            with col_g2:
+                st.caption("📏 Talla (cm)")
+                st.line_chart(df_g.set_index("fecha")["talla"], color="#10b981", use_container_width=True)
+
+            # Gráfico combinado opcional
+            if st.checkbox("Ver gráfico combinado (Peso + Talla)"):
+                chart = alt.Chart(df_g).mark_line(point=True).encode(
+                    x=alt.X('fecha_dt:T', title="Fecha"),
+                    y=alt.Y('peso:Q', title="Peso (kg)"),
+                    color=alt.value("#3b82f6")
+                ).properties(height=400, title="Evolución Peso y Talla")
+                st.altair_chart(chart, use_container_width=True)
+
             st.divider()
+
+            # === HISTORIAL ===
             col_tit, col_btn = st.columns([3, 1])
             col_tit.markdown("#### 📋 Historial de Controles Pediátricos")
-            
-            if col_btn.button("🗑️ Borrar último", use_container_width=True, key="del_ped", help="Elimina el último control cargado por error"):
-                st.session_state["pediatria_db"].remove(ped[-1])
-                guardar_datos()
-                st.rerun()
-            
-            with st.container(height=250):
+
+            if col_btn.button("🗑️ Borrar último control", use_container_width=True, help="Elimina solo el último registro"):
+                if st.checkbox("¿Confirmar borrado? (No se puede deshacer)", key="conf_del_ped"):
+                    st.session_state["pediatria_db"].remove(ped[-1])
+                    guardar_datos()
+                    st.success("Control eliminado.")
+                    st.rerun()
+
+            with st.container(height=380):
                 df_ped = pd.DataFrame(ped).drop(columns=["paciente"], errors='ignore')
-                
-                columnas_ped_esperadas = ["fecha", "edad_meses", "peso", "talla", "pc", "imc", "percentil_sug", "nota", "firma"]
-                df_ped = df_ped[[c for c in columnas_ped_esperadas if c in df_ped.columns]]
-                
+                df_ped['fecha_dt'] = df_ped['fecha'].apply(parse_fecha_hora)
+                df_ped = df_ped.sort_values(by='fecha_dt', ascending=False).drop(columns=['fecha_dt'])
+
                 df_ped = df_ped.rename(columns={
-                    "fecha": "Fecha y Hora", 
-                    "edad_meses": "Edad (Mes)", 
-                    "peso": "Peso (kg)", 
-                    "talla": "Talla (cm)", 
-                    "pc": "Périm. Cef.", 
-                    "imc": "IMC", 
+                    "fecha": "Fecha y Hora",
+                    "edad_meses": "Edad (meses)",
+                    "peso": "Peso (kg)",
+                    "talla": "Talla (cm)",
+                    "pc": "Perímetro Cefálico",
+                    "imc": "IMC",
                     "percentil_sug": "Percentil",
                     "nota": "Notas",
                     "firma": "Profesional"
                 })
-                
-                try:
-                    df_ped['fecha_dt'] = pd.to_datetime(df_ped['Fecha y Hora'], format="%d/%m/%Y %H:%M")
-                    df_ped = df_ped.sort_values(by='fecha_dt', ascending=False).drop(columns=['fecha_dt'])
-                except Exception:
-                    df_ped = df_ped.iloc[::-1]
-                    
                 st.dataframe(df_ped, use_container_width=True, hide_index=True)
+        else:
+            st.info("Aún no hay controles pediátricos registrados.")
 
 # 6. EVOLUCIÓN
 with tabs[menu.index("📝 Evolución")]:
