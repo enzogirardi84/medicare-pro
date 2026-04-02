@@ -536,49 +536,114 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
                 if hora_turno_str:
                     st.caption(f"*(El mensaje de WhatsApp incluirá automáticamente el horario programado: {hora_turno_str})*")
 
-# 2. DASHBOARD (AHORA MIDE FICHADAS REALES POR GPS)
 if "📈 Dashboard" in menu:
     with tabs[menu.index("📈 Dashboard")]:
         st.markdown(f"<h3 style='color: #3b82f6;'>📈 Panel de Gestión - {mi_empresa}</h3>", unsafe_allow_html=True)
-        if not st.session_state["pacientes_db"]: 
+
+        if not st.session_state["pacientes_db"]:
             st.warning("No hay pacientes cargados.")
         else:
             df_visitas = pd.DataFrame(st.session_state.get("checkin_db", []))
-            
-            if not df_visitas.empty:
-                # Filtramos solo para contar las "LLEGADAS" reales al domicilio
-                df_llegadas = df_visitas[df_visitas["tipo"].str.contains("LLEGADA", na=False)].copy()
-                
-                if not df_llegadas.empty:
-                    # Convertimos la fecha exacta con segundos a formato entendible por el gráfico
-                    df_llegadas["fecha_c"] = pd.to_datetime(df_llegadas["fecha_hora"], format="%d/%m/%Y %H:%M:%S", errors='coerce')
-                    hace_una_semana = (ahora() - timedelta(days=7)).replace(tzinfo=None)
-                    
-                    if rol == "Coordinador":
-                        df_llegadas = df_llegadas[df_llegadas['empresa'] == mi_empresa]
-                        
-                    # Filtramos los últimos 7 días
-                    df_visitas_s = df_llegadas[df_llegadas["fecha_c"] > hace_una_semana]
-                    
-                    if not df_visitas_s.empty:
-                        perf_enf = df_visitas_s["profesional"].value_counts().reset_index()
-                        perf_enf.columns = ["Profesional", "Visitas Reales"]
-                        
-                        chart = alt.Chart(perf_enf).mark_bar(
-                            size=35, color='#3b82f6', cornerRadiusTopLeft=5, cornerRadiusTopRight=5
-                        ).encode(
-                            x=alt.X('Profesional:N', sort='-y', title='Profesional / Enfermero'),
-                            y=alt.Y('Visitas Reales:Q', title='Cantidad de Fichadas GPS (7 días)', axis=alt.Axis(tickMinStep=1)),
-                            tooltip=['Profesional', 'Visitas Reales']
-                        ).properties(height=350)
-                        
-                        st.altair_chart(chart, use_container_width=True)
-                    else:
-                        st.info("No hay fichadas de GPS (Llegadas) en los últimos 7 días.")
-                else:
-                    st.info("Aún no se han registrado ingresos (GPS) en los domicilios.")
-            else:
+
+            if df_visitas.empty:
                 st.info("El sistema está listo para empezar a registrar visitas.")
+            else:
+                # Columnas obligatorias para que no rompa
+                columnas_necesarias = ["tipo", "fecha_hora", "profesional"]
+                if not all(col in df_visitas.columns for col in columnas_necesarias):
+                    st.error("❌ Faltan columnas necesarias en 'checkin_db'. Contacta al administrador.")
+                    st.stop()
+
+                # Filtramos solo LLEGADAS reales (GPS)
+                df_llegadas = df_visitas[
+                    df_visitas["tipo"].str.contains("LLEGADA", na=False)
+                ].copy()
+
+                if df_llegadas.empty:
+                    st.info("Aún no se han registrado ingresos (GPS) en los domicilios.")
+                else:
+                    # === Conversión segura de fecha ===
+                    try:
+                        df_llegadas["fecha_c"] = pd.to_datetime(
+                            df_llegadas["fecha_hora"],
+                            format="%d/%m/%Y %H:%M:%S",
+                            errors="coerce"
+                        )
+                        # Eliminamos fechas inválidas
+                        df_llegadas = df_llegadas.dropna(subset=["fecha_c"])
+                    except Exception as e:
+                        st.error(f"Error al procesar las fechas: {e}")
+                        st.stop()
+
+                    if df_llegadas.empty:
+                        st.info("No se encontraron fechas válidas de llegadas GPS.")
+                    else:
+                        # Rango de los últimos 7 días
+                        hace_una_semana = (ahora() - timedelta(days=7)).replace(tzinfo=None)
+
+                        # Filtro por empresa si es Coordinador
+                        if rol == "Coordinador" and "empresa" in df_llegadas.columns:
+                            df_llegadas = df_llegadas[df_llegadas["empresa"] == mi_empresa]
+
+                        # Últimos 7 días
+                        df_visitas_s = df_llegadas[df_llegadas["fecha_c"] > hace_una_semana]
+
+                        if df_visitas_s.empty:
+                            st.info("No hay fichadas de GPS (Llegadas) en los últimos 7 días.")
+                        else:
+                            # === Métricas y visualización ===
+                            total_fichadas = len(df_visitas_s)
+
+                            st.metric(
+                                label="**Total de Fichadas Reales por GPS (últimos 7 días)**",
+                                value=total_fichadas
+                            )
+
+                            # Tabla resumen (siempre visible)
+                            perf_enf = (
+                                df_visitas_s["profesional"]
+                                .value_counts()
+                                .reset_index()
+                            )
+                            perf_enf.columns = ["Profesional / Enfermero", "Visitas Reales"]
+                            
+                            st.dataframe(
+                                perf_enf,
+                                use_container_width=True,
+                                hide_index=True
+                            )
+
+                            # Gráfico Altair mejorado
+                            chart = alt.Chart(perf_enf).mark_bar(
+                                size=35,
+                                color="#3b82f6",
+                                cornerRadiusTopLeft=6,
+                                cornerRadiusTopRight=6
+                            ).encode(
+                                x=alt.X(
+                                    "Profesional / Enfermero:N",
+                                    sort="-y",
+                                    title="Profesional / Enfermero"
+                                ),
+                                y=alt.Y(
+                                    "Visitas Reales:Q",
+                                    title="Cantidad de Fichadas GPS",
+                                    axis=alt.Axis(tickMinStep=1)
+                                ),
+                                tooltip=[
+                                    alt.Tooltip("Profesional / Enfermero:N", title="Profesional"),
+                                    alt.Tooltip("Visitas Reales:Q", title="Fichadas")
+                                ]
+                            ).properties(
+                                height=380,
+                                title=f"Fichadas GPS - Últimos 7 días ({hace_una_semana.strftime('%d/%m/%Y')} → hoy)"
+                            ).configure_title(
+                                fontSize=16,
+                                color="#3b82f6",
+                                anchor="middle"
+                            )
+
+                            st.altair_chart(chart, use_container_width=True)
 # 3. ADMISIÓN 
 with tabs[menu.index("👤 Admisión")]:
     with st.form("adm_form", clear_on_submit=True):
