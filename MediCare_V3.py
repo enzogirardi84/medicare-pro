@@ -1521,95 +1521,102 @@ with tabs[menu.index("💊 Recetas")]:
 
 # 9. BALANCE HÍDRICO
 with tabs[menu.index("⚖️ Balance")]:
-    if paciente_sel:
+    if not paciente_sel:
+        st.info("👈 Seleccioná un paciente en el menú lateral.")
+    else:
         st.subheader("⚖️ Balance Hídrico Estricto")
-        
+
+        # ====================== FORMULARIO DE BALANCE ======================
         with st.form("bal", clear_on_submit=True):
             col_meta1, col_meta2, col_meta3 = st.columns(3)
             fecha_bal = col_meta1.date_input("📅 Fecha de control", value=ahora().date(), key="fecha_bal")
-            hora_bal_str = col_meta2.text_input("⏰ Hora exacta (Formato HH:MM)", value=ahora().strftime("%H:%M"), key="hora_bal")
-            turno = col_meta3.selectbox("Turno de Guardia", ["Mañana (06 a 14hs)", "Tarde (14 a 22hs)", "Noche (22 a 06hs)"])
-            
+            hora_bal_str = col_meta2.text_input("⏰ Hora exacta (HH:MM)", value=ahora().strftime("%H:%M"), key="hora_bal")
+            turno = col_meta3.selectbox("Turno de Guardia", [
+                "Mañana (06 a 14hs)", 
+                "Tarde (14 a 22hs)", 
+                "Noche (22 a 06hs)"
+            ])
+
             st.divider()
+
             c1, c2 = st.columns(2)
-            c1.markdown("#### 🟢 Ingresos (ml)")
-            i1 = c1.number_input("Oral / Enteral", 0, step=50)
-            i2 = c1.number_input("Parenteral (Sachets, Medicación)", 0, step=50)
-            
-            c2.markdown("#### 🔴 Egresos (ml)")
-            e1 = c2.number_input("Diuresis (Orina)", 0, step=50)
-            e2 = c2.number_input("Drenajes / Sondas", 0, step=50)
-            e3 = c2.number_input("Pérdidas Insensibles / Catarsis", 0, step=50)
-            
-            if st.form_submit_button("💾 Guardar Balance y Calcular Shift", width="stretch"):
-                # --- ARREGLO: Validación flexible de hora ---
-                hora_limpia = hora_bal_str.strip()
-                if not hora_limpia or ":" not in hora_limpia:
-                    hora_limpia = ahora().strftime("%H:%M")
-                    
-                ting = i1 + i2
-                tegr = e1 + e2 + e3
-                bal = ting - tegr
-                
-                fecha_str_combinada = f"{fecha_bal.strftime('%d/%m/%Y')} {hora_limpia}"
-                
+            with c1:
+                st.markdown("#### 🟢 Ingresos (ml)")
+                i_oral = st.number_input("Oral / Enteral", min_value=0, step=50, value=0)
+                i_par = st.number_input("Parenteral (Sachets, Medicación)", min_value=0, step=50, value=0)
+
+            with c2:
+                st.markdown("#### 🔴 Egresos (ml)")
+                e_orina = st.number_input("Diuresis (Orina)", min_value=0, step=50, value=0)
+                e_dren = st.number_input("Drenajes / Sondas", min_value=0, step=50, value=0)
+                e_perd = st.number_input("Pérdidas Insensibles / Catarsis", min_value=0, step=50, value=0)
+
+            if st.form_submit_button("💾 Guardar Balance y Calcular Shift", use_container_width=True, type="primary"):
+                # Validación de hora
+                hora_limpia = hora_bal_str.strip() if ":" in hora_bal_str else ahora().strftime("%H:%M")
+                fecha_str = f"{fecha_bal.strftime('%d/%m/%Y')} {hora_limpia}"
+
+                ingresos = i_oral + i_par
+                egresos = e_orina + e_dren + e_perd
+                balance = ingresos - egresos
+
                 st.session_state["balance_db"].append({
-                    "paciente": paciente_sel, 
+                    "paciente": paciente_sel,
                     "turno": turno,
-                    "i_oral": i1, "i_par": i2,
-                    "e_orina": e1, "e_dren": e2, "e_perd": e3,
-                    "ingresos": ting, 
-                    "egresos": tegr, 
-                    "balance": bal, 
-                    "fecha": fecha_str_combinada,
+                    "i_oral": i_oral,
+                    "i_par": i_par,
+                    "e_orina": e_orina,
+                    "e_dren": e_dren,
+                    "e_perd": e_perd,
+                    "ingresos": ingresos,
+                    "egresos": egresos,
+                    "balance": balance,
+                    "fecha": fecha_str,
                     "firma": user["nombre"]
                 })
                 guardar_datos()
-                st.success(f"✅ Balance registrado con éxito. Resultado del Shift: {bal} ml")
+                st.success(f"✅ Balance guardado. Shift: {'+' if balance >= 0 else ''}{balance} ml")
                 st.rerun()
 
-        blp = [x for x in st.session_state["balance_db"] if x["paciente"] == paciente_sel]
+        # ====================== HISTORIAL DE BALANCES ======================
+        blp = [x for x in st.session_state.get("balance_db", []) if x.get("paciente") == paciente_sel]
+
         if blp:
             st.divider()
             col_tit, col_btn = st.columns([3, 1])
             col_tit.markdown("#### 📋 Historial de Balances Hídricos")
-            
-            if col_btn.button("🗑️ Borrar último", use_container_width=True, key="del_bal", help="Elimina el último balance cargado por error"):
-                st.session_state["balance_db"].remove(blp[-1])
-                guardar_datos()
-                st.rerun()
-            
-            with st.container(height=350):
-                df_bal = pd.DataFrame(blp)
-                
-                if "turno" not in df_bal.columns: 
-                    df_bal["turno"] = "S/D"
-                else:
-                    df_bal["turno"] = df_bal["turno"].fillna("S/D")
-                    
-                df_bal["Ingresos"] = df_bal["ingresos"].astype(str) + " ml"
-                df_bal["Egresos"] = df_bal["egresos"].astype(str) + " ml"
-                
-                df_bal["Shift (Resultado)"] = df_bal["balance"].apply(
-                    lambda x: f"🟢 +{x} ml" if float(x) > 0 else (f"🔴 {x} ml" if float(x) < 0 else "⚖️ 0 ml")
-                )
-                
-                columnas_mostrar = ["fecha", "turno", "Ingresos", "Egresos", "Shift (Resultado)", "firma"]
-                columnas_reales = [c for c in columnas_mostrar if c in df_bal.columns]
-                
-                df_mostrar = df_bal[columnas_reales].rename(columns={
-                    "fecha": "Fecha y Hora", 
-                    "turno": "Turno", 
-                    "firma": "Enfermero/a"
-                })
-                
-                try:
-                    df_mostrar['fecha_dt'] = pd.to_datetime(df_mostrar['Fecha y Hora'], format="%d/%m/%Y %H:%M")
-                    df_mostrar = df_mostrar.sort_values(by='fecha_dt', ascending=False).drop(columns=['fecha_dt'])
-                except Exception:
-                    df_mostrar = df_mostrar.iloc[::-1]
-                
-                st.dataframe(df_mostrar, use_container_width=True, hide_index=True)
+
+            if col_btn.button("🗑️ Borrar último balance", use_container_width=True, key="del_ultimo_balance"):
+                if st.checkbox("¿Estás seguro? Esta acción no se puede deshacer", key="conf_del_balance"):
+                    st.session_state["balance_db"].remove(blp[-1])
+                    guardar_datos()
+                    st.success("Balance eliminado.")
+                    st.rerun()
+
+            # Preparar DataFrame
+            df_bal = pd.DataFrame(blp)
+            df_bal['fecha_dt'] = pd.to_datetime(df_bal['fecha'], format="%d/%m/%Y %H:%M", errors='coerce')
+            df_bal = df_bal.sort_values(by='fecha_dt', ascending=False).drop(columns=['fecha_dt'], errors='ignore')
+
+            df_bal["Ingresos"] = df_bal["ingresos"].astype(str) + " ml"
+            df_bal["Egresos"] = df_bal["egresos"].astype(str) + " ml"
+            df_bal["Shift (Resultado)"] = df_bal["balance"].apply(
+                lambda x: f"🟢 +{x} ml" if x > 0 else (f"🔴 {x} ml" if x < 0 else "⚖️ 0 ml")
+            )
+
+            df_mostrar = df_bal.rename(columns={
+                "fecha": "Fecha y Hora",
+                "turno": "Turno",
+                "firma": "Enfermero/a"
+            })
+
+            st.dataframe(
+                df_mostrar[["Fecha y Hora", "Turno", "Ingresos", "Egresos", "Shift (Resultado)", "Enfermero/a"]],
+                use_container_width=True,
+                hide_index=True
+            )
+        else:
+            st.info("Aún no hay balances hídricos registrados para este paciente.")
 
 # 10. INVENTARIO 
 with tabs[menu.index("📦 Inventario")]:
