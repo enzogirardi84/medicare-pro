@@ -1131,28 +1131,30 @@ with tabs[menu.index("📝 Evolución")]:
         else:
             st.info("Aún no hay evoluciones registradas para este paciente.")
 
-# 6.5 ESTUDIOS COMPLEMENTARIOS - VERSIÓN CORREGIDA (SIN ERRORES 404 + BOTÓN PARA BORRAR)
+# 6.5 ESTUDIOS COMPLEMENTARIOS
 with tabs[menu.index("🔬 Estudios")]:
-    if paciente_sel:
-        st.subheader("Órdenes y Resultados de Estudios")
-        
-        # --- FORMULARIO PARA AGREGAR ESTUDIO ---
+    if not paciente_sel:
+        st.info("👈 Seleccioná un paciente en el menú lateral.")
+    else:
+        st.subheader("🔬 Órdenes y Resultados de Estudios")
+
+        # === FORMULARIO PARA AGREGAR ESTUDIO ===
         with st.form("form_estudios", clear_on_submit=True):
             col_e1, col_e2 = st.columns([1, 2])
             tipo_estudio = col_e1.selectbox("Tipo de Estudio", [
-                "Laboratorio (Sangre/Orina)", "Radiografía (Rx)", "Ecografía", 
+                "Laboratorio (Sangre/Orina)", "Radiografía (Rx)", "Ecografía",
                 "Electrocardiograma (ECG)", "Tomografía (TAC)", "Resonancia Magnética (RMN)", "Otro"
             ])
             detalle_estudio = col_e2.text_input("Detalle del Pedido o Resultado (Ej: Rx Tórax frente...)")
-            
+
             st.markdown("##### 📎 Adjuntar Documento (Opcional)")
-            archivo_subido = st.file_uploader("Subir archivo, foto de galería o PDF", 
-                                             type=["png", "jpg", "jpeg", "pdf"])
-            
+            archivo_subido = st.file_uploader("Subir archivo, foto de galería o PDF",
+                                             type=["png", "jpg", "jpeg", "pdf"], key="uploader_estudio")
+
             with st.expander("📷 O tomar foto con la cámara ahora", expanded=False):
-                foto_estudio = st.camera_input("Tomar foto en vivo")
-            
-            if st.form_submit_button("Guardar Estudio Clínico", width="stretch"):
+                foto_estudio = st.camera_input("Tomar foto en vivo", key="camara_estudio")
+
+            if st.form_submit_button("Guardar Estudio Clínico", use_container_width=True, type="primary"):
                 img_b64 = ""
                 ext = ""
                 if archivo_subido is not None:
@@ -1175,14 +1177,14 @@ with tabs[menu.index("🔬 Estudios")]:
                 st.success("✅ Estudio guardado correctamente.")
                 st.rerun()
 
-        # --- LISTADO DE ESTUDIOS CON DESCARGA SEGURA Y BORRADO INDIVIDUAL ---
+        # === LISTADO DE ESTUDIOS ===
         estudios_pac = [e for e in st.session_state.get("estudios_db", []) if e["paciente"] == paciente_sel]
-        
+
         if estudios_pac:
             st.divider()
             st.markdown("#### 📁 Archivo de Estudios del Paciente")
-            
-            # Botón para borrar el último estudio (rápido)
+
+            # --- OPCIÓN 1: BORRAR ÚLTIMO (rápido) ---
             col_del1, col_del2 = st.columns([3, 1])
             if col_del1.button("🗑️ Borrar último estudio", use_container_width=True):
                 if estudios_pac:
@@ -1190,46 +1192,75 @@ with tabs[menu.index("🔬 Estudios")]:
                     guardar_datos()
                     st.success("Estudio eliminado correctamente.")
                     st.rerun()
-            
+
+            # --- OPCIÓN 2: ELEGIR CUALQUIER ESTUDIO PARA BORRAR (lo que pediste) ---
+            st.markdown("**Seleccioná el estudio que querés eliminar:**")
+            opciones = []
+            for est in reversed(estudios_pac):
+                label = f"{est['fecha']} — {est['tipo']}"
+                if est.get('detalle'):
+                    label += f" | {est['detalle'][:50]}..."
+                opciones.append((label, est))
+
+            if opciones:
+                estudio_seleccionado = st.selectbox(
+                    "Elegir estudio a borrar",
+                    options=opciones,
+                    format_func=lambda x: x[0],
+                    key="selector_borrar_estudio"
+                )
+
+                if st.button("🗑️ Eliminar el estudio seleccionado", type="secondary", use_container_width=True):
+                    if st.checkbox("¿Estás completamente seguro? Esta acción no se puede deshacer", key="conf_borrar_estudio"):
+                        st.session_state["estudios_db"] = [
+                            e for e in st.session_state["estudios_db"]
+                            if not (e["paciente"] == paciente_sel and e["fecha"] == estudio_seleccionado[1]["fecha"])
+                        ]
+                        guardar_datos()
+                        st.success("✅ Estudio eliminado correctamente.")
+                        st.rerun()
+
+            st.divider()
+
+            # --- LISTADO VISUAL ---
             limite_est = st.selectbox("Mostrar últimos:", [10, 20, 50, "Todos"], key="lim_estudios_tab")
             estudios_mostrar = estudios_pac if limite_est == "Todos" else estudios_pac[-int(limite_est):]
-            
+
             with st.container(height=520):
                 for idx, est in enumerate(reversed(estudios_mostrar)):
                     with st.container(border=True):
                         col1, col2 = st.columns([4, 1])
-                        
+
                         with col1:
                             st.markdown(f"**📅 {est['fecha']}** | 👨‍⚕️ **{est['firma']}**")
                             st.markdown(f"**🔬 {est['tipo']}**")
                             if est.get('detalle'):
                                 st.caption(est.get('detalle'))
-                        
+
                         with col2:
-                            # Botón para borrar ESTE estudio específico
                             if st.button("🗑️ Eliminar", key=f"del_est_{est['fecha']}_{idx}", help="Borrar este estudio"):
                                 st.session_state["estudios_db"] = [
-                                    e for e in st.session_state["estudios_db"] 
+                                    e for e in st.session_state["estudios_db"]
                                     if not (e["paciente"] == paciente_sel and e["fecha"] == est["fecha"])
                                 ]
                                 guardar_datos()
                                 st.success("Estudio eliminado")
                                 st.rerun()
-                        
-                        # DESCARGA SEGURA DE PDF
+
+                        # DESCARGA SEGURA
                         if est.get('imagen'):
                             try:
                                 b64_str = est['imagen']
                                 img_bytes = base64.b64decode(b64_str)
-                                
+
                                 if img_bytes.startswith(b'%PDF') or est.get('extension') == 'pdf':
                                     nombre_arch = f"Estudio_{est['fecha'][:10].replace('/','-')}.pdf"
                                     html_btn = f'''
-                                    <a href="data:application/pdf;base64,{b64_str}" 
-                                       download="{nombre_arch}" 
-                                       style="display: block; width: 100%; text-align: center; 
-                                              background-color: #2563eb; color: white; padding: 12px; 
-                                              border-radius: 8px; text-decoration: none; 
+                                    <a href="data:application/pdf;base64,{b64_str}"
+                                       download="{nombre_arch}"
+                                       style="display: block; width: 100%; text-align: center;
+                                              background-color: #2563eb; color: white; padding: 12px;
+                                              border-radius: 8px; text-decoration: none;
                                               font-weight: 600; margin-top: 8px;">
                                        📥 DESCARGAR PDF (Seguro)
                                     </a>
