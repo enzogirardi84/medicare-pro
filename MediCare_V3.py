@@ -1617,7 +1617,7 @@ with tabs[menu.index("⚖️ Balance")]:
             )
         else:
             st.info("Aún no hay balances hídricos registrados para este paciente.")
-# 10. INVENTARIO - VERSIÓN MEJORADA Y CORREGIDA
+# 10. INVENTARIO - VERSIÓN LIMPIA Y PROFESIONAL
 with tabs[menu.index("📦 Inventario")]:
     st.subheader("📦 Gestión de Inventario y Stock de Farmacia")
 
@@ -1627,7 +1627,7 @@ with tabs[menu.index("📦 Inventario")]:
     # ====================== ALERTA DE STOCK CRÍTICO ======================
     stock_critico = [i for i in inv_mio if i.get("stock", 0) <= 10]
     if stock_critico:
-        st.markdown("#### 🚨 **ALERTA DE STOCK CRÍTICO EN FARMACIA**")
+        st.markdown("#### 🚨 **ALERTA DE STOCK CRÍTICO**")
         for item in stock_critico:
             st.error(f"⚠️ **{item.get('item')}**: Quedan solo **{item.get('stock', 0)}** unidades.")
 
@@ -1635,7 +1635,7 @@ with tabs[menu.index("📦 Inventario")]:
 
     # ====================== INGRESO DE MERCADERÍA ======================
     with st.form("form_inv", clear_on_submit=True):
-        st.markdown("#### ➕ Ingreso de Mercadería (Suma al stock existente)")
+        st.markdown("#### ➕ Ingreso de Mercadería")
 
         c1, c2, c3 = st.columns([2, 2, 1])
         lista_base_inv = ["-- Seleccionar del Vademécum --"] + VADEMECUM_BASE
@@ -1668,28 +1668,26 @@ with tabs[menu.index("📦 Inventario")]:
 
     st.divider()
 
-    # ====================== STOCK ACTUAL ======================
+    # ====================== STOCK ACTUAL (VERSIÓN MÁS LINDA) ======================
     if inv_mio:
         st.markdown("#### 📋 Stock Actual en Farmacia")
 
         df_stock = pd.DataFrame(inv_mio)
         df_stock = df_stock.rename(columns={"item": "Insumo", "stock": "Stock Actual"})
 
-        # Función para colorear el stock
-        def highlight_stock(val):
+        # Función para colorear según stock
+        def color_stock(val):
             if val <= 10:
-                return 'background-color: #ffebee; color: #c62828; font-weight: bold'
+                return 'background-color: #ffebee; color: #d32f2f; font-weight: bold'
             elif val <= 25:
-                return 'background-color: #fff3e0; color: #ef6c00'
+                return 'background-color: #fff8e1; color: #f57c00'
             return ''
 
-        # Aplicar estilo correctamente (usando .map en lugar de applymap)
-        styled_df = df_stock[["Insumo", "Stock Actual"]].style.map(
-            highlight_stock, subset=["Stock Actual"]
-        )
+        # Aplicar estilo correctamente
+        styled = df_stock[["Insumo", "Stock Actual"]].style.map(color_stock, subset=["Stock Actual"])
 
         st.dataframe(
-            styled_df,
+            styled,
             use_container_width=True,
             hide_index=True
         )
@@ -1698,32 +1696,32 @@ with tabs[menu.index("📦 Inventario")]:
 
     st.divider()
 
-    # ====================== AJUSTE MANUAL Y ELIMINACIÓN ======================
+    # ====================== AJUSTE MANUAL ======================
     if inv_mio:
         st.markdown("#### ⚙️ Ajuste Manual y Corrección")
 
-        c_ed1, c_ed2, c_ed3 = st.columns([2, 1, 1])
-        item_a_editar = c_ed1.selectbox("Seleccionar insumo a corregir:", [i["item"] for i in inv_mio], key="edit_sel")
+        col1, col2, col3 = st.columns([2, 1, 1])
+        item_a_editar = col1.selectbox("Seleccionar insumo a corregir:", [i["item"] for i in inv_mio], key="edit_sel")
         
         stock_actual = next((i.get("stock", 0) for i in inv_mio if i["item"] == item_a_editar), 0)
-        nuevo_stock = c_ed2.number_input("Declarar Stock Real Exacto:", min_value=0, value=stock_actual, key="new_stock")
+        nuevo_stock = col2.number_input("Nuevo stock real:", min_value=0, value=stock_actual, key="new_stock")
 
-        if c_ed3.button("✏️ Fijar Nuevo Stock", use_container_width=True):
+        if col3.button("✏️ Actualizar Stock", use_container_width=True):
             for i in st.session_state["inventario_db"]:
                 if i["item"] == item_a_editar and i.get("empresa") == mi_empresa:
                     i["stock"] = nuevo_stock
                     break
             guardar_datos()
-            st.success(f"Stock de **{item_a_editar}** actualizado a **{nuevo_stock}** unidades.")
+            st.success(f"✅ Stock de **{item_a_editar}** actualizado a **{nuevo_stock}** unidades.")
             st.rerun()
 
         # Eliminar insumo
         st.divider()
         col_del1, col_del2 = st.columns([3, 1])
-        del_item = col_del1.selectbox("Eliminar insumo por completo del sistema:", [i["item"] for i in inv_mio], key="del_sel")
+        del_item = col_del1.selectbox("Eliminar insumo por completo:", [i["item"] for i in inv_mio], key="del_sel")
         
         if col_del2.button("🗑️ Eliminar Insumo Definitivamente", use_container_width=True, type="secondary"):
-            if st.checkbox("¿Estás completamente seguro? Esta acción no se puede deshacer.", key="conf_del_item"):
+            if st.checkbox("¿Estás seguro? Esta acción no se puede deshacer.", key="conf_del_item"):
                 st.session_state["inventario_db"] = [
                     i for i in st.session_state["inventario_db"] 
                     if not (i["item"] == del_item and i.get("empresa") == mi_empresa)
