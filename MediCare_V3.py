@@ -447,21 +447,69 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
             else:
                 st.error("⚠️ Librería 'streamlit-geolocation' no cargó correctamente.")
 
+            # --- CONTROL DE HORAS DE GUARDIA ---
+            st.markdown("#### ⏳ Control de Horas (Guardia de Hoy)")
+            hoy_str = ahora().strftime("%d/%m/%Y")
+            fichadas_hoy = [c for c in st.session_state.get("checkin_db", []) if c.get("paciente") == paciente_sel and c.get("profesional") == user["nombre"] and c.get("fecha_hora", "").startswith(hoy_str)]
+            
+            if not fichadas_hoy:
+                st.info("Aún no tenés fichadas (Llegada/Salida) registradas hoy para este paciente.")
+            else:
+                llegada_time = None
+                ahora_naive = ahora().replace(tzinfo=None)
+                
+                for f in fichadas_hoy:
+                    try:
+                        dt = datetime.strptime(f["fecha_hora"], "%d/%m/%Y %H:%M:%S")
+                    except:
+                        dt = datetime.strptime(f["fecha_hora"], "%d/%m/%Y %H:%M")
+                        
+                    if "LLEGADA" in f["tipo"]:
+                        llegada_time = dt
+                    elif "SALIDA" in f["tipo"] and llegada_time:
+                        duracion = dt - llegada_time
+                        horas, rem = divmod(duracion.seconds, 3600)
+                        minutos, _ = divmod(rem, 60)
+                        st.success(f"✅ **Turno completado:** Ingresaste a las {llegada_time.strftime('%H:%M')} y saliste a las {dt.strftime('%H:%M')} ➔ **Total trabajado: {horas}h {minutos}m**")
+                        llegada_time = None
+                        
+                if llegada_time: 
+                    duracion_actual = ahora_naive - llegada_time
+                    horas, rem = divmod(duracion_actual.seconds, 3600)
+                    minutos, _ = divmod(rem, 60)
+                    st.warning(f"🟢 **Guardia en curso:** Ingresaste a las {llegada_time.strftime('%H:%M')} ➔ **Tiempo transcurrido: {horas}h {minutos}m**")
+                    if st.button("🔄 Actualizar cronómetro de guardia"):
+                        st.rerun()
+
             st.divider()
             
-            # --- NUEVO ORDEN: PRIMERO LA AGENDA ---
+            # --- PRIMERO LA AGENDA ---
             st.subheader("📅 Agendar Próxima Visita")
             with st.form("agenda_form", clear_on_submit=True):
                 c1_ag, c2_ag = st.columns(2)
                 fecha_ag = c1_ag.date_input("Fecha programada", value=ahora().date())
-                hora_ag = c2_ag.time_input("Hora aproximada", value=ahora().time())
+                hora_ag_str = c2_ag.text_input("Hora aproximada (HH:MM)", value=ahora().strftime("%H:%M"))
+                
                 profesionales = [v['nombre'] for k, v in st.session_state["usuarios_db"].items() if v['empresa'] == mi_empresa or rol == "SuperAdmin"]
                 idx_prof = profesionales.index(user['nombre']) if user['nombre'] in profesionales else 0
                 prof_ag = st.selectbox("Asignar Profesional", profesionales, index=idx_prof)
                 
                 if st.form_submit_button("Agendar Visita", width="stretch"):
-                    st.session_state["agenda_db"].append({"paciente": paciente_sel, "profesional": prof_ag, "fecha": fecha_ag.strftime("%d/%m/%Y"), "hora": hora_ag.strftime("%H:%M"), "empresa": mi_empresa, "estado": "Pendiente"})
-                    guardar_datos(); st.success("✅ Turno agendado. El paciente recibirá la hora automáticamente en el próximo WhatsApp."); st.rerun()
+                    # Validación simple de hora
+                    if len(hora_ag_str) != 5 or ":" not in hora_ag_str:
+                        hora_ag_str = ahora().strftime("%H:%M")
+                        
+                    st.session_state["agenda_db"].append({
+                        "paciente": paciente_sel, 
+                        "profesional": prof_ag, 
+                        "fecha": fecha_ag.strftime("%d/%m/%Y"), 
+                        "hora": hora_ag_str, 
+                        "empresa": mi_empresa, 
+                        "estado": "Pendiente"
+                    })
+                    guardar_datos()
+                    st.success("✅ Turno agendado. El paciente recibirá la hora automáticamente en el próximo WhatsApp.")
+                    st.rerun()
             
             agenda_mia = [a for a in st.session_state["agenda_db"] if a["empresa"] == mi_empresa and a["paciente"] == paciente_sel]
             if agenda_mia: 
