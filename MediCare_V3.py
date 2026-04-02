@@ -2009,4 +2009,147 @@ with tabs[menu.index("📹 Telemedicina")]:
     else:
         st.info("👈 Seleccione un paciente en el panel lateral para iniciar o programar una teleconsulta.")
 
+
+# 15. MÓDULO DE RRHH Y FICHAJES (SOLO ADMIN/COORD)
+if "🧑‍⚕️ RRHH y Fichajes" in menu:
+    with tabs[menu.index("🧑‍⚕️ RRHH y Fichajes")]:
+        st.subheader("🧑‍⚕️ Control de RRHH y Fichaje Histórico")
+        st.info("Generá reportes oficiales de presentismo cruzando ingresos, egresos y matrículas de cada profesional.")
+        
+        # 1. Filtros de Fecha
+        col_f1, col_f2, col_f3 = st.columns(3)
+        fecha_inicio = col_f1.date_input("Desde fecha:", value=ahora().date() - timedelta(days=7))
+        fecha_fin = col_f2.date_input("Hasta fecha:", value=ahora().date())
+        
+        # 2. Extracción y procesamiento de datos
+        fichajes_lista = []
+        for c in st.session_state.get("checkin_db", []):
+            # Filtramos por empresa (el SuperAdmin ve todo, el Coord ve solo su empresa)
+            if c.get("empresa") == mi_empresa or rol == "SuperAdmin":
+                
+                # Buscamos la matrícula del profesional cruzando bases de datos
+                matricula = "S/D"
+                for u_key, u_data in st.session_state["usuarios_db"].items():
+                    if u_data.get("nombre") == c.get("profesional"):
+                        matricula = u_data.get("matricula", "S/D")
+                        break
+                
+                # Separamos Fecha y Hora
+                fh = c.get("fecha_hora", "")
+                if " " in fh:
+                    fecha_f, hora_f = fh.split(" ", 1)
+                else:
+                    fecha_f, hora_f = fh, ""
+                
+                # Limpiamos la acción (Llegada -> INGRESO / Salida -> EGRESO)
+                accion_raw = c.get("tipo", "")
+                if "LLEGADA" in accion_raw.upper():
+                    accion = "🟢 INGRESO"
+                elif "SALIDA" in accion_raw.upper():
+                    accion = "🔴 EGRESO"
+                else:
+                    accion = "OTRO"
+
+                fichajes_lista.append({
+                    "Fecha": fecha_f,
+                    "Hora": hora_f[:5], # Nos quedamos solo con HH:MM
+                    "Profesional": c.get("profesional", "S/D"),
+                    "Matrícula": matricula,
+                    "Acción": accion,
+                    "Paciente": c.get("paciente", "S/D"),
+                    "Detalle_GPS": accion_raw
+                })
+
+        if fichajes_lista:
+            df_fichajes = pd.DataFrame(fichajes_lista)
+            
+            # 3. Aplicamos el filtro de fechas elegido
+            df_fichajes['fecha_dt'] = pd.to_datetime(df_fichajes['Fecha'], format="%d/%m/%Y", errors='coerce')
+            mask = (df_fichajes['fecha_dt'].dt.date >= fecha_inicio) & (df_fichajes['fecha_dt'].dt.date <= fecha_fin)
+            df_filtrado = df_fichajes[mask].copy()
+            
+            if not df_filtrado.empty:
+                # Quitamos la columna auxiliar de fecha
+                df_mostrar = df_filtrado.drop(columns=['fecha_dt', 'Detalle_GPS']).sort_values(by=["Fecha", "Hora"], ascending=[False, False])
+                
+                # Opcional: Filtrar por un profesional en particular
+                prof_filtrar = col_f3.selectbox("Filtrar Profesional:", ["Todos"] + sorted(list(df_mostrar["Profesional"].unique())))
+                if prof_filtrar != "Todos":
+                    df_mostrar = df_mostrar[df_mostrar["Profesional"] == prof_filtrar]
+
+                st.dataframe(df_mostrar, use_container_width=True, hide_index=True)
+                
+                # 4. GENERACIÓN DEL PDF OFICIAL DE RRHH
+                if FPDF_DISPONIBLE:
+                    def t(txt): return str(txt).replace('🟢 ', '').replace('🔴 ', '').encode('latin-1', 'replace').decode('latin-1')
+
+                    def generar_pdf_rrhh(datos_tabla, f_ini, f_fin, prof_sel):
+                        pdf = FPDF(orientation='L') # 'L' es Landscape (Apaisado) para que entren más columnas
+                        pdf.add_page()
+                        
+                        # Insertamos el Logo
+                        import os
+                        directorio_actual = os.path.dirname(os.path.abspath(__file__))
+                        ruta_logo = os.path.join(directorio_actual, "logo_medicare_pro.jpeg")
+                        try:
+                            pdf.image(ruta_logo, x=10, y=8, w=22)
+                        except Exception:
+                            pass
+                            
+                        # Encabezado
+                        pdf.set_font("Arial", 'B', 15)
+                        pdf.cell(0, 10, t(f"REPORTE OFICIAL DE RRHH Y ASISTENCIA - {mi_empresa}"), ln=True, align='C')
+                        pdf.set_font("Arial", '', 10)
+                        pdf.cell(0, 6, t(f"Periodo auditado: {f_ini.strftime('%d/%m/%Y')} al {f_fin.strftime('%d/%m/%Y')}"), ln=True, align='C')
+                        texto_prof = f" | Profesional: {prof_sel}" if prof_sel != "Todos" else ""
+                        pdf.cell(0, 6, t(f"Generado por: {user['nombre']}{texto_prof}"), ln=True, align='C')
+                        pdf.ln(8)
+
+                        # Cabeceras de la Tabla
+                        pdf.set_fill_color(59, 130, 246) # Azul corporativo
+                        pdf.set_text_color(255, 255, 255)
+                        pdf.set_font("Arial", 'B', 10)
+                        pdf.cell(25, 8, "FECHA", 1, 0, 'C', True)
+                        pdf.cell(18, 8, "HORA", 1, 0, 'C', True)
+                        pdf.cell(65, 8, "PROFESIONAL", 1, 0, 'C', True)
+                        pdf.cell(25, 8, "MATRICULA", 1, 0, 'C', True)
+                        pdf.cell(25, 8, "ACCION", 1, 0, 'C', True)
+                        pdf.cell(115, 8, "PACIENTE", 1, 1, 'C', True)
+
+                        # Filas de la Tabla
+                        pdf.set_text_color(0, 0, 0)
+                        pdf.set_font("Arial", '', 9)
+                        
+                        # Convertimos el DataFrame a diccionario para iterar
+                        filas_pdf = datos_tabla.to_dict('records')
+                        
+                        for fila in filas_pdf:
+                            pdf.cell(25, 8, t(fila['Fecha']), 1, 0, 'C')
+                            pdf.cell(18, 8, t(fila['Hora']), 1, 0, 'C')
+                            pdf.cell(65, 8, t(fila['Profesional']), 1, 0, 'L')
+                            pdf.cell(25, 8, t(fila['Matrícula']), 1, 0, 'C')
+                            
+                            # Colorear la celda dependiendo si entró o salió
+                            if "INGRESO" in fila['Acción']:
+                                pdf.set_text_color(0, 128, 0) # Verde
+                            elif "EGRESO" in fila['Acción']:
+                                pdf.set_text_color(200, 0, 0) # Rojo
+                                
+                            pdf.cell(25, 8, t(fila['Acción']), 1, 0, 'C')
+                            pdf.set_text_color(0, 0, 0) # Volver al negro
+                            
+                            # Truncar nombre del paciente si es muy largo
+                            paciente_corto = str(fila['Paciente'])[:65]
+                            pdf.cell(115, 8, t(paciente_corto), 1, 1, 'L')
+
+                        return pdf.output(dest='S').encode('latin-1')
+
+                    st.divider()
+                    pdf_data = generar_pdf_rrhh(df_mostrar, fecha_inicio, fecha_fin, prof_filtrar)
+                    st.download_button("📥 DESCARGAR REPORTE RRHH (PDF PARA LA EMPRESA)", data=pdf_data, file_name=f"Reporte_RRHH_{mi_empresa.replace(' ', '_')}_{ahora().strftime('%d%m%Y')}.pdf", mime="application/pdf", use_container_width=True)
+
+            else:
+                st.warning("No hay registros de fichaje en el rango de fechas seleccionado.")
+        else:
+            st.info("Aún no existen registros de ingresos o egresos en la base de datos general.")
 # --- FIN DEL SISTEMA MEDICARE PRO V9.11 ---
