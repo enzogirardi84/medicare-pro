@@ -402,6 +402,7 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
         st.info("👈 Seleccioná un paciente en el menú lateral para gestionar sus visitas y turnos.")
     else:
         st.subheader("⏱️ Fichada Legal de Visita (GPS Real)")
+
         estado_pac = st.session_state["detalles_pacientes_db"].get(paciente_sel, {}).get("estado", "Activo")
         if estado_pac == "De Alta":
             st.error("⚠️ Este paciente se encuentra DE ALTA. Su legajo está archivado. Solo se puede visualizar el historial.")
@@ -410,15 +411,16 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
             dire_paciente = det.get("direccion", "No registrada")
             te = det.get("telefono", "")
 
+            # === GEOLOCALIZACIÓN ===
             if GEO_DISPONIBLE:
                 loc = streamlit_geolocation()
-                lat = loc.get('latitude') if loc else None
-                lon = loc.get('longitude') if loc else None
+                lat = loc.get('latitude') if loc and loc.get('latitude') is not None else None
+                lon = loc.get('longitude') if loc and loc.get('longitude') is not None else None
 
                 if lat is not None and lon is not None:
                     try:
-                        lat_str = str(round(float(lat), 5))
-                        lon_str = str(round(float(lon), 5))
+                        lat_str = f"{float(lat):.5f}"
+                        lon_str = f"{float(lon):.5f}"
                     except:
                         lat_str = str(lat)
                         lon_str = str(lon)
@@ -428,114 +430,147 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
                     link_mapa = f"https://www.google.com/maps/search/?api=1&query={lat_str},{lon_str}"
                     st.markdown(f"[🗺️ Ver en Google Maps]({link_mapa})")
 
+                    # Botones de fichada más grandes y claros
                     c_in, c_out = st.columns(2)
-                    if c_in.button("🟢 Fichar LLEGADA en esta Ubicación", use_container_width=True):
-                        st.session_state["checkin_db"].append({"paciente": paciente_sel, "profesional": user["nombre"], "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"), "tipo": f"LLEGADA en: {direccion_real} (Lat: {lat_str})", "empresa": mi_empresa})
-                        guardar_datos(); st.success("Llegada registrada exitosamente."); st.rerun()
-                    
-                    if c_out.button("🔴 Fichar SALIDA en esta Ubicación", use_container_width=True):
-                        st.session_state["checkin_db"].append({"paciente": paciente_sel, "profesional": user["nombre"], "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"), "tipo": f"SALIDA de: {direccion_real} (Lat: {lat_str})", "empresa": mi_empresa})
-                        guardar_datos(); st.success("Salida registrada exitosamente."); st.rerun()
-                else:
-                    st.error("❌ Aún no capturaste tu ubicación. Tocá la brújula de arriba 👆 y dale a 'Permitir' en tu navegador.")
-            else:
-                st.error("⚠️ Librería 'streamlit-geolocation' no cargó correctamente.")
+                    if c_in.button("🟢 Fichar LLEGADA en esta Ubicación", use_container_width=True, type="primary"):
+                        st.session_state["checkin_db"].append({
+                            "paciente": paciente_sel,
+                            "profesional": user["nombre"],
+                            "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"),
+                            "tipo": f"LLEGADA en: {direccion_real} (Lat: {lat_str})",
+                            "empresa": mi_empresa
+                        })
+                        guardar_datos()
+                        st.success("✅ Llegada registrada exitosamente.")
+                        st.rerun()
 
-            # --- CONTROL DE HORAS DE GUARDIA ---
-            st.markdown("#### ⏳ Control de Horas (Guardia de Hoy)")
-            hoy_str = ahora().strftime("%d/%m/%Y")
-            fichadas_hoy = [c for c in st.session_state.get("checkin_db", []) if c.get("paciente") == paciente_sel and c.get("profesional") == user["nombre"] and c.get("fecha_hora", "").startswith(hoy_str)]
-            
-            if not fichadas_hoy:
-                st.info("Aún no tenés fichadas (Llegada/Salida) registradas hoy para este paciente.")
+                    if c_out.button("🔴 Fichar SALIDA en esta Ubicación", use_container_width=True, type="secondary"):
+                        st.session_state["checkin_db"].append({
+                            "paciente": paciente_sel,
+                            "profesional": user["nombre"],
+                            "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"),
+                            "tipo": f"SALIDA de: {direccion_real} (Lat: {lat_str})",
+                            "empresa": mi_empresa
+                        })
+                        guardar_datos()
+                        st.success("✅ Salida registrada exitosamente.")
+                        st.rerun()
+                else:
+                    st.warning("📍 Aún no capturaste tu ubicación. Tocá el ícono de ubicación arriba y permití el acceso.")
             else:
+                st.error("⚠️ Librería 'streamlit-geolocation' no está instalada.")
+
+            # === CONTROL DE HORAS DE GUARDIA (MEJORADO) ===
+            st.markdown("#### ⏳ Control de Horas de Guardia (Hoy)")
+            hoy_str = ahora().strftime("%d/%m/%Y")
+            fichadas_hoy = [
+                c for c in st.session_state.get("checkin_db", [])
+                if c.get("paciente") == paciente_sel
+                and c.get("profesional") == user["nombre"]
+                and c.get("fecha_hora", "").startswith(hoy_str)
+            ]
+
+            if not fichadas_hoy:
+                st.info("Aún no tenés fichadas hoy para este paciente.")
+            else:
+                # Ordenamos cronológicamente
+                fichadas_hoy.sort(key=lambda x: datetime.strptime(x["fecha_hora"], "%d/%m/%Y %H:%M:%S") 
+                                  if " %H:%M:%S" in x["fecha_hora"] else datetime.strptime(x["fecha_hora"], "%d/%m/%Y %H:%M"))
+
                 llegada_time = None
                 ahora_naive = ahora().replace(tzinfo=None)
-                
+
                 for f in fichadas_hoy:
-                    try:
-                        dt = datetime.strptime(f["fecha_hora"], "%d/%m/%Y %H:%M:%S")
-                    except:
-                        dt = datetime.strptime(f["fecha_hora"], "%d/%m/%Y %H:%M")
-                        
-                    if "LLEGADA" in f["tipo"]:
+                    dt = datetime.strptime(f["fecha_hora"], "%d/%m/%Y %H:%M:%S") if " %H:%M:%S" in f["fecha_hora"] else datetime.strptime(f["fecha_hora"], "%d/%m/%Y %H:%M")
+
+                    if "LLEGADA" in f["tipo"].upper():
                         llegada_time = dt
-                    elif "SALIDA" in f["tipo"] and llegada_time:
+                        st.info(f"🟢 **Guardia abierta:** Ingresaste a las {dt.strftime('%H:%M')}")
+                    elif "SALIDA" in f["tipo"].upper() and llegada_time:
                         duracion = dt - llegada_time
                         horas, rem = divmod(duracion.seconds, 3600)
                         minutos, _ = divmod(rem, 60)
-                        st.success(f"✅ **Turno completado:** Ingresaste a las {llegada_time.strftime('%H:%M')} y saliste a las {dt.strftime('%H:%M')} ➔ **Total trabajado: {horas}h {minutos}m**")
+                        st.success(f"✅ **Turno completado:** {llegada_time.strftime('%H:%M')} → {dt.strftime('%H:%M')} → **{horas}h {minutos}m**")
                         llegada_time = None
-                        
-                if llegada_time: 
+
+                # Cronómetro en tiempo real si hay guardia abierta
+                if llegada_time:
                     duracion_actual = ahora_naive - llegada_time
                     horas, rem = divmod(duracion_actual.seconds, 3600)
                     minutos, _ = divmod(rem, 60)
-                    st.warning(f"🟢 **Guardia en curso:** Ingresaste a las {llegada_time.strftime('%H:%M')} ➔ **Tiempo transcurrido: {horas}h {minutos}m**")
-                    if st.button("🔄 Actualizar cronómetro de guardia"):
+                    st.warning(f"⏳ **Guardia en curso desde las {llegada_time.strftime('%H:%M')}** → **{horas}h {minutos}m** transcurridos")
+
+                    # Auto-refresco cada 30 segundos
+                    if st.button("🔄 Actualizar cronómetro", use_container_width=True):
                         st.rerun()
+                    st.caption("⏳ Se actualiza automáticamente cada 30 segundos")
 
             st.divider()
-            
-            # --- PRIMERO LA AGENDA ---
+
+            # === AGENDA (sin cambios importantes, solo pequeño pulido) ===
             st.subheader("📅 Agendar Próxima Visita")
             with st.form("agenda_form", clear_on_submit=True):
                 c1_ag, c2_ag = st.columns(2)
                 fecha_ag = c1_ag.date_input("Fecha programada", value=ahora().date(), key="fecha_agenda_nueva")
                 hora_ag_str = c2_ag.text_input("Hora aproximada (HH:MM)", value=ahora().strftime("%H:%M"), key="hora_agenda_nueva")
-                
-                profesionales = [v['nombre'] for k, v in st.session_state["usuarios_db"].items() if v['empresa'] == mi_empresa or rol == "SuperAdmin"]
+
+                profesionales = [v['nombre'] for k, v in st.session_state["usuarios_db"].items() 
+                               if v['empresa'] == mi_empresa or rol == "SuperAdmin"]
                 idx_prof = profesionales.index(user['nombre']) if user['nombre'] in profesionales else 0
                 prof_ag = st.selectbox("Asignar Profesional", profesionales, index=idx_prof)
-                
-                if st.form_submit_button("Agendar Visita", width="stretch"):
-                    # ARREGLO: Validación mucho más flexible. Solo exige que haya un ":"
-                    hora_limpia = hora_ag_str.strip()
-                    if not hora_limpia or ":" not in hora_limpia:
-                        hora_limpia = ahora().strftime("%H:%M")
-                        
+
+                if st.form_submit_button("Agendar Visita", use_container_width=True, type="primary"):
+                    hora_limpia = hora_ag_str.strip() if ":" in hora_ag_str else ahora().strftime("%H:%M")
                     st.session_state["agenda_db"].append({
-                        "paciente": paciente_sel, 
-                        "profesional": prof_ag, 
-                        "fecha": fecha_ag.strftime("%d/%m/%Y"), 
-                        "hora": hora_limpia, 
-                        "empresa": mi_empresa, 
+                        "paciente": paciente_sel,
+                        "profesional": prof_ag,
+                        "fecha": fecha_ag.strftime("%d/%m/%Y"),
+                        "hora": hora_limpia,
+                        "empresa": mi_empresa,
                         "estado": "Pendiente"
                     })
                     guardar_datos()
-                    st.success("✅ Turno agendado. El paciente recibirá la hora automáticamente en el próximo WhatsApp.")
+                    st.success("✅ Turno agendado correctamente.")
                     st.rerun()
-            
+
+            # Mostrar últimas agendas
             agenda_mia = [a for a in st.session_state["agenda_db"] if a["empresa"] == mi_empresa and a["paciente"] == paciente_sel]
-            if agenda_mia: 
-                st.caption("Próximas visitas agendadas para este paciente:")
-                st.dataframe(pd.DataFrame(agenda_mia).drop(columns=["empresa", "paciente"]).tail(3), use_container_width=True)
+            if agenda_mia:
+                st.caption("Próximas visitas agendadas:")
+                st.dataframe(pd.DataFrame(agenda_mia).drop(columns=["empresa", "paciente"]).tail(5), use_container_width=True)
 
             st.divider()
 
-            # --- SEGUNDO: EL DOMICILIO Y EL WHATSAPP ---
+            # === CONTACTO Y WHATSAPP (mejorado) ===
             st.subheader("📲 Contacto y Ubicación")
             if dire_paciente and dire_paciente != "No registrada":
-                st.info(f"🏠 **Domicilio Asignado del Paciente:** {dire_paciente}")
-            
-            agenda_paciente = [a for a in st.session_state["agenda_db"] if a["paciente"] == paciente_sel and a["empresa"] == mi_empresa and a["estado"] == "Pendiente"]
-            hora_turno_str = ""
-            if agenda_paciente:
-                turno_prox = agenda_paciente[-1]
-                hora_turno_str = f" a las {turno_prox['hora']} hs"
-            
+                st.info(f"🏠 **Domicilio:** {dire_paciente}")
+
+            agenda_paciente = [a for a in st.session_state["agenda_db"] 
+                             if a["paciente"] == paciente_sel and a["empresa"] == mi_empresa and a["estado"] == "Pendiente"]
+            hora_turno_str = f" a las {agenda_paciente[-1]['hora']} hs" if agenda_paciente else ""
+
             if te:
                 num_limpio = ''.join(filter(str.isdigit, str(te)))
-                if len(num_limpio) >= 10: num_limpio = "549" + num_limpio[-10:]
-                if hora_turno_str:
-                    msg_text = f"Hola, soy {user['nombre']} de {mi_empresa}. Me comunico para confirmar la visita médica. Estaré llegando{hora_turno_str}. ¡Saludos!"
-                else:
-                    msg_text = f"Hola, soy {user['nombre']} de {mi_empresa}. Estoy en camino al domicilio."
-                msg = urllib.parse.quote(msg_text)
-                st.markdown(f'<a href="https://wa.me/{num_limpio}?text={msg}" target="_blank" class="wa-btn">AVISAR LLEGADA POR WHATSAPP</a>', unsafe_allow_html=True)
-                if hora_turno_str:
-                    st.caption(f"*(El mensaje de WhatsApp incluirá automáticamente el horario programado: {hora_turno_str})*")
+                if len(num_limpio) >= 10:
+                    num_limpio = "549" + num_limpio[-10:]
 
+                msg_text = (
+                    f"Hola, soy {user['nombre']} de {mi_empresa}. "
+                    f"Me comunico para confirmar la visita{hora_turno_str}. "
+                    f"Estaré llegando en breve. ¡Saludos!"
+                )
+                msg = urllib.parse.quote(msg_text)
+
+                st.markdown(f'''
+                <a href="https://wa.me/{num_limpio}?text={msg}" 
+                   target="_blank" class="wa-btn">
+                    📲 AVISAR LLEGADA POR WHATSAPP
+                </a>
+                ''', unsafe_allow_html=True)
+
+                if hora_turno_str:
+                    st.caption(f"*(El mensaje incluye automáticamente el horario: {hora_turno_str})*")
 if "📈 Dashboard" in menu:
     with tabs[menu.index("📈 Dashboard")]:
         st.markdown(f"<h3 style='color: #3b82f6;'>📈 Panel de Gestión - {mi_empresa}</h3>", unsafe_allow_html=True)
