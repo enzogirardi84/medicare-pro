@@ -1617,7 +1617,7 @@ with tabs[menu.index("⚖️ Balance")]:
             )
         else:
             st.info("Aún no hay balances hídricos registrados para este paciente.")
-# 10. INVENTARIO - VERSIÓN CON TARJETAS EN 3 COLUMNAS + UNIFICADO
+# 10. INVENTARIO - VERSIÓN TABLA LIMPIA Y PROFESIONAL (Para muchos insumos)
 with tabs[menu.index("📦 Inventario")]:
     st.subheader("📦 Gestión de Inventario y Stock de Farmacia")
 
@@ -1667,44 +1667,29 @@ with tabs[menu.index("📦 Inventario")]:
 
     st.divider()
 
-    # ====================== STOCK ACTUAL CON TARJETAS (3 COLUMNAS) ======================
+    # ====================== STOCK ACTUAL - TABLA LIMPIA ======================
     if inv_mio:
         st.markdown("#### 📋 Stock Actual en Farmacia")
 
-        # Usamos 3 columnas para que no se haga tan largo
-        cols = st.columns(3)
+        df_stock = pd.DataFrame(inv_mio)
+        df_stock = df_stock.rename(columns={"item": "Insumo", "stock": "Stock Actual"})
 
-        for idx, item in enumerate(inv_mio):
-            stock = item.get("stock", 0)
-            
-            # Color unificado (rojo suave para crítico, verde suave para normal)
+        # Estilo limpio y oscuro
+        def style_stock(row):
+            stock = row["Stock Actual"]
             if stock <= 10:
-                color = "#ff5252"
-                bg_color = "#3a1f1f"
+                return ['background-color: #3a1f1f; color: #ff8a80'] * len(row)
             elif stock <= 25:
-                color = "#ffb300"
-                bg_color = "#3a2f1f"
-            else:
-                color = "#4caf50"
-                bg_color = "#1f2f1f"
+                return ['background-color: #3a2f1f; color: #ffd180'] * len(row)
+            return ['background-color: #1e1e1e; color: #ffffff'] * len(row)
 
-            with cols[idx % 3]:
-                st.markdown(f"""
-                <div style="background-color:{bg_color}; 
-                            padding:16px; 
-                            border-radius:12px; 
-                            border:1px solid #424242; 
-                            margin-bottom:12px; 
-                            text-align:center;">
-                    <div style="font-size:15px; color:#bbbbbb; margin-bottom:6px;">
-                        {item['item']}
-                    </div>
-                    <div style="font-size:28px; font-weight:bold; color:{color};">
-                        {stock}
-                    </div>
-                    <div style="font-size:13px; color:#888888;">unidades</div>
-                </div>
-                """, unsafe_allow_html=True)
+        styled_df = df_stock[["Insumo", "Stock Actual"]].style.apply(style_stock, axis=1)
+
+        st.dataframe(
+            styled_df,
+            use_container_width=True,
+            hide_index=True
+        )
     else:
         st.info("Aún no hay insumos cargados en el inventario.")
 
@@ -1743,7 +1728,6 @@ with tabs[menu.index("📦 Inventario")]:
                 guardar_datos()
                 st.success(f"Insumo **{del_item}** eliminado definitivamente.")
                 st.rerun()
-
 # 11. CAJA - VERSIÓN CORREGIDA (SIN ERRORES 404)
 with tabs[menu.index("💳 Caja")]:
     if paciente_sel:
