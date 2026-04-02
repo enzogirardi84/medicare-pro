@@ -1397,7 +1397,7 @@ with tabs[menu.index("💉 Materiales")]:
         else:
             st.info("Aún no se han registrado consumos de materiales para este paciente.")
             
-# 8. RECETAS - VERSIÓN LEGAL COMPLETA (Nombre + Matrícula + Firma Digital)
+# 8. RECETAS - VERSIÓN LEGAL COMPLETA (Nombre + Matrícula + Firma Digital + PDF)
 with tabs[menu.index("💊 Recetas")]:
     if not paciente_sel:
         st.info("👈 Seleccioná un paciente en el menú lateral.")
@@ -1407,7 +1407,6 @@ with tabs[menu.index("💊 Recetas")]:
         # ====================== NUEVA PRESCRIPCIÓN MÉDICA LEGAL ======================
         st.markdown("##### 👨‍⚕️ Nueva Prescripción Médica")
         
-        # ARREGLO: Cambiamos st.form por st.container. Esto libera el canvas para la PC y el móvil.
         with st.container(border=True):
             c1, c2 = st.columns([3, 1])
             lista_vademecum = ["-- Seleccionar del Vademécum --"] + VADEMECUM_BASE
@@ -1429,16 +1428,15 @@ with tabs[menu.index("💊 Recetas")]:
 
             st.markdown("##### 🖋️ Firma Digital del Médico")
             firma_canvas = st_canvas(
-                key="firma_receta_activa", # Le cambié la key para forzar que se reinicie
+                key="firma_receta_activa", 
                 background_color="#ffffff",
                 height=150,
                 drawing_mode="freedraw",
-                stroke_width=3, # Trazo un poquito más fino, tipo lapicera
+                stroke_width=3, 
                 stroke_color="#000000",
                 display_toolbar=True
             )
 
-            # Cambiamos form_submit_button por un st.button normal
             if st.button("✅ Guardar Prescripción Médica", use_container_width=True, type="primary"):
                 med_final = med_manual.strip().title() if med_manual.strip() else med_vademecum
 
@@ -1523,10 +1521,8 @@ with tabs[menu.index("💊 Recetas")]:
                 return styles
 
             styled_df = df.style.apply(style_medicacion, axis=1)
-
             st.dataframe(styled_df, use_container_width=True, hide_index=True)
             st.caption("✅ = Administrado   ⭕ = Pendiente")
-
             st.divider()
 
             # ====================== PANEL DE REGISTRO DE DOSIS ======================
@@ -1551,68 +1547,120 @@ with tabs[menu.index("💊 Recetas")]:
                     else:
                         if "administracion_med_db" not in st.session_state:
                             st.session_state["administracion_med_db"] = []
-                            
-                        # Limpia si ya había un registro a esa misma hora y lo sobreescribe
                         st.session_state["administracion_med_db"] = [
                             a for a in st.session_state.get("administracion_med_db", [])
                             if not (a.get("paciente") == paciente_sel and a.get("fecha") == fecha_hoy and a.get("med") == med_sel and a.get("hora") == hora_sel)
                         ]
-                        
                         st.session_state["administracion_med_db"].append({
-                            "paciente": paciente_sel,
-                            "med": med_sel,
-                            "fecha": fecha_hoy,
-                            "hora": hora_sel,
-                            "estado": estado_sel,
-                            "motivo": justificacion.strip() if "❌" in estado_sel else "",
-                            "firma": user["nombre"]
+                            "paciente": paciente_sel, "med": med_sel, "fecha": fecha_hoy, "hora": hora_sel,
+                            "estado": estado_sel, "motivo": justificacion.strip() if "❌" in estado_sel else "", "firma": user["nombre"]
                         })
-                        guardar_datos()
-                        st.success(f"✅ Registro guardado exitosamente para las {hora_sel}.")
-                        st.rerun()
+                        guardar_datos(); st.success(f"✅ Registro guardado exitosamente para las {hora_sel}."); st.rerun()
 
             st.divider()
 
             # ====================== MODIFICAR O SUSPENDER ======================
             st.markdown("#### ⚙️ Modificar o Suspender Manualmente")
             c_ed1, c_ed2 = st.columns([3, 2])
-            
             opciones_recetas = [f"[{r.get('fecha', '')}] {r.get('med', '')}" for r in recs]
             receta_seleccionada = c_ed1.selectbox("Seleccionar indicación a gestionar:", opciones_recetas)
-            
             accion_receta = c_ed2.selectbox("Acción a realizar:", ["Suspender / Eliminar", "Editar indicación"])
             
             nuevo_texto_receta = ""
             if accion_receta == "Editar indicación" and receta_seleccionada:
-                try:
-                    texto_original = receta_seleccionada.split("] ")[1]
-                except:
-                    texto_original = receta_seleccionada
+                try: texto_original = receta_seleccionada.split("] ")[1]
+                except: texto_original = receta_seleccionada
                 nuevo_texto_receta = st.text_input("Modificar detalle (Dosis, días, etc.):", value=texto_original)
             
             if st.button("⚠️ Aplicar Cambios en Terapéutica", use_container_width=True):
                 for r in st.session_state["indicaciones_db"]:
                     if r["paciente"] == paciente_sel and f"[{r.get('fecha', '')}] {r.get('med', '')}" == receta_seleccionada:
                         if accion_receta == "Suspender / Eliminar":
-                            st.session_state["indicaciones_db"].remove(r)
-                            st.success("✅ Indicación suspendida.")
+                            st.session_state["indicaciones_db"].remove(r); st.success("✅ Indicación suspendida.")
                         elif accion_receta == "Editar indicación" and nuevo_texto_receta:
-                            r["med"] = nuevo_texto_receta
-                            st.success("✅ Indicación editada con éxito.")
+                            r["med"] = nuevo_texto_receta; st.success("✅ Indicación editada con éxito.")
                         break
-                guardar_datos()
-                st.rerun()
+                guardar_datos(); st.rerun()
 
             st.divider()
 
-            # ====================== HISTORIAL DE PRESCRIPCIONES ======================
+            # ====================== GENERADOR DE PDF Y HISTORIAL ======================
             st.markdown("#### 🕰️ Historial de Prescripciones Médicas")
-            with st.container(height=400):
-                for r in reversed(recs[-30:]):
-                    st.success(f"""
-                    📌 **{r.get('fecha', '—')}** Indicado por: **{r.get('medico_nombre', '—')}** Matrícula: {r.get('medico_matricula', '—')}  
-                    {r.get('med', '')}
-                    """)
+            
+            # Función para generar el PDF de una receta individual
+            def generar_pdf_receta(r_data):
+                if not FPDF_DISPONIBLE: return b""
+                def t(txt): return str(txt).replace('⚖️', '').replace('⚠️', '').encode('latin-1', 'replace').decode('latin-1')
+                
+                pdf = FPDF(format='A5')
+                pdf.add_page()
+                
+                # Intentar poner logo
+                directorio_actual = os.path.dirname(os.path.abspath(__file__))
+                ruta_logo = os.path.join(directorio_actual, "logo_medicare_pro.jpeg")
+                try: pdf.image(ruta_logo, x=10, y=10, w=20)
+                except: pass
+                
+                pdf.set_font("Arial", 'B', 14)
+                pdf.cell(0, 10, t(f"RECETA MEDICA - {mi_empresa}"), ln=True, align='C')
+                pdf.ln(5)
+                
+                det = st.session_state["detalles_pacientes_db"].get(paciente_sel, {})
+                pdf.set_font("Arial", '', 10)
+                pdf.cell(0, 6, t(f"Fecha: {r_data.get('fecha', '').split(' ')[0]}"), ln=True)
+                pdf.cell(0, 6, t(f"Paciente: {paciente_sel.split(' (')[0]}"), ln=True)
+                pdf.cell(0, 6, t(f"DNI: {det.get('dni', 'S/D')}"), ln=True)
+                pdf.line(10, pdf.get_y()+2, 138, pdf.get_y()+2)
+                pdf.ln(8)
+                
+                pdf.set_font("Arial", 'B', 12)
+                pdf.cell(0, 8, t("Rp/"), ln=True)
+                pdf.set_font("Arial", '', 11)
+                pdf.multi_cell(0, 6, t(r_data.get('med', '')))
+                pdf.ln(15)
+                
+                y_firma = pdf.get_y()
+                firma_str = r_data.get("firma_b64", "")
+                if firma_str:
+                    try:
+                        img_data = base64.b64decode(firma_str)
+                        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
+                            tmp.write(img_data)
+                            tmp_path = tmp.name
+                        pdf.image(tmp_path, x=80, y=y_firma, w=40)
+                        os.remove(tmp_path)
+                    except: pass
+                
+                pdf.set_xy(80, y_firma + 20)
+                pdf.set_font("Arial", 'B', 9)
+                pdf.cell(50, 5, t(r_data.get('medico_nombre', 'S/D')), ln=2, align='C')
+                pdf.cell(50, 5, t(f"Mat: {r_data.get('medico_matricula', 'S/D')}"), ln=0, align='C')
+                
+                return pdf.output(dest='S').encode('latin-1')
+
+            with st.container(height=450):
+                for idx, r in enumerate(reversed(recs[-30:])):
+                    with st.container(border=True):
+                        c_info, c_btn = st.columns([3, 1])
+                        
+                        c_info.markdown(f"📌 **{r.get('fecha', '—')}**")
+                        c_info.markdown(f"**Indicado por:** {r.get('medico_nombre', '—')} | **Matrícula:** {r.get('medico_matricula', '—')}")
+                        c_info.markdown(f"*{r.get('med', '')}*")
+                        
+                        if FPDF_DISPONIBLE:
+                            pdf_bytes = generar_pdf_receta(r)
+                            b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+                            nombre_arch = f"Receta_{paciente_sel.split(' (')[0]}_{r.get('fecha', '')[:10].replace('/','')}.pdf"
+                            
+                            html_btn_receta = f'''
+                            <a href="data:application/pdf;base64,{b64_pdf}" download="{nombre_arch}" 
+                               style="display: block; width: 100%; text-align: center; background-color: #2563eb; 
+                                      color: white; padding: 10px; border-radius: 6px; text-decoration: none; 
+                                      font-weight: 600; font-size: 14px; font-family: sans-serif; margin-top: 15px;">
+                               📄 Imprimir PDF
+                            </a>
+                            '''
+                            c_btn.markdown(html_btn_receta, unsafe_allow_html=True)
 
         else:
             st.info("Aún no hay medicación indicada para este paciente.")
