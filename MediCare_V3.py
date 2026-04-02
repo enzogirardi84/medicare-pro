@@ -2596,7 +2596,7 @@ if "⚙️ Mi Equipo" in menu:
                     st.success(f"✅ Usuario **{u_id}** habilitado correctamente.")
                     st.rerun()
 
-               st.divider()
+        st.divider()
 
         # ====================== LISTADO DE USUARIOS CON SCROLL ANTI-COLAPSO ======================
         st.subheader("👥 Control de Accesos")
@@ -2617,8 +2617,8 @@ if "⚙️ Mi Equipo" in menu:
         else:
             st.caption(f"Mostrando {len(usuarios_filtrados)} usuarios")
 
-            # === CONTENEDOR CON SCROLL INTERNO (ANTI-COLAPSO) ===
-            with st.container(height=620, border=True):   # ←←← AQUÍ ESTÁ EL SCROLL
+            # Contenedor con scroll interno (anti-colapso)
+            with st.container(height=620, border=True):
                 for u, d in usuarios_filtrados.items():
                     if u == "admin":
                         continue
