@@ -1617,7 +1617,7 @@ with tabs[menu.index("⚖️ Balance")]:
             )
         else:
             st.info("Aún no hay balances hídricos registrados para este paciente.")
-# 10. INVENTARIO - VERSIÓN OSCURA UNIFICADA (Negro con letras blancas)
+# 10. INVENTARIO - VERSIÓN UNIFICADA EN TONO BORDO OSCURO
 with tabs[menu.index("📦 Inventario")]:
     st.subheader("📦 Gestión de Inventario y Stock de Farmacia")
 
@@ -1667,23 +1667,24 @@ with tabs[menu.index("📦 Inventario")]:
 
     st.divider()
 
-    # ====================== STOCK ACTUAL - ESTILO OSCURO UNIFICADO ======================
+    # ====================== STOCK ACTUAL - TODO EN TONO BORDO OSCURO ======================
     if inv_mio:
         st.markdown("#### 📋 Stock Actual en Farmacia")
 
         df_stock = pd.DataFrame(inv_mio)
         df_stock = df_stock.rename(columns={"item": "Insumo", "stock": "Stock Actual"})
 
-        # Estilo oscuro unificado (negro con letras blancas)
-        def style_unificado(row):
+        # Estilo unificado: todo en tono bordo oscuro
+        def unificar_bordo(row):
             stock = row["Stock Actual"]
             if stock <= 10:
-                return ['background-color: #2c1f1f; color: #ff8a80; font-weight: bold'] * len(row)
-            return ['background-color: #1e1e1e; color: #ffffff'] * len(row)
+                return ['background-color: #3c1f1f; color: #ff8a80; font-weight: bold'] * len(row)
+            else:
+                return ['background-color: #2c1f1f; color: #ffffff'] * len(row)
 
-        styled = df_stock[["Insumo", "Stock Actual"]].style.apply(style_unificado, axis=1)
+        styled = df_stock[["Insumo", "Stock Actual"]].style.apply(unificar_bordo, axis=1)
 
-        # Contenedor con scroll interno (anti-colapso)
+        # Contenedor con scroll interno para evitar colapso
         with st.container(height=480, border=True):
             st.dataframe(
                 styled,
