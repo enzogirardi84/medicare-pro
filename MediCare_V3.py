@@ -879,10 +879,8 @@ with tabs[menu.index("🔬 Estudios")]:
             limite_est = st.selectbox("Mostrar últimos:", [10, 20, 50, "Todos"], key="lim_estudios_tab")
             estudios_mostrar = estudios_pac if limite_est == "Todos" else estudios_pac[-int(limite_est):]
             
-            # Cajita anti-colapso con scroll
             with st.container(height=500):
                 for idx, est in enumerate(reversed(estudios_mostrar)):
-                    # Diseño de Carpeta/Tarjeta individual
                     with st.container(border=True):
                         st.markdown(f"**📅 Fecha:** {est['fecha']} | 👨‍⚕️ **Profesional:** {est['firma']}")
                         st.markdown(f"**🔬 Estudio:** {est['tipo']}")
@@ -890,29 +888,20 @@ with tabs[menu.index("🔬 Estudios")]:
                         
                         if est.get('imagen'):
                             try:
-                                b64_string = est['imagen']
-                                img_bytes = base64.b64decode(b64_string)
+                                b64_str = est['imagen']
+                                img_bytes = base64.b64decode(b64_str)
                                 
+                                # TRUCO ANTI-404: Botón HTML Puro para descargar
                                 if img_bytes.startswith(b'%PDF') or est.get('extension') == 'pdf':
-                                    file_name = f"Estudio_{est['fecha'][:10].replace('/','-')}.pdf"
-                                    
-                                    # TRUCO ANTI-404: Botón HTML puro con Base64 inyectado
-                                    html_boton = f"""
-                                    <a href="data:application/pdf;base64,{b64_string}" download="{file_name}" style="
-                                        display: block;
-                                        width: 100%;
-                                        text-align: center;
-                                        background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
-                                        color: white;
-                                        padding: 10px;
-                                        border-radius: 8px;
-                                        text-decoration: none;
-                                        font-weight: 600;
-                                        box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
-                                        margin-top: 10px;
-                                        font-family: sans-serif;
-                                    ">📥 Descargar PDF Adjunto</a>
-                                    """
+                                    nombre_arch = f"Estudio_{est['fecha'][:10].replace('/','-')}.pdf"
+                                    html_boton = f'''
+                                    <a href="data:application/pdf;base64,{b64_str}" download="{nombre_arch}" 
+                                       style="display: block; width: 100%; text-align: center; background-color: #2563eb; 
+                                              color: white; padding: 12px; border-radius: 8px; text-decoration: none; 
+                                              font-weight: 600; font-family: sans-serif; margin-top: 10px;">
+                                       📥 DESCARGAR PDF (Seguro)
+                                    </a>
+                                    '''
                                     st.markdown(html_boton, unsafe_allow_html=True)
                                 else:
                                     st.image(img_bytes, caption="Documento Adjunto", use_container_width=True)
@@ -1550,7 +1539,7 @@ with tabs[menu.index("📚 Historial")]:
                     for e in reversed(evs[-limite:]): st.info(f"📅 **{e['fecha']}** | {e['firma']}\n\n{e['nota']}")
             else: st.write("No hay evoluciones médicas cargadas.")
 
-        # NUEVO: HISTORIAL DE ESTUDIOS COMPLEMENTARIOS (CON CARPETAS Y REPARACIÓN PDF)
+        # NUEVO: HISTORIAL DE ESTUDIOS COMPLEMENTARIOS (CON CARPETAS Y REPARACIÓN PDF ANTI-404)
         with st.expander("🔬 Estudios Complementarios"):
             estudios = [x for x in st.session_state.get("estudios_db", []) if x["paciente"] == paciente_sel]
             if estudios:
@@ -1563,9 +1552,20 @@ with tabs[menu.index("📚 Historial")]:
                             
                             if est.get('imagen'):
                                 try:
-                                    img_bytes = base64.b64decode(est['imagen'])
+                                    b64_str = est['imagen']
+                                    img_bytes = base64.b64decode(b64_str)
+                                    
                                     if img_bytes.startswith(b'%PDF') or est.get('extension') == 'pdf':
-                                        st.download_button("📥 Descargar PDF", data=img_bytes, file_name=f"Estudio.pdf", mime="application/pdf", key=f"dl_pdf_hist_{idx}_{est['fecha']}")
+                                        nombre_arch = f"Estudio_{est['fecha'][:10].replace('/','-')}.pdf"
+                                        html_btn = f'''
+                                        <a href="data:application/pdf;base64,{b64_str}" download="{nombre_arch}" 
+                                           style="display: block; width: 100%; text-align: center; background-color: #2563eb; 
+                                                  color: white; padding: 12px; border-radius: 8px; text-decoration: none; 
+                                                  font-weight: 600; font-family: sans-serif; margin-top: 10px;">
+                                           📥 Descargar PDF
+                                        </a>
+                                        '''
+                                        st.markdown(html_btn, unsafe_allow_html=True)
                                     else:
                                         st.image(img_bytes, caption="Documento Adjunto", use_container_width=True)
                                 except Exception:
