@@ -225,25 +225,18 @@ input[type=number] { -moz-appearance: textfield; }
 """
 st.markdown(page_bg_css, unsafe_allow_html=True)
 
-import os
-import streamlit as st
-
 # --- 🎁 LOGO EXCLUSIVO PROFESIONAL ---
 def render_logo_eg(size=100):
-    # Obtenemos la ruta exacta de la carpeta donde está este script de Python
     directorio_actual = os.path.dirname(os.path.abspath(__file__))
-    # Unimos esa ruta con el nombre de tu imagen
     ruta_logo = os.path.join(directorio_actual, "logo_medicare_pro.jpeg")
     
-    # Usamos columnas para centrar el logo en el panel lateral
     col1, col2, col3 = st.sidebar.columns([1, 1.5, 1])
     with col2:
         try:
-            # Intenta cargar la imagen con la ruta absoluta
             st.image(ruta_logo, use_container_width=True)
         except Exception as e:
-            # Si el archivo no está (ej: faltó subirlo a GitHub), muestra este aviso sin romper la app
             st.error("⚠️ Falta subir logo_medicare_pro.jpeg a GitHub")
+
 # --- MOTOR DE PERSISTENCIA ---
 def cargar_datos():
     try:
@@ -397,8 +390,8 @@ if rol in ["SuperAdmin", "Coordinador"]:
     menu.insert(1, "📈 Dashboard") 
     menu.append("📑 Cierre Diario")
     menu.append("⚙️ Mi Equipo")
-    menu.append("⏱️ Asistencia en Vivo") # <-- Pestaña 17
-    menu.append("🧑‍⚕️ RRHH y Fichajes") # <-- Pestaña 18
+    menu.append("⏱️ Asistencia en Vivo")
+    menu.append("🧑‍⚕️ RRHH y Fichajes")
     menu.append("🕵️ Auditoría")
 
 tabs = st.tabs(menu)
@@ -592,7 +585,6 @@ with tabs[menu.index("👤 Admisión")]:
         n = col_a.text_input("Nombre y Apellido"); o = col_b.text_input("Obra Social")
         d = col_a.text_input("DNI del Paciente")
         
-        # --- ACÁ ESTÁ EL ARREGLO: Agregamos min_value y max_value ---
         f_nac = col_b.date_input("Nacimiento", value=date(1980, 1, 1), min_value=date(1900, 1, 1), max_value=ahora().date())
         
         col_c, col_d = st.columns(2)
@@ -624,7 +616,6 @@ with tabs[menu.index("📊 Clínica")]:
             st.markdown("##### ⏱️ Fecha y Hora del Control")
             col_time1, col_time2 = st.columns(2)
             
-            # --- ARREGLO MÁGICO: Agregamos key="..." a ambos para que Streamlit no los resetee ---
             fecha_toma = col_time1.date_input("📅 Fecha de la toma", value=ahora().date(), key="fecha_vits")
             hora_toma_str = col_time2.text_input("⏰ Hora exacta (Formato HH:MM)", value=ahora().strftime("%H:%M"), key="hora_vits")
             st.divider()
@@ -636,7 +627,6 @@ with tabs[menu.index("📊 Clínica")]:
             hgt = col_signos[4].text_input("HGT", "100")
             
             if st.form_submit_button("💾 Guardar Signos", width="stretch"):
-                # Validamos que no hayan escrito cualquier cosa en la hora
                 if len(hora_toma_str) != 5 or ":" not in hora_toma_str:
                     hora_toma_str = ahora().strftime("%H:%M")
                     
@@ -694,7 +684,6 @@ with tabs[menu.index("👶 Pediatría")]:
         if pd.isna(f_n): f_n = datetime(2000, 1, 1)
         
         with st.form("pedia", clear_on_submit=True):
-            # --- ARREGLO MÁGICO: Fechas fijadas y hora en texto ---
             st.markdown("##### ⏱️ Fecha y Hora del Control Pediátrico")
             col_time1, col_time2 = st.columns(2)
             fecha_toma = col_time1.date_input("📅 Fecha del control", value=ahora().date(), key="fecha_ped")
@@ -708,13 +697,11 @@ with tabs[menu.index("👶 Pediatría")]:
             desc = col_b.text_input("Descripción / Nota")
             
             if st.form_submit_button("💾 Guardar Control Pediátrico", width="stretch"):
-                # Validar hora manual para evitar errores de tipeo
                 if len(hora_toma_str) != 5 or ":" not in hora_toma_str:
                     hora_toma_str = ahora().strftime("%H:%M")
                     
                 fecha_str_toma = f"{fecha_toma.strftime('%d/%m/%Y')} {hora_toma_str}"
                 
-                # Calcular edad en meses a esa fecha EXACTA del control
                 try:
                     dt_toma = datetime.strptime(fecha_str_toma, "%d/%m/%Y %H:%M")
                 except:
@@ -758,7 +745,6 @@ with tabs[menu.index("👶 Pediatría")]:
             if "peso" in df_g.columns: c1.line_chart(df_g["peso"], color="#3b82f6")
             if "talla" in df_g.columns: c2.line_chart(df_g["talla"], color="#10b981")
             
-            # --- SISTEMA ANTI-COLAPSO Y ORDEN DE TABLA PEDIATRÍA ---
             st.divider()
             col_tit, col_btn = st.columns([3, 1])
             col_tit.markdown("#### 📋 Historial de Controles Pediátricos")
@@ -771,11 +757,9 @@ with tabs[menu.index("👶 Pediatría")]:
             with st.container(height=250):
                 df_ped = pd.DataFrame(ped).drop(columns=["paciente"], errors='ignore')
                 
-                # 1. Definimos las columnas EXACTAS que queremos ver (chau columnas zombis)
                 columnas_ped_esperadas = ["fecha", "edad_meses", "peso", "talla", "pc", "imc", "percentil_sug", "nota", "firma"]
                 df_ped = df_ped[[c for c in columnas_ped_esperadas if c in df_ped.columns]]
                 
-                # 2. Renombramos prolijo
                 df_ped = df_ped.rename(columns={
                     "fecha": "Fecha y Hora", 
                     "edad_meses": "Edad (Mes)", 
@@ -788,7 +772,6 @@ with tabs[menu.index("👶 Pediatría")]:
                     "firma": "Profesional"
                 })
                 
-                # 3. Ordenamos cronológicamente (el más nuevo arriba)
                 try:
                     df_ped['fecha_dt'] = pd.to_datetime(df_ped['Fecha y Hora'], format="%d/%m/%Y %H:%M")
                     df_ped = df_ped.sort_values(by='fecha_dt', ascending=False).drop(columns=['fecha_dt'])
@@ -887,7 +870,6 @@ with tabs[menu.index("🔬 Estudios")]:
                         if est.get('imagen'):
                             try:
                                 img_bytes = base64.b64decode(est['imagen'])
-                                # LÓGICA INTELIGENTE: Si detecta que es PDF, arma botón. Si no, muestra foto.
                                 if img_bytes.startswith(b'%PDF') or est.get('extension') == 'pdf':
                                     st.download_button("📥 Descargar PDF Adjunto", data=img_bytes, file_name=f"Estudio_{est['fecha'][:10].replace('/','-')}.pdf", mime="application/pdf", key=f"dl_pdf_tab_{idx}_{est['fecha']}")
                                 else:
@@ -947,7 +929,6 @@ with tabs[menu.index("💊 Recetas")]:
             
             f = c_rec5.number_input("Días de Tratamiento", min_value=1, max_value=90, value=7)
             
-            # --- NUEVO: CARGA DE MÉDICO PRESCRIPTOR ---
             st.divider()
             st.markdown("##### 👨‍⚕️ Transcripción de Receta Papel (Opcional)")
             c_doc1, c_doc2 = st.columns(2)
@@ -1113,11 +1094,9 @@ with tabs[menu.index("💊 Recetas")]:
                         if "❌" in estado_sel and not justificacion.strip():
                             st.error("🚨 LEGAL: Es obligatorio justificar clínicamente por qué no se administró la dosis en esa hora.")
                         else:
-                            # Previene KeyError inicializando si no existe en la caché
                             if "administracion_med_db" not in st.session_state:
                                 st.session_state["administracion_med_db"] = []
                                 
-                            # Filtro seguro para reemplazar la dosis de esa hora
                             st.session_state["administracion_med_db"] = [
                                 a for a in st.session_state.get("administracion_med_db", [])
                                 if not (a.get("paciente") == paciente_sel and a.get("fecha") == fecha_hoy and a.get("med") == med_sel and a.get("hora") == hora_sel)
@@ -1200,7 +1179,6 @@ with tabs[menu.index("⚖️ Balance")]:
         st.subheader("⚖️ Balance Hídrico Estricto")
         
         with st.form("bal", clear_on_submit=True):
-            # --- ARREGLO MÁGICO: Fechas fijadas y hora en texto ---
             col_meta1, col_meta2, col_meta3 = st.columns(3)
             fecha_bal = col_meta1.date_input("📅 Fecha de control", value=ahora().date(), key="fecha_bal")
             hora_bal_str = col_meta2.text_input("⏰ Hora exacta (Formato HH:MM)", value=ahora().strftime("%H:%M"), key="hora_bal")
@@ -1218,7 +1196,6 @@ with tabs[menu.index("⚖️ Balance")]:
             e3 = c2.number_input("Pérdidas Insensibles / Catarsis", 0, step=50)
             
             if st.form_submit_button("💾 Guardar Balance y Calcular Shift", width="stretch"):
-                # Validar hora manual para evitar errores de tipeo
                 if len(hora_bal_str) != 5 or ":" not in hora_bal_str:
                     hora_bal_str = ahora().strftime("%H:%M")
                     
@@ -1226,7 +1203,6 @@ with tabs[menu.index("⚖️ Balance")]:
                 tegr = e1 + e2 + e3
                 bal = ting - tegr
                 
-                # Guardamos la fecha combinada para compatibilidad y los datos nuevos desglosados
                 fecha_str_combinada = f"{fecha_bal.strftime('%d/%m/%Y')} {hora_bal_str}"
                 
                 st.session_state["balance_db"].append({
@@ -1244,7 +1220,6 @@ with tabs[menu.index("⚖️ Balance")]:
                 st.success(f"✅ Balance registrado con éxito. Resultado del Shift: {bal} ml")
                 st.rerun()
 
-        # --- HISTORIAL ANTI-COLAPSO DE BALANCE ---
         blp = [x for x in st.session_state["balance_db"] if x["paciente"] == paciente_sel]
         if blp:
             st.divider()
@@ -1259,26 +1234,19 @@ with tabs[menu.index("⚖️ Balance")]:
             with st.container(height=350):
                 df_bal = pd.DataFrame(blp)
                 
-                # Parche de compatibilidad por si tenés balances viejos guardados sin la palabra "turno"
                 if "turno" not in df_bal.columns: 
                     df_bal["turno"] = "S/D"
                 else:
-                    # Limpiamos los "None" viejos que se ven en la foto
                     df_bal["turno"] = df_bal["turno"].fillna("S/D")
                     
-                # Formateo visual de los datos
                 df_bal["Ingresos"] = df_bal["ingresos"].astype(str) + " ml"
                 df_bal["Egresos"] = df_bal["egresos"].astype(str) + " ml"
                 
-                # Lógica visual para el balance (Positivo, Negativo o Neutro)
                 df_bal["Shift (Resultado)"] = df_bal["balance"].apply(
                     lambda x: f"🟢 +{x} ml" if float(x) > 0 else (f"🔴 {x} ml" if float(x) < 0 else "⚖️ 0 ml")
                 )
                 
-                # Seleccionamos las columnas para la tabla
                 columnas_mostrar = ["fecha", "turno", "Ingresos", "Egresos", "Shift (Resultado)", "firma"]
-                
-                # Filtramos para evitar errores con base de datos antigua
                 columnas_reales = [c for c in columnas_mostrar if c in df_bal.columns]
                 
                 df_mostrar = df_bal[columnas_reales].rename(columns={
@@ -1287,7 +1255,6 @@ with tabs[menu.index("⚖️ Balance")]:
                     "firma": "Enfermero/a"
                 })
                 
-                # Ordenamos cronológicamente (el más nuevo arriba)
                 try:
                     df_mostrar['fecha_dt'] = pd.to_datetime(df_mostrar['Fecha y Hora'], format="%d/%m/%Y %H:%M")
                     df_mostrar = df_mostrar.sort_values(by='fecha_dt', ascending=False).drop(columns=['fecha_dt'])
@@ -1854,97 +1821,7 @@ if "📑 Cierre Diario" in menu:
         else:
             st.write("Aún no hay reportes de cierre diario guardados.")
 
-# 15. EQUIPO Y SUSCRIPCIONES (SOLO VISIBLE PARA ADMIN/COORDINADOR)
-if "⚙️ Mi Equipo" in menu:
-    with tabs[menu.index("⚙️ Mi Equipo")]:
-        st.subheader(f"Gestión de Personal - {mi_empresa}")
-        with st.form("equipo", clear_on_submit=True):
-            col_id, col_pw, col_pin = st.columns([2, 2, 1])
-            u_id = col_id.text_input("Usuario (Login)"); u_pw = col_pw.text_input("Clave"); u_pin = col_pin.text_input("PIN (4 Nros)", max_chars=4)
-            u_nm = st.text_input("Nombre Completo")
-            col_dni, col_mt = st.columns(2); u_dni = col_dni.text_input("DNI del Profesional"); u_mt = col_mt.text_input("Matrícula")
-            u_ti = st.selectbox("Título", ["Médico/a", "Lic. en Enfermería", "Enfermero/a", "Kinesiólogo/a", "Fonoaudiólogo/a", "Nutricionista", "Psicólogo/a", "Acompañante Terapéutico", "Trabajador/a Social", "Administrativo/a", "Otro"])
-            u_emp = st.text_input("🏢 Asignar a Clínica / Empresa") if rol == "SuperAdmin" else mi_empresa
-            u_rl = st.selectbox("Rol", ["Operativo", "Coordinador", "SuperAdmin"] if rol == "SuperAdmin" else ["Operativo", "Coordinador"])
-            if st.form_submit_button("Habilitar Acceso", width="stretch"):
-                if u_id and u_pw and u_pin and u_dni:
-                    st.session_state["usuarios_db"][u_id.strip().lower()] = { "pass": u_pw.strip(), "nombre": u_nm.strip(), "rol": u_rl, "titulo": u_ti, "empresa": u_emp.strip(), "matricula": u_mt.strip(), "dni": u_dni.strip(), "estado": "Activo", "pin": u_pin.strip()}
-                    guardar_datos(); st.rerun()
-        st.divider(); st.subheader("👥 Control de Accesos")
-        for u, d in list({k: v for k, v in st.session_state["usuarios_db"].items() if v["empresa"] == mi_empresa or rol == "SuperAdmin"}.items()):
-            if u == "admin": continue
-            c1, c2, c3 = st.columns([3, 1, 1])
-            c1.write(f"🏢 {d['empresa']} | 👤 **{d['nombre']}** *(Rol: {d.get('rol', 'Operativo')})* | Login: `{u}` | PIN: `{d.get('pin', 'S/D')}` | Estado: **{d.get('estado', 'Activo')}**")
-            if rol == "SuperAdmin":
-                if d.get("estado", "Activo") == "Activo" and c2.button("⏸️ Suspender", key=f"susp_{u}"): st.session_state["usuarios_db"][u]["estado"] = "Bloqueado"; guardar_datos(); st.rerun()
-                elif d.get("estado", "Activo") != "Activo" and c2.button("▶️ Reactivar", key=f"reac_{u}"): st.session_state["usuarios_db"][u]["estado"] = "Activo"; guardar_datos(); st.rerun()
-            if c3.button("❌ Bajar", key=f"del_{u}"): del st.session_state["usuarios_db"][u]; guardar_datos(); st.rerun()
-
-# 16. AUDITORÍA (SOLO VISIBLE PARA ADMIN/COORDINADOR)
-if "🕵️ Auditoría" in menu:
-    with tabs[menu.index("🕵️ Auditoría")]:
-        st.subheader("Auditoría General de Movimientos")
-        df_logs = pd.DataFrame(st.session_state["logs_db"])
-        
-        if not df_logs.empty:
-            col_b1, col_b2 = st.columns([2, 1])
-            buscar_log = col_b1.text_input("🔍 Filtrar reportes (por Acción, Usuario, etc.):")
-            
-            if buscar_log:
-                mask = df_logs.astype(str).apply(lambda x: x.str.contains(buscar_log, case=False, na=False)).any(axis=1)
-                df_logs_filtrado = df_logs[mask]
-            else:
-                df_logs_filtrado = df_logs
-                
-            st.dataframe(df_logs_filtrado, use_container_width=True)
-            
-            out_logs = io.BytesIO()
-            with pd.ExcelWriter(out_logs, engine='openpyxl') as writer: df_logs_filtrado.to_excel(writer, index=False, sheet_name='Logs_MediCare')
-            st.download_button("📥 DESCARGAR RESULTADOS A EXCEL", data=out_logs.getvalue(), file_name=f"Reporte_Logs_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-        else:
-            st.info("No hay registros en la auditoría.")
-        
-        st.divider()
-        st.subheader("📄 Reporte RRHH (Auditoría de Asistencia por Profesional)")
-        if FPDF_DISPONIBLE:
-            profesionales_lista = list(set([v['nombre'] for k, v in st.session_state["usuarios_db"].items()]))
-            profesionales_historicos = list(set([c.get("profesional", "") for c in st.session_state["checkin_db"]]))
-            profesionales_lista = list(set(profesionales_lista + profesionales_historicos))
-            
-            if profesionales_lista:
-                profesionales_lista.sort()
-                prof_sel = st.selectbox("Seleccionar Profesional para liquidación:", profesionales_lista)
-                
-                def t(txt): return str(txt).replace('⚖️', '').replace('⚠️', '').replace('📌', '').replace('📅', '').replace('📸', '').replace('🗄️', '').encode('latin-1', 'replace').decode('latin-1')
-
-                def crear_pdf_rrhh(profesional):
-                    pdf = FPDF(); pdf.add_page()
-                    pdf.set_font("Arial", 'B', 14)
-                    pdf.cell(0, 10, t(f"REPORTE DE ASISTENCIA Y GPS - {mi_empresa}"), ln=True, align='C')
-                    pdf.set_font("Arial", 'B', 11)
-                    pdf.cell(0, 10, t(f"Profesional Auditado: {profesional}"), ln=True)
-                    pdf.set_font("Arial", 'I', 9)
-                    pdf.cell(0, 5, t(f"Fecha de emisión: {ahora().strftime('%d/%m/%Y %H:%M')}"), ln=True)
-                    pdf.ln(5)
-                    
-                    pdf.set_font("Arial", '', 9)
-                    chks_prof = [c for c in st.session_state["checkin_db"] if c.get("profesional", "") == profesional]
-                    
-                    if not chks_prof:
-                        pdf.cell(0, 10, t("No hay registros de visitas (Llegada/Salida) para este profesional."), ln=True)
-                    else:
-                        for c in reversed(chks_prof):
-                            texto_linea = f"[{c.get('fecha_hora', '')}] PACIENTE: {c.get('paciente', '')} | ACCION: {c.get('tipo', '')}"
-                            pdf.multi_cell(0, 6, t(texto_linea), border=1)
-                            pdf.ln(2)
-                            
-                    return pdf.output(dest='S').encode('latin-1')
-
-                st.download_button("📥 DESCARGAR REPORTE RRHH (PDF)", crear_pdf_rrhh(prof_sel), f"Auditoria_RRHH_{prof_sel}.pdf", "application/pdf")
-        else:
-            st.error("Librería FPDF no disponible. Instalar para generar reportes.")
-            
-# 14. TELEMEDICINA (JITSI EMBEBIDO + FIX MÓVILES + EXTRACCIÓN DINÁMICA DE VITALES)
+# 15. TELEMEDICINA (JITSI EMBEBIDO + FIX MÓVILES + EXTRACCIÓN DINÁMICA DE VITALES)
 with tabs[menu.index("📹 Telemedicina")]:
     if paciente_sel:
         st.subheader("📹 Teleconsulta en Vivo")
@@ -2010,7 +1887,7 @@ with tabs[menu.index("📹 Telemedicina")]:
         st.info("👈 Seleccione un paciente en el panel lateral para iniciar o programar una teleconsulta.")
 
 # =====================================================================
-# 15. EQUIPO Y SUSCRIPCIONES (SOLO VISIBLE PARA ADMIN/COORDINADOR)
+# 16. EQUIPO Y SUSCRIPCIONES (SOLO VISIBLE PARA ADMIN/COORDINADOR)
 # =====================================================================
 if "⚙️ Mi Equipo" in menu:
     with tabs[menu.index("⚙️ Mi Equipo")]:
@@ -2038,7 +1915,7 @@ if "⚙️ Mi Equipo" in menu:
             if c3.button("❌ Bajar", key=f"del_{u}"): del st.session_state["usuarios_db"][u]; guardar_datos(); st.rerun()
 
 # =====================================================================
-# 16. AUDITORÍA (SOLO VISIBLE PARA ADMIN/COORDINADOR)
+# 17. AUDITORÍA (SOLO VISIBLE PARA ADMIN/COORDINADOR)
 # =====================================================================
 if "🕵️ Auditoría" in menu:
     with tabs[menu.index("🕵️ Auditoría")]:
@@ -2062,7 +1939,7 @@ if "🕵️ Auditoría" in menu:
             st.download_button("📥 DESCARGAR RESULTADOS A EXCEL", data=out_logs.getvalue(), file_name=f"Reporte_Logs_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         else:
             st.info("No hay registros en la auditoría.")
-        
+            
         st.divider()
         st.subheader("📄 Reporte RRHH (Auditoría de Asistencia por Profesional)")
         if FPDF_DISPONIBLE:
@@ -2104,7 +1981,7 @@ if "🕵️ Auditoría" in menu:
             st.error("Librería FPDF no disponible. Instalar para generar reportes.")
 
 # =====================================================================
-# 17. CONTROL DE ASISTENCIA EN VIVO (SOLO ADMIN/COORD)
+# 18. CONTROL DE ASISTENCIA EN VIVO (SOLO ADMIN/COORD)
 # =====================================================================
 if "⏱️ Asistencia en Vivo" in menu:
     with tabs[menu.index("⏱️ Asistencia en Vivo")]:
@@ -2168,7 +2045,7 @@ if "⏱️ Asistencia en Vivo" in menu:
             st.write("Sin movimientos en el día de la fecha.")
 
 # =====================================================================
-# 18. MÓDULO DE RRHH Y FICHAJES (SOLO ADMIN/COORD)
+# 19. MÓDULO DE RRHH Y FICHAJES (SOLO ADMIN/COORD)
 # =====================================================================
 if "🧑‍⚕️ RRHH y Fichajes" in menu:
     with tabs[menu.index("🧑‍⚕️ RRHH y Fichajes")]:
