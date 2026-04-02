@@ -833,10 +833,11 @@ with tabs[menu.index("📝 Evolución")]:
         else:
             st.info("Aún no hay evoluciones registradas para este paciente.")
 
-# 6.5 ESTUDIOS COMPLEMENTARIOS (CON UPLOAD Y CARPETAS INTELIGENTES)
+# 6.5 ESTUDIOS COMPLEMENTARIOS (CORREGIDO - ANTI-404)
 with tabs[menu.index("🔬 Estudios")]:
     if paciente_sel:
         st.subheader("Órdenes y Resultados de Estudios")
+        
         with st.form("form_estudios", clear_on_submit=True):
             col_e1, col_e2 = st.columns([1, 2])
             tipo_estudio = col_e1.selectbox("Tipo de Estudio", [
@@ -846,7 +847,8 @@ with tabs[menu.index("🔬 Estudios")]:
             detalle_estudio = col_e2.text_input("Detalle del Pedido o Resultado (Ej: Rx Tórax frente...)")
             
             st.markdown("##### 📎 Adjuntar Documento (Opcional)")
-            archivo_subido = st.file_uploader("Subir archivo, foto de galería o PDF", type=["png", "jpg", "jpeg", "pdf"])
+            archivo_subido = st.file_uploader("Subir archivo, foto de galería o PDF", 
+                                             type=["png", "jpg", "jpeg", "pdf"])
             
             with st.expander("📷 O tomar foto con la cámara ahora", expanded=False):
                 foto_estudio = st.camera_input("Tomar foto en vivo")
@@ -870,9 +872,13 @@ with tabs[menu.index("🔬 Estudios")]:
                     "extension": ext,
                     "firma": user["nombre"]
                 })
-                guardar_datos(); st.success("✅ Estudio guardado correctamente."); st.rerun()
+                guardar_datos()
+                st.success("✅ Estudio guardado correctamente.")
+                st.rerun()
 
+        # --- HISTORIAL DE ESTUDIOS (CON DESCARGA SEGURA) ---
         estudios_pac = [e for e in st.session_state.get("estudios_db", []) if e["paciente"] == paciente_sel]
+        
         if estudios_pac:
             st.divider()
             st.markdown("#### 📁 Archivo de Estudios del Paciente")
@@ -891,13 +897,15 @@ with tabs[menu.index("🔬 Estudios")]:
                                 b64_str = est['imagen']
                                 img_bytes = base64.b64decode(b64_str)
                                 
-                                # TRUCO ANTI-404: Botón HTML Puro para descargar
+                                # DESCARGA SEGURA ANTI-404
                                 if img_bytes.startswith(b'%PDF') or est.get('extension') == 'pdf':
                                     nombre_arch = f"Estudio_{est['fecha'][:10].replace('/','-')}.pdf"
                                     html_boton = f'''
-                                    <a href="data:application/pdf;base64,{b64_str}" download="{nombre_arch}" 
-                                       style="display: block; width: 100%; text-align: center; background-color: #2563eb; 
-                                              color: white; padding: 12px; border-radius: 8px; text-decoration: none; 
+                                    <a href="data:application/pdf;base64,{b64_str}" 
+                                       download="{nombre_arch}" 
+                                       style="display: block; width: 100%; text-align: center; 
+                                              background-color: #2563eb; color: white; padding: 12px; 
+                                              border-radius: 8px; text-decoration: none; 
                                               font-weight: 600; font-family: sans-serif; margin-top: 10px;">
                                        📥 DESCARGAR PDF (Seguro)
                                     </a>
@@ -907,6 +915,8 @@ with tabs[menu.index("🔬 Estudios")]:
                                     st.image(img_bytes, caption="Documento Adjunto", use_container_width=True)
                             except Exception:
                                 st.error("⚠️ Archivo corrupto o no reconocido.")
+        else:
+            st.info("Aún no hay estudios guardados para este paciente.")
 
 # 7. MATERIALES Y DESCARTABLES
 with tabs[menu.index("💉 Materiales")]:
