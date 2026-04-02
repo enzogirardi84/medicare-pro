@@ -1,8 +1,12 @@
-streamlit
+streamlit>=1.32.0
 pandas
+numpy
 fpdf
 supabase
 pytz
 openpyxl
-streamlit-drawable-canvas
-streamlit-geolocation
+Pillow
+altair
+python-dotenv
+
+
