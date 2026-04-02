@@ -1397,7 +1397,7 @@ with tabs[menu.index("💉 Materiales")]:
         else:
             st.info("Aún no se han registrado consumos de materiales para este paciente.")
             
-# 8. RECETAS - VERSIÓN LEGAL COMPLETA (Nombre + Matrícula + Firma Digital + PDF)
+# 8. RECETAS - VERSIÓN LEGAL COMPLETA (Nombre + Matrícula + Firma + Caja Fuerte)
 with tabs[menu.index("💊 Recetas")]:
     if not paciente_sel:
         st.info("👈 Seleccioná un paciente en el menú lateral.")
@@ -1463,7 +1463,8 @@ with tabs[menu.index("💊 Recetas")]:
                             "medico_nombre": medico_nombre.strip(),
                             "medico_matricula": medico_matricula.strip(),
                             "firma_b64": firma_b64,
-                            "firmado_por": user["nombre"]
+                            "firmado_por": user["nombre"],
+                            "estado_receta": "Activa" # <-- CLAVE DE LA CAJA FUERTE
                         })
                         guardar_datos()
                         st.success(f"✅ Prescripción de **{med_final}** guardada con firma médica.")
@@ -1471,9 +1472,11 @@ with tabs[menu.index("💊 Recetas")]:
 
         st.divider()
 
-        recs = [r for r in st.session_state.get("indicaciones_db", []) if r.get("paciente") == paciente_sel]
+        # Obtenemos TODAS las recetas, pero separamos las Activas de las Suspendidas
+        recs_todas = [r for r in st.session_state.get("indicaciones_db", []) if r.get("paciente") == paciente_sel]
+        recs_activas = [r for r in recs_todas if r.get("estado_receta", "Activa") == "Activa"]
 
-        if recs:
+        if recs_activas:
             # ====================== TABLA 00:00 - 23:00 ======================
             st.markdown("#### 📅 Administración de Hoy (00:00 a 23:00)")
 
@@ -1484,7 +1487,7 @@ with tabs[menu.index("💊 Recetas")]:
             all_horarios = [f"{h:02d}:00" for h in range(24)]
 
             table_data = []
-            for r in recs:
+            for r in recs_activas: # Solo mostramos a enfermería las ACTIVAS
                 partes = r['med'].split(" | ")
                 nombre = partes[0].strip()
                 via = partes[1].replace("Vía: ", "") if len(partes) > 1 else ""
@@ -1528,7 +1531,7 @@ with tabs[menu.index("💊 Recetas")]:
             # ====================== PANEL DE REGISTRO DE DOSIS ======================
             st.markdown("#### 📝 Panel de Registro de Dosis (Enfermería)")
             with st.form("form_registro_dosis", clear_on_submit=True):
-                meds_activas_nombres = [r['med'].split(" |")[0].strip() for r in recs]
+                meds_activas_nombres = [r['med'].split(" |")[0].strip() for r in recs_activas]
                 
                 c_med, c_hora = st.columns([2, 1])
                 med_sel = c_med.selectbox("1. Medicación a registrar:", meds_activas_nombres)
@@ -1562,9 +1565,9 @@ with tabs[menu.index("💊 Recetas")]:
             # ====================== MODIFICAR O SUSPENDER ======================
             st.markdown("#### ⚙️ Modificar o Suspender Manualmente")
             c_ed1, c_ed2 = st.columns([3, 2])
-            opciones_recetas = [f"[{r.get('fecha', '')}] {r.get('med', '')}" for r in recs]
+            opciones_recetas = [f"[{r.get('fecha', '')}] {r.get('med', '')}" for r in recs_activas]
             receta_seleccionada = c_ed1.selectbox("Seleccionar indicación a gestionar:", opciones_recetas)
-            accion_receta = c_ed2.selectbox("Acción a realizar:", ["Suspender / Eliminar", "Editar indicación"])
+            accion_receta = c_ed2.selectbox("Acción a realizar:", ["Suspender / Anular", "Editar indicación"])
             
             nuevo_texto_receta = ""
             if accion_receta == "Editar indicación" and receta_seleccionada:
@@ -1575,19 +1578,38 @@ with tabs[menu.index("💊 Recetas")]:
             if st.button("⚠️ Aplicar Cambios en Terapéutica", use_container_width=True):
                 for r in st.session_state["indicaciones_db"]:
                     if r["paciente"] == paciente_sel and f"[{r.get('fecha', '')}] {r.get('med', '')}" == receta_seleccionada:
-                        if accion_receta == "Suspender / Eliminar":
-                            st.session_state["indicaciones_db"].remove(r); st.success("✅ Indicación suspendida.")
+                        if accion_receta == "Suspender / Anular":
+                            r["estado_receta"] = "Suspendida" # NO BORRA, CAMBIA EL ESTADO
+                            r["fecha_suspension"] = ahora().strftime("%d/%m/%Y %H:%M")
+                            st.success("✅ Indicación suspendida. Quedará en el historial legal.")
                         elif accion_receta == "Editar indicación" and nuevo_texto_receta:
-                            r["med"] = nuevo_texto_receta; st.success("✅ Indicación editada con éxito.")
+                            r["estado_receta"] = "Modificada" # La original queda como modificada
+                            r["fecha_suspension"] = ahora().strftime("%d/%m/%Y %H:%M")
+                            # Creamos una NUEVA receta con la modificación
+                            st.session_state["indicaciones_db"].append({
+                                "paciente": paciente_sel,
+                                "med": nuevo_texto_receta,
+                                "fecha": ahora().strftime("%d/%m/%Y %H:%M:%S"),
+                                "dias_duracion": r.get("dias_duracion", 7),
+                                "medico_nombre": r.get("medico_nombre", ""),
+                                "medico_matricula": r.get("medico_matricula", ""),
+                                "firma_b64": r.get("firma_b64", ""),
+                                "firmado_por": user["nombre"],
+                                "estado_receta": "Activa"
+                            })
+                            st.success("✅ Indicación editada. La versión anterior quedó en el historial.")
                         break
                 guardar_datos(); st.rerun()
 
-            st.divider()
+        else:
+            st.info("Aún no hay medicación activa para este paciente.")
 
-            # ====================== GENERADOR DE PDF Y HISTORIAL ======================
-            st.markdown("#### 🕰️ Historial de Prescripciones Médicas")
+        st.divider()
+
+        # ====================== GENERADOR DE PDF Y HISTORIAL ======================
+        if recs_todas:
+            st.markdown("#### 🕰️ Historial Completo de Prescripciones (Caja Fuerte)")
             
-            # Función para generar el PDF de una receta individual
             def generar_pdf_receta(r_data):
                 if not FPDF_DISPONIBLE: return b""
                 def t(txt): return str(txt).replace('⚖️', '').replace('⚠️', '').encode('latin-1', 'replace').decode('latin-1')
@@ -1595,7 +1617,6 @@ with tabs[menu.index("💊 Recetas")]:
                 pdf = FPDF(format='A5')
                 pdf.add_page()
                 
-                # Intentar poner logo
                 directorio_actual = os.path.dirname(os.path.abspath(__file__))
                 ruta_logo = os.path.join(directorio_actual, "logo_medicare_pro.jpeg")
                 try: pdf.image(ruta_logo, x=10, y=10, w=20)
@@ -1639,31 +1660,36 @@ with tabs[menu.index("💊 Recetas")]:
                 return pdf.output(dest='S').encode('latin-1')
 
             with st.container(height=450):
-                for idx, r in enumerate(reversed(recs[-30:])):
+                for idx, r in enumerate(reversed(recs_todas[-30:])):
                     with st.container(border=True):
                         c_info, c_btn = st.columns([3, 1])
                         
-                        c_info.markdown(f"📌 **{r.get('fecha', '—')}**")
-                        c_info.markdown(f"**Indicado por:** {r.get('medico_nombre', '—')} | **Matrícula:** {r.get('medico_matricula', '—')}")
-                        c_info.markdown(f"*{r.get('med', '')}*")
+                        estado_actual = r.get("estado_receta", "Activa")
                         
-                        if FPDF_DISPONIBLE:
-                            pdf_bytes = generar_pdf_receta(r)
-                            b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
-                            nombre_arch = f"Receta_{paciente_sel.split(' (')[0]}_{r.get('fecha', '')[:10].replace('/','')}.pdf"
+                        if estado_actual == "Activa":
+                            c_info.markdown(f"✅ **{r.get('fecha', '—')}**")
+                            c_info.markdown(f"**Indicado por:** {r.get('medico_nombre', '—')} | **Matrícula:** {r.get('medico_matricula', '—')}")
+                            c_info.markdown(f"*{r.get('med', '')}*")
                             
-                            html_btn_receta = f'''
-                            <a href="data:application/pdf;base64,{b64_pdf}" download="{nombre_arch}" 
-                               style="display: block; width: 100%; text-align: center; background-color: #2563eb; 
-                                      color: white; padding: 10px; border-radius: 6px; text-decoration: none; 
-                                      font-weight: 600; font-size: 14px; font-family: sans-serif; margin-top: 15px;">
-                               📄 Imprimir PDF
-                            </a>
-                            '''
-                            c_btn.markdown(html_btn_receta, unsafe_allow_html=True)
-
-        else:
-            st.info("Aún no hay medicación indicada para este paciente.")
+                            if FPDF_DISPONIBLE:
+                                pdf_bytes = generar_pdf_receta(r)
+                                b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+                                nombre_arch = f"Receta_{paciente_sel.split(' (')[0]}_{r.get('fecha', '')[:10].replace('/','')}.pdf"
+                                
+                                html_btn_receta = f'''
+                                <a href="data:application/pdf;base64,{b64_pdf}" download="{nombre_arch}" 
+                                   style="display: block; width: 100%; text-align: center; background-color: #2563eb; 
+                                          color: white; padding: 10px; border-radius: 6px; text-decoration: none; 
+                                          font-weight: 600; font-size: 14px; font-family: sans-serif; margin-top: 15px;">
+                                   📄 Imprimir PDF
+                                </a>
+                                '''
+                                c_btn.markdown(html_btn_receta, unsafe_allow_html=True)
+                        else:
+                            # SI ESTÁ SUSPENDIDA O MODIFICADA, SE MUESTRA EN ROJO Y TACHADA
+                            c_info.markdown(f"❌ **{r.get('fecha', '—')}** *(ESTADO: {estado_actual.upper()} el {r.get('fecha_suspension', 'S/D')})*")
+                            c_info.markdown(f"**Indicado por:** {r.get('medico_nombre', '—')} | **Matrícula:** {r.get('medico_matricula', '—')}")
+                            c_info.markdown(f"~~*{r.get('med', '')}*~~")
 # 9. BALANCE HÍDRICO
 with tabs[menu.index("⚖️ Balance")]:
     if not paciente_sel:
@@ -2173,17 +2199,20 @@ with tabs[menu.index("📚 Historial")]:
             else: st.write("No hay balances hídricos calculados.")
             
         with st.expander("💊 Plan Terapéutico (Recetas)"):
-            recs = [x for x in st.session_state["indicaciones_db"] if x["paciente"] == paciente_sel]
-            if recs:
+            recs_todas_hist = [x for x in st.session_state["indicaciones_db"] if x["paciente"] == paciente_sel]
+            if recs_todas_hist:
                 with st.container(height=350):
-                    for r in reversed(recs[-limite:]):
-                        # ARREGLO KEYERROR DEFINITIVO: Lee variables viejas y nuevas
+                    for r in reversed(recs_todas_hist[-limite:]):
                         firma_mostrar = r.get('firma', r.get('medico_nombre', r.get('firmado_por', 'S/D')))
                         fecha_mostrar = r.get('fecha', 'S/D')
                         med_mostrar = r.get('med', 'S/D')
+                        estado = r.get("estado_receta", "Activa")
                         
-                        st.success(f"📌 **{fecha_mostrar}** | Indicado por: **{firma_mostrar}**\n\n{med_mostrar}")
-            else: st.write("No hay terapéutica indicada.")
+                        if estado == "Activa":
+                            st.success(f"✅ **{fecha_mostrar}** | Indicado por: **{firma_mostrar}**\n\n{med_mostrar}")
+                        else:
+                            st.error(f"❌ **{fecha_mostrar}** | Indicado por: **{firma_mostrar}**\n\n~~{med_mostrar}~~\n*(ESTADO: {estado.upper()})*")
+            else: st.write("No hay terapéutica indicada en el registro histórico.")
 
 # 13. PDF - VERSIÓN CORREGIDA Y COMPLETA (SIN ERRORES 404)
 with tabs[menu.index("🗄️ PDF")]:
