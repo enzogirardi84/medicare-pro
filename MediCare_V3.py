@@ -1557,7 +1557,7 @@ with tabs[menu.index("📚 Historial")]:
                     for e in reversed(evs[-limite:]): st.info(f"📅 **{e['fecha']}** | {e['firma']}\n\n{e['nota']}")
             else: st.write("No hay evoluciones médicas cargadas.")
 
-        # NUEVO: HISTORIAL DE ESTUDIOS COMPLEMENTARIOS (CON CARPETAS Y REPARACIÓN PDF ANTI-404)
+        # NUEVO: HISTORIAL DE ESTUDIOS COMPLEMENTARIOS (CON CARPETAS Y REPARACIÓN PDF/IMG ANTI-404)
         with st.expander("🔬 Estudios Complementarios"):
             estudios = [x for x in st.session_state.get("estudios_db", []) if x["paciente"] == paciente_sel]
             if estudios:
@@ -1575,12 +1575,12 @@ with tabs[menu.index("📚 Historial")]:
                                     
                                     if img_bytes.startswith(b'%PDF') or est.get('extension') == 'pdf':
                                         nombre_arch = f"Estudio_{est['fecha'][:10].replace('/','-')}.pdf"
-                                        html_btn = f"""
-                                        <a href="data:application/pdf;base64,{b64_str}" download="{nombre_arch}" style="display: block; width: 100%; text-align: center; background-color: #2563eb; color: white; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: 600; font-family: sans-serif; margin-top: 10px;">📥 Descargar PDF</a>
-                                        """
+                                        html_btn = f"""<a href="data:application/pdf;base64,{b64_str}" download="{nombre_arch}" style="display: block; width: 100%; text-align: center; background-color: #2563eb; color: white; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: 600; font-family: sans-serif; margin-top: 10px;">📥 Descargar PDF</a>"""
                                         st.markdown(html_btn, unsafe_allow_html=True)
                                     else:
-                                        st.image(img_bytes, caption="Documento Adjunto", use_container_width=True)
+                                        # ARREGLO ANTI-404 PARA FOTOS DE ESTUDIOS:
+                                        html_img = f'<img src="data:image/png;base64,{b64_str}" style="width: 100%; border-radius: 8px; margin-top: 10px;">'
+                                        st.markdown(html_img, unsafe_allow_html=True)
                                 except Exception:
                                     st.error("⚠️ Error al leer archivo adjunto.")
             else: st.write("No hay estudios complementarios registrados.")
@@ -1596,7 +1596,10 @@ with tabs[menu.index("📚 Historial")]:
                 with st.container(height=450):
                     for fh in reversed(fot_her[-limite:]):
                         st.success(f"📅 **{fh['fecha']}** | {fh['firma']}\n\nDescripción: {fh['descripcion']}")
-                        st.image(base64.b64decode(fh['base64_foto']), caption=f"Herida: {fh['descripcion']}")
+                        # ARREGLO ANTI-404 PARA FOTOS DE HERIDAS:
+                        b64_foto_herida = fh['base64_foto']
+                        html_foto_herida = f'<img src="data:image/png;base64,{b64_foto_herida}" style="width: 100%; border-radius: 8px; margin-top: 10px;">'
+                        st.markdown(html_foto_herida, unsafe_allow_html=True)
             else: st.write("No hay registro fotográfico.")
             
         with st.expander("📊 Signos Vitales"):
