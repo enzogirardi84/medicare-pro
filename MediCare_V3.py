@@ -1402,9 +1402,9 @@ with tabs[menu.index("💊 Recetas")]:
     if not paciente_sel:
         st.info("👈 Seleccioná un paciente en el menú lateral.")
     else:
-        st.subheader("💊 Plan Terapéutico y Administración de Medicamentos")
+        st.subheader("💊 Prescripción Médica y Administración de Medicamentos")
 
-        # ====================== AGREGAR NUEVA PRESCRIPCIÓN MÉDICA ======================
+        # ====================== NUEVA PRESCRIPCIÓN MÉDICA LEGAL ======================
         with st.form("recet", clear_on_submit=True):
             st.markdown("##### 👨‍⚕️ Nueva Prescripción Médica")
 
@@ -1421,13 +1421,11 @@ with tabs[menu.index("💊 Recetas")]:
             ])
             dias = col5.number_input("Días de Tratamiento", min_value=1, max_value=90, value=7)
 
-            # Datos del médico
             st.markdown("##### ✍️ Datos del Médico Prescriptor")
             col_m1, col_m2 = st.columns(2)
             medico_nombre = col_m1.text_input("Nombre completo del médico", value=user.get("nombre", ""))
             medico_matricula = col_m2.text_input("Matrícula profesional", placeholder="Ej: 123456")
 
-            # Firma digital
             st.markdown("##### Firma Digital del Médico")
             firma_canvas = st_canvas(
                 key="firma_receta",
@@ -1446,7 +1444,7 @@ with tabs[menu.index("💊 Recetas")]:
                     if not medico_matricula.strip():
                         st.error("❌ Debe ingresar la matrícula del médico.")
                     else:
-                        # Guardar firma como imagen
+                        # Guardar firma
                         firma_b64 = ""
                         if firma_canvas.image_data is not None:
                             import io
@@ -1569,25 +1567,13 @@ with tabs[menu.index("💊 Recetas")]:
             st.divider()
 
             # ====================== HISTORIAL ======================
-            st.markdown("#### 🕰️ Historial de Administraciones Anteriores")
-            col_f1, _ = st.columns([1, 3])
-            fecha_consulta = col_f1.date_input(
-                "Ver administraciones del día:",
-                value=(ahora() - timedelta(days=1)).date(),
-                max_value=ahora().date()
-            )
-            fecha_str = fecha_consulta.strftime("%d/%m/%Y")
-            admin_hist = [a for a in st.session_state.get("administracion_med_db", [])
-                         if a.get("paciente") == paciente_sel and a.get("fecha") == fecha_str]
-
-            if admin_hist:
-                df_hist = pd.DataFrame(admin_hist)
-                df_hist = df_hist[["hora", "med", "estado", "motivo", "firma"]]
-                df_hist.columns = ["Hora", "Medicamento", "Estado", "Justificación", "Enfermero/a"]
-                df_hist = df_hist.sort_values(by="Hora")
-                st.dataframe(df_hist, use_container_width=True, hide_index=True)
-            else:
-                st.info(f"No hay registros de administración para el día **{fecha_str}**.")
+            st.markdown("#### 🕰️ Historial de Prescripciones")
+            for r in reversed(recs[-10:]):   # últimas 10 prescripciones
+                st.success(f"""
+                📌 **{r.get('fecha', '—')}**  
+                Indicado por: **{r.get('medico_nombre', '—')}** (Matrícula: {r.get('medico_matricula', '—')})  
+                {r['med']}
+                """)
 
         else:
             st.info("Aún no hay medicación indicada para este paciente.")
