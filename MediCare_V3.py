@@ -685,24 +685,91 @@ if "📈 Dashboard" in menu:
                             st.altair_chart(chart, use_container_width=True)
 # 3. ADMISIÓN 
 with tabs[menu.index("👤 Admisión")]:
+    st.subheader("👤 Admisión de Nuevo Paciente")
+
+    # --- BUSCADOR RÁPIDO (para evitar duplicados) ---
+    st.markdown("##### 🔍 Buscar paciente existente")
+    buscar_adm = st.text_input("Nombre, DNI o apellido...", placeholder="Ej: Juan Pérez o 35123456")
+    
+    if buscar_adm:
+        coincidencias = [
+            p for p in st.session_state["pacientes_db"]
+            if buscar_adm.lower() in p.lower() or 
+               (buscar_adm.isdigit() and buscar_adm in st.session_state["detalles_pacientes_db"].get(p, {}).get("dni", ""))
+        ]
+        if coincidencias:
+            st.warning(f"⚠️ Se encontraron {len(coincidencias)} pacientes similares:")
+            for p in coincidencias[:5]:
+                det = st.session_state["detalles_pacientes_db"].get(p, {})
+                st.caption(f"• {p} | DNI: {det.get('dni','S/D')} | Empresa: {det.get('empresa','S/D')}")
+        else:
+            st.success("✅ No hay pacientes con ese nombre/DNI.")
+
+    st.divider()
+
+    # --- FORMULARIO DE ADMISIÓN MEJORADO ---
     with st.form("adm_form", clear_on_submit=True):
         col_a, col_b = st.columns(2)
-        n = col_a.text_input("Nombre y Apellido"); o = col_b.text_input("Obra Social")
-        d = col_a.text_input("DNI del Paciente")
-        
-        f_nac = col_b.date_input("Nacimiento", value=date(1980, 1, 1), min_value=date(1900, 1, 1), max_value=ahora().date())
+        n = col_a.text_input("Nombre y Apellido *", placeholder="Juan Pérez")
+        o = col_b.text_input("Obra Social / Prepaga", placeholder="PAMI / OSDE / Particular")
         
         col_c, col_d = st.columns(2)
-        se = col_c.selectbox("Sexo", ["F", "M"]); tel = col_d.text_input("WhatsApp (Ej: 3584302024)")
-        dir_p = st.text_input("Dirección Exacta (Para el PDF)")
-        emp_d = st.text_input("Empresa", value=mi_empresa) if rol == "SuperAdmin" else mi_empresa
+        d = col_c.text_input("DNI del Paciente *", placeholder="35123456")
+        f_nac = col_d.date_input(
+            "Fecha de Nacimiento", 
+            value=date(1990, 1, 1), 
+            min_value=date(1900, 1, 1), 
+            max_value=ahora().date()
+        )
+
+        col_e, col_f = st.columns(2)
+        se = col_e.selectbox("Sexo", ["F", "M", "Otro"])
+        tel = col_f.text_input("WhatsApp (sin 0 ni 15)", placeholder="3584302024")
+
+        dir_p = st.text_input("Dirección Exacta (Importante para GPS y PDF)", 
+                             placeholder="Calle 123, Barrio, Ciudad")
         
-        if st.form_submit_button("Habilitar Paciente", width="stretch"):
-            if n and d and emp_d: 
-                id_p = f"{n} ({o}) - {emp_d.strip()}"
-                st.session_state["pacientes_db"].append(id_p)
-                st.session_state["detalles_pacientes_db"][id_p] = {"dni": d, "fnac": f_nac.strftime("%d/%m/%Y"), "sexo": se, "telefono": tel, "direccion": dir_p, "empresa": emp_d.strip(), "estado": "Activo"}
-                guardar_datos(); st.rerun()
+        # Empresa solo editable por SuperAdmin
+        if rol == "SuperAdmin":
+            emp_d = st.text_input("Empresa / Clínica", value=mi_empresa)
+        else:
+            emp_d = mi_empresa
+            st.info(f"🏢 Paciente será asignado a: **{mi_empresa}**")
+
+        if st.form_submit_button("✅ Habilitar Paciente", use_container_width=True, type="primary"):
+            if not n or not d:
+                st.error("❌ Nombre y DNI son obligatorios.")
+            else:
+                # --- ANTI-DUPLICADOS ---
+                dni_existente = any(
+                    det.get("dni") == d 
+                    for det in st.session_state["detalles_pacientes_db"].values()
+                )
+                
+                if dni_existente:
+                    st.error("🚫 Ya existe un paciente con ese DNI.")
+                else:
+                    # ID más seguro y legible
+                    id_p = f"{n.strip()} - {d.strip()}"
+                    
+                    st.session_state["pacientes_db"].append(id_p)
+                    st.session_state["detalles_pacientes_db"][id_p] = {
+                        "dni": d.strip(),
+                        "fnac": f_nac.strftime("%d/%m/%Y"),
+                        "sexo": se,
+                        "telefono": tel.strip(),
+                        "direccion": dir_p.strip(),
+                        "empresa": emp_d.strip(),
+                        "estado": "Activo",
+                        "obra_social": o.strip()
+                    }
+                    
+                    guardar_datos()
+                    st.success(f"🎉 ¡Paciente **{n}** dado de alta correctamente!")
+                    st.balloons()
+                    st.rerun()
+
+    st.caption("💡 Los pacientes se guardan automáticamente en la nube.")
 
 # 4. CLÍNICA
 with tabs[menu.index("📊 Clínica")]:
