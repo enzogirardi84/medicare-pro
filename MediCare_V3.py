@@ -2010,67 +2010,91 @@ with tabs[menu.index("📹 Telemedicina")]:
         st.info("👈 Seleccione un paciente en el panel lateral para iniciar o programar una teleconsulta.")
 
 
-# 15. MÓDULO DE RRHH Y FICHAJES (SOLO ADMIN/COORD)
+# 18. MÓDULO DE RRHH Y FICHAJES (SOLO ADMIN/COORD)
 if "🧑‍⚕️ RRHH y Fichajes" in menu:
     with tabs[menu.index("🧑‍⚕️ RRHH y Fichajes")]:
         st.subheader("🧑‍⚕️ Control de RRHH y Fichaje Histórico")
-        st.info("Generá reportes oficiales de presentismo cruzando ingresos, egresos y matrículas de cada profesional.")
+        st.info("Generá reportes oficiales de presentismo cruzando ingresos, egresos, matrículas y tiempo total trabajado de cada profesional.")
         
         # 1. Filtros de Fecha
         col_f1, col_f2, col_f3 = st.columns(3)
         fecha_inicio = col_f1.date_input("Desde fecha:", value=ahora().date() - timedelta(days=7))
         fecha_fin = col_f2.date_input("Hasta fecha:", value=ahora().date())
         
-        # 2. Extracción y procesamiento de datos
+        # 2. Extracción y procesamiento de datos con cálculo de horas
         fichajes_lista = []
-        for c in st.session_state.get("checkin_db", []):
-            # Filtramos por empresa (el SuperAdmin ve todo, el Coord ve solo su empresa)
+        rastreador_ingresos = {} # Diccionario para cruzar la llegada con la salida
+        
+        # Ordenamos los checkins cronológicamente del más viejo al más nuevo para calcular bien las horas
+        def obtener_dt(c):
+            try: return datetime.strptime(c.get("fecha_hora", ""), "%d/%m/%Y %H:%M:%S")
+            except: 
+                try: return datetime.strptime(c.get("fecha_hora", ""), "%d/%m/%Y %H:%M")
+                except: return datetime.min
+                
+        checkins_ordenados = sorted(st.session_state.get("checkin_db", []), key=obtener_dt)
+        
+        for c in checkins_ordenados:
             if c.get("empresa") == mi_empresa or rol == "SuperAdmin":
                 
-                # Buscamos la matrícula del profesional cruzando bases de datos
+                prof = c.get("profesional", "S/D")
+                pac = c.get("paciente", "S/D")
+                dt_actual = obtener_dt(c)
+                
+                if dt_actual == datetime.min: continue
+                
                 matricula = "S/D"
                 for u_key, u_data in st.session_state["usuarios_db"].items():
-                    if u_data.get("nombre") == c.get("profesional"):
+                    if u_data.get("nombre") == prof:
                         matricula = u_data.get("matricula", "S/D")
                         break
                 
-                # Separamos Fecha y Hora
-                fh = c.get("fecha_hora", "")
-                if " " in fh:
-                    fecha_f, hora_f = fh.split(" ", 1)
-                else:
-                    fecha_f, hora_f = fh, ""
-                
-                # Limpiamos la acción (Llegada -> INGRESO / Salida -> EGRESO)
+                fecha_f = dt_actual.strftime("%d/%m/%Y")
+                hora_f = dt_actual.strftime("%H:%M")
                 accion_raw = c.get("tipo", "")
+                tiempo_total = "-" # Por defecto vacío (para ingresos u otros)
+
                 if "LLEGADA" in accion_raw.upper():
                     accion = "🟢 INGRESO"
+                    # Guardamos a qué hora entró para calcularlo cuando salga
+                    rastreador_ingresos[(prof, pac)] = dt_actual
                 elif "SALIDA" in accion_raw.upper():
                     accion = "🔴 EGRESO"
+                    # Si encontramos una salida, buscamos a qué hora había entrado
+                    if (prof, pac) in rastreador_ingresos:
+                        dt_ingreso = rastreador_ingresos[(prof, pac)]
+                        duracion = dt_actual - dt_ingreso
+                        horas, rem = divmod(duracion.seconds, 3600)
+                        minutos, _ = divmod(rem, 60)
+                        tiempo_total = f"{horas}h {minutos}m"
+                        del rastreador_ingresos[(prof, pac)] # Limpiamos el registro
+                    else:
+                        tiempo_total = "Sin Ingreso previo"
                 else:
                     accion = "OTRO"
 
                 fichajes_lista.append({
                     "Fecha": fecha_f,
-                    "Hora": hora_f[:5], # Nos quedamos solo con HH:MM
-                    "Profesional": c.get("profesional", "S/D"),
+                    "Hora": hora_f,
+                    "Profesional": prof,
                     "Matrícula": matricula,
                     "Acción": accion,
-                    "Paciente": c.get("paciente", "S/D"),
-                    "Detalle_GPS": accion_raw
+                    "Tiempo Trabajado": tiempo_total, # NUEVA COLUMNA CLAVE
+                    "Paciente": pac,
+                    "Detalle_GPS": accion_raw,
+                    "fecha_dt": dt_actual # Columna oculta para filtrar
                 })
 
         if fichajes_lista:
             df_fichajes = pd.DataFrame(fichajes_lista)
             
             # 3. Aplicamos el filtro de fechas elegido
-            df_fichajes['fecha_dt'] = pd.to_datetime(df_fichajes['Fecha'], format="%d/%m/%Y", errors='coerce')
             mask = (df_fichajes['fecha_dt'].dt.date >= fecha_inicio) & (df_fichajes['fecha_dt'].dt.date <= fecha_fin)
             df_filtrado = df_fichajes[mask].copy()
             
             if not df_filtrado.empty:
-                # Quitamos la columna auxiliar de fecha
-                df_mostrar = df_filtrado.drop(columns=['fecha_dt', 'Detalle_GPS']).sort_values(by=["Fecha", "Hora"], ascending=[False, False])
+                # Ordenamos para mostrar lo más nuevo arriba y quitamos las columnas de sistema
+                df_mostrar = df_filtrado.sort_values(by="fecha_dt", ascending=False).drop(columns=['fecha_dt', 'Detalle_GPS'])
                 
                 # Opcional: Filtrar por un profesional en particular
                 prof_filtrar = col_f3.selectbox("Filtrar Profesional:", ["Todos"] + sorted(list(df_mostrar["Profesional"].unique())))
@@ -2087,7 +2111,6 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
                         pdf = FPDF(orientation='L') # 'L' es Landscape (Apaisado) para que entren más columnas
                         pdf.add_page()
                         
-                        # Insertamos el Logo
                         import os
                         directorio_actual = os.path.dirname(os.path.abspath(__file__))
                         ruta_logo = os.path.join(directorio_actual, "logo_medicare_pro.jpeg")
@@ -2108,26 +2131,27 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
                         # Cabeceras de la Tabla
                         pdf.set_fill_color(59, 130, 246) # Azul corporativo
                         pdf.set_text_color(255, 255, 255)
-                        pdf.set_font("Arial", 'B', 10)
-                        pdf.cell(25, 8, "FECHA", 1, 0, 'C', True)
-                        pdf.cell(18, 8, "HORA", 1, 0, 'C', True)
-                        pdf.cell(65, 8, "PROFESIONAL", 1, 0, 'C', True)
-                        pdf.cell(25, 8, "MATRICULA", 1, 0, 'C', True)
-                        pdf.cell(25, 8, "ACCION", 1, 0, 'C', True)
-                        pdf.cell(115, 8, "PACIENTE", 1, 1, 'C', True)
+                        pdf.set_font("Arial", 'B', 9)
+                        # Ajustamos anchos para meter la columna nueva
+                        pdf.cell(22, 8, "FECHA", 1, 0, 'C', True)
+                        pdf.cell(15, 8, "HORA", 1, 0, 'C', True)
+                        pdf.cell(48, 8, "PROFESIONAL", 1, 0, 'C', True)
+                        pdf.cell(22, 8, "MATRICULA", 1, 0, 'C', True)
+                        pdf.cell(24, 8, "ACCION", 1, 0, 'C', True)
+                        pdf.cell(24, 8, "TIEMPO", 1, 0, 'C', True) # NUEVA COLUMNA
+                        pdf.cell(122, 8, "PACIENTE", 1, 1, 'C', True)
 
                         # Filas de la Tabla
                         pdf.set_text_color(0, 0, 0)
-                        pdf.set_font("Arial", '', 9)
+                        pdf.set_font("Arial", '', 8)
                         
-                        # Convertimos el DataFrame a diccionario para iterar
                         filas_pdf = datos_tabla.to_dict('records')
                         
                         for fila in filas_pdf:
-                            pdf.cell(25, 8, t(fila['Fecha']), 1, 0, 'C')
-                            pdf.cell(18, 8, t(fila['Hora']), 1, 0, 'C')
-                            pdf.cell(65, 8, t(fila['Profesional']), 1, 0, 'L')
-                            pdf.cell(25, 8, t(fila['Matrícula']), 1, 0, 'C')
+                            pdf.cell(22, 8, t(fila['Fecha']), 1, 0, 'C')
+                            pdf.cell(15, 8, t(fila['Hora']), 1, 0, 'C')
+                            pdf.cell(48, 8, t(fila['Profesional']), 1, 0, 'L')
+                            pdf.cell(22, 8, t(fila['Matrícula']), 1, 0, 'C')
                             
                             # Colorear la celda dependiendo si entró o salió
                             if "INGRESO" in fila['Acción']:
@@ -2135,12 +2159,15 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
                             elif "EGRESO" in fila['Acción']:
                                 pdf.set_text_color(200, 0, 0) # Rojo
                                 
-                            pdf.cell(25, 8, t(fila['Acción']), 1, 0, 'C')
+                            pdf.cell(24, 8, t(fila['Acción']), 1, 0, 'C')
                             pdf.set_text_color(0, 0, 0) # Volver al negro
                             
+                            # Columna de Tiempo Trabajado
+                            pdf.cell(24, 8, t(fila['Tiempo Trabajado']), 1, 0, 'C')
+                            
                             # Truncar nombre del paciente si es muy largo
-                            paciente_corto = str(fila['Paciente'])[:65]
-                            pdf.cell(115, 8, t(paciente_corto), 1, 1, 'L')
+                            paciente_corto = str(fila['Paciente'])[:70]
+                            pdf.cell(122, 8, t(paciente_corto), 1, 1, 'L')
 
                         return pdf.output(dest='S').encode('latin-1')
 
@@ -2152,4 +2179,6 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
                 st.warning("No hay registros de fichaje en el rango de fechas seleccionado.")
         else:
             st.info("Aún no existen registros de ingresos o egresos en la base de datos general.")
-# --- FIN DEL SISTEMA MEDICARE PRO V9.11 ---
+
+
+# --- FIN DEL SISTEMA MEDICARE PRO V9.12 ---
