@@ -1363,32 +1363,32 @@ with tabs[menu.index("💉 Materiales")]:
         else:
             st.info("Aún no se han registrado consumos de materiales para este paciente.")
 
-# 8. RECETAS (PLAN TERAPÉUTICO) - VERSIÓN MEJORADA CON MAR VISUAL
+# 8. RECETAS (PLAN TERAPÉUTICO) - VERSIÓN LIMPIA Y CLARA
 with tabs[menu.index("💊 Recetas")]:
     if not paciente_sel:
         st.info("👈 Seleccioná un paciente en el menú lateral.")
     else:
-        st.subheader("💊 Gestión del Plan Terapéutico y Administración de Medicamentos")
+        st.subheader("💊 Plan Terapéutico y Administración de Medicamentos")
 
-        # ====================== FORMULARIO PARA NUEVA RECETA ======================
+        # ====================== AGREGAR NUEVA MEDICACIÓN ======================
         with st.form("recet", clear_on_submit=True):
-            c_rec1, c_rec2 = st.columns([2, 1])
-            lista_vademecum_receta = ["-- Seleccionar del Vademécum --"] + VADEMECUM_BASE
-            med_vademecum = c_rec1.selectbox("1. Medicamento:", lista_vademecum_receta)
-            med_manual = c_rec2.text_input("O escribir manualmente:")
+            c1, c2 = st.columns([3, 1])
+            lista_vademecum = ["-- Seleccionar del Vademécum --"] + VADEMECUM_BASE
+            med = c1.selectbox("Medicamento", lista_vademecum)
+            manual = c2.text_input("O escribir manualmente")
 
-            c_rec3, c_rec4, c_rec5 = st.columns([2, 2, 1])
-            via = c_rec3.selectbox("Vía", ["Oral", "EV", "IM", "SC", "Tópica", "Inhalatoria", "Otro"])
-            frec = c_rec4.selectbox("Frecuencia", [
+            c3, c4, c5 = st.columns([2, 2, 1])
+            via = c3.selectbox("Vía", ["Oral", "EV", "IM", "SC", "Tópica", "Inhalatoria", "Otro"])
+            frecuencia = c4.selectbox("Frecuencia", [
                 "Cada 4 horas", "Cada 6 horas", "Cada 8 horas", "Cada 12 horas", 
                 "Cada 24 horas", "Dosis única", "Según necesidad (SOS)"
-            ], index=2)
-            dias = c_rec5.number_input("Días de tratamiento", min_value=1, max_value=90, value=7)
+            ])
+            dias = c5.number_input("Días", min_value=1, max_value=90, value=7)
 
             if st.form_submit_button("➕ Agregar Medicación", use_container_width=True, type="primary"):
-                med_final = med_manual.strip().title() if med_manual.strip() else med_vademecum
-                if med_final and med_final != "-- Seleccionar del Vademécum --":
-                    texto = f"{med_final} | Vía: {via} | {frec} | Durante {dias} días."
+                medicamento_final = manual.strip().title() if manual.strip() else med
+                if medicamento_final and medicamento_final != "-- Seleccionar del Vademécum --":
+                    texto = f"{medicamento_final} | Vía: {via} | {frecuencia} | Durante {dias} días"
                     st.session_state["indicaciones_db"].append({
                         "paciente": paciente_sel,
                         "med": texto,
@@ -1397,96 +1397,97 @@ with tabs[menu.index("💊 Recetas")]:
                         "firma": user["nombre"]
                     })
                     guardar_datos()
-                    st.success("✅ Medicación agregada correctamente.")
+                    st.success("✅ Medicación agregada al plan")
                     st.rerun()
 
         st.divider()
 
-        # ====================== MEDICACIÓN VIGENTE ======================
-        recs_paciente = [r for r in st.session_state.get("indicaciones_db", []) if r.get("paciente") == paciente_sel]
+        # ====================== MEDICACIÓN INDICADA ======================
+        recs = [r for r in st.session_state.get("indicaciones_db", []) if r.get("paciente") == paciente_sel]
 
-        if recs_paciente:
+        if recs:
             st.markdown("#### 🟢 Medicación Indicada")
 
             activas = []
             ahora_naive = ahora().replace(tzinfo=None)
 
-            for r in recs_paciente:
+            for r in recs:
                 try:
                     f_ini = datetime.strptime(r["fecha"], "%d/%m/%Y %H:%M:%S")
                 except:
                     f_ini = datetime.strptime(r["fecha"], "%d/%m/%Y %H:%M")
                 
-                dias = r.get("dias_duracion", 30)
-                if ahora_naive < f_ini + timedelta(days=dias):
+                if ahora_naive < f_ini + timedelta(days=r.get("dias_duracion", 30)):
                     activas.append(r)
 
             if activas:
-                # ====================== SÁBANA VISUAL MAR (LO QUE PEDISTE) ======================
-                st.markdown("#### 🕒 Administración por Horario - Hoy")
                 fecha_hoy = ahora().strftime("%d/%m/%Y")
-                
-                # Cargar administraciones ya realizadas hoy
                 admin_hoy = [a for a in st.session_state.get("administracion_med_db", []) 
                             if a.get("paciente") == paciente_sel and a.get("fecha") == fecha_hoy]
 
                 for r in activas:
                     partes = r['med'].split(" | ")
-                    med_nombre = partes[0].strip()
-                    frecuencia = partes[2].strip() if len(partes) > 2 else ""
+                    nombre_med = partes[0].strip()
+                    via = partes[1].replace("Vía: ", "") if len(partes) > 1 else ""
+                    freq = partes[2] if len(partes) > 2 else ""
 
-                    # Sugerencia de horarios según frecuencia
-                    sugerencia = ""
-                    freq_lower = frecuencia.lower()
-                    if "4 horas" in freq_lower: sugerencia = " (00-04-08-12-16-20)"
-                    elif "6 horas" in freq_lower: sugerencia = " (00-06-12-18)"
-                    elif "8 horas" in freq_lower: sugerencia = " (00-08-16)"
-                    elif "12 horas" in freq_lower: sugerencia = " (08-20)"
-                    elif "24 horas" in freq_lower: sugerencia = " (08)"
-                    elif "única" in freq_lower: sugerencia = " (Única)"
+                    st.markdown(f"**💊 {nombre_med}**  •  {via}  •  {freq}")
 
-                    st.markdown(f"**💊 {med_nombre}{sugerencia}**")
+                    # Definir horarios según frecuencia (más limpio)
+                    horarios = []
+                    if "4 horas" in freq.lower():
+                        horarios = ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"]
+                    elif "6 horas" in freq.lower():
+                        horarios = ["00:00", "06:00", "12:00", "18:00"]
+                    elif "8 horas" in freq.lower():
+                        horarios = ["00:00", "08:00", "16:00"]
+                    elif "12 horas" in freq.lower():
+                        horarios = ["08:00", "20:00"]
+                    elif "24 horas" in freq.lower():
+                        horarios = ["08:00"]
+                    else:
+                        horarios = ["08:00"]
 
-                    # Crear columnas para las 24 horas
-                    horas = st.columns(12) if "12 horas" in freq_lower else st.columns(8)
-                    
-                    for i, hora_col in enumerate(horas):
-                        hora_str = f"{i*3:02d}:00"   # Ej: 00:00, 03:00, 06:00...
-                        realizada = any(a.get("med") == med_nombre and a.get("hora", "").startswith(hora_str[:2]) 
-                                      for a in admin_hoy)
+                    # Mostrar horarios en tarjetas limpias
+                    cols = st.columns(len(horarios))
+                    for i, hora in enumerate(horarios):
+                        # Ver si ya fue administrada
+                        realizada = any(
+                            a.get("med") == nombre_med and 
+                            a.get("hora", "").startswith(hora[:2]) 
+                            for a in admin_hoy
+                        )
 
-                        if realizada:
-                            hora_col.success(f"✅ {hora_str}")
-                        else:
-                            hora_col.info(f"⭕ {hora_str}")
+                        with cols[i]:
+                            if realizada:
+                                st.success(f"**✅**  \n{hora}")
+                            else:
+                                st.info(f"**⭕**  \n{hora}")
 
                     st.caption("─" * 60)
 
-                # ====================== REGISTRO RÁPIDO DE DOSIS ======================
+                # ====================== REGISTRO RÁPIDO ======================
                 st.divider()
-                st.markdown("#### 📝 Registrar Administración de Dosis")
+                st.markdown("#### 📝 Registrar Administración")
 
-                with st.form("form_registro_dosis", clear_on_submit=True):
-                    meds_activas = [r['med'].split(" |")[0].strip() for r in activas]
-                    med_sel = st.selectbox("Medicación:", meds_activas, key="med_admin")
+                with st.form("registro_dosis", clear_on_submit=True):
+                    meds_nombres = [r['med'].split(" |")[0].strip() for r in activas]
+                    med_sel = st.selectbox("Medicación a registrar:", meds_nombres)
 
-                    col_h, col_e = st.columns(2)
-                    opciones_hora = [f"{h:02d}:00" for h in range(24)]
-                    hora_sel = col_h.selectbox("Hora de administración:", opciones_hora, 
-                                             index=ahora().hour, key="hora_admin")
+                    col_h, col_s = st.columns(2)
+                    hora_sel = col_h.selectbox("Hora:", [f"{h:02d}:00" for h in range(24)], index=ahora().hour)
+                    estado = col_s.radio("Estado:", ["✅ Realizada", "❌ No realizada"], horizontal=True)
 
-                    estado = col_e.radio("Estado:", ["✅ Realizada", "❌ No realizada"], horizontal=True)
-                    motivo = st.text_input("Justificación (solo si marcás ❌)", 
-                                         placeholder="Ej: Paciente dormido, rechazo, falta de stock...")
+                    justif = st.text_input("Justificación (obligatorio si ❌)", placeholder="Ej: Paciente rechazó, sueño, etc.")
 
                     if st.form_submit_button("💾 Guardar Registro", use_container_width=True, type="primary"):
-                        if "❌" in estado and not motivo.strip():
-                            st.error("Debes justificar cuando la dosis no se administró.")
+                        if "❌" in estado and not justif.strip():
+                            st.error("Debes justificar cuando no se administra la dosis.")
                         else:
                             if "administracion_med_db" not in st.session_state:
                                 st.session_state["administracion_med_db"] = []
 
-                            # Evitar duplicados
+                            # Evitar duplicado
                             st.session_state["administracion_med_db"] = [
                                 a for a in st.session_state["administracion_med_db"]
                                 if not (a.get("paciente") == paciente_sel and 
@@ -1501,16 +1502,14 @@ with tabs[menu.index("💊 Recetas")]:
                                 "fecha": fecha_hoy,
                                 "hora": hora_sel,
                                 "estado": estado,
-                                "motivo": motivo.strip() if "❌" in estado else "",
+                                "motivo": justif.strip() if "❌" in estado else "",
                                 "firma": user["nombre"]
                             })
                             guardar_datos()
-                            st.success(f"Registro guardado para {med_sel} a las {hora_sel}")
+                            st.success(f"Registro guardado: {med_sel} a las {hora_sel}")
                             st.rerun()
-
             else:
-                st.info("No hay medicación activa para este paciente en este momento.")
-
+                st.info("No hay medicación activa actualmente.")
         else:
             st.info("Aún no hay medicación indicada para este paciente.")
 
