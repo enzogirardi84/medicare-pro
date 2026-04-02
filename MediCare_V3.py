@@ -2552,7 +2552,9 @@ with tabs[menu.index("📹 Telemedicina")]:
                 st.warning("Aún no hay signos vitales registrados para este paciente.")
 
     else:
+# =====================================================================
 # 16. EQUIPO Y SUSCRIPCIONES (SOLO VISIBLE PARA ADMIN/COORDINADOR)
+# =====================================================================
 if "⚙️ Mi Equipo" in menu:
     with tabs[menu.index("⚙️ Mi Equipo")]:
         st.subheader(f"👥 Gestión de Personal - {mi_empresa}")
