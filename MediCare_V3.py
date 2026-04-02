@@ -1275,35 +1275,93 @@ with tabs[menu.index("🔬 Estudios")]:
 
 # 7. MATERIALES Y DESCARTABLES
 with tabs[menu.index("💉 Materiales")]:
-    if paciente_sel:
-        st.subheader("Registro de Materiales Descartables")
-        with st.form("form_mat", clear_on_submit=True):
-            inv_mi_empresa = [i for i in st.session_state["inventario_db"] if i["empresa"] == mi_empresa]
-            if not inv_mi_empresa:
-                st.warning("⚠️ No hay insumos en el inventario. Cargalos primero en la pestaña 'Inventario'.")
-                st.form_submit_button("Registrar Consumo", disabled=True)
-            else:
+    if not paciente_sel:
+        st.info("👈 Seleccioná un paciente en el menú lateral.")
+    else:
+        st.subheader("💉 Registro de Materiales Descartables")
+
+        # === INVENTARIO DE LA EMPRESA (fuera del form) ===
+        inv_mi_empresa = [i for i in st.session_state.get("inventario_db", []) 
+                         if i.get("empresa") == mi_empresa]
+
+        if not inv_mi_empresa:
+            st.warning("⚠️ No hay insumos cargados en el inventario. Ve a la pestaña **Inventario** primero.")
+        else:
+            with st.form("form_mat", clear_on_submit=True):
                 c1, c2 = st.columns([3, 1])
-                insumo_sel = c1.selectbox("Seleccionar Insumo Utilizado", [i["item"] for i in inv_mi_empresa])
-                cant_usada = c2.number_input("Cantidad", min_value=1, value=1)
-                
-                if st.form_submit_button("Registrar Consumo", width="stretch"):
+                insumo_sel = c1.selectbox(
+                    "Seleccionar Insumo Utilizado", 
+                    [i["item"] for i in inv_mi_empresa],
+                    key="select_insumo"
+                )
+                cant_usada = c2.number_input("Cantidad", min_value=1, value=1, step=1)
+
+                if st.form_submit_button("Registrar Consumo", use_container_width=True, type="primary"):
+                    # Buscar y actualizar stock
+                    stock_actualizado = False
                     for i in st.session_state["inventario_db"]:
-                        if i["item"] == insumo_sel and i["empresa"] == mi_empresa:
-                            if i["stock"] >= cant_usada:
-                                i["stock"] -= cant_usada
-                            else:
-                                st.warning(f"⚠️ Stock insuficiente. El stock de {insumo_sel} quedará negativo.")
-                                i["stock"] -= cant_usada
+                        if i["item"] == insumo_sel and i.get("empresa") == mi_empresa:
+                            stock_actual = i.get("stock", 0)
+                            if stock_actual < cant_usada:
+                                st.warning(f"⚠️ Stock insuficiente. Quedarán {stock_actual - cant_usada} unidades (negativo).")
+                            i["stock"] = stock_actual - cant_usada
+                            stock_actualizado = True
                             break
-                    st.session_state["consumos_db"].append({"paciente": paciente_sel, "insumo": insumo_sel, "cantidad": cant_usada, "fecha": ahora().strftime("%d/%m/%Y %H:%M"), "firma": user["nombre"], "empresa": mi_empresa})
-                    guardar_datos(); st.success(f"✅ {cant_usada}x {insumo_sel} registrado y descontado del stock."); st.rerun()
-                    
-        cons_paciente = [c for c in st.session_state["consumos_db"] if c["paciente"] == paciente_sel]
+
+                    if stock_actualizado:
+                        st.session_state["consumos_db"].append({
+                            "paciente": paciente_sel,
+                            "insumo": insumo_sel,
+                            "cantidad": cant_usada,
+                            "fecha": ahora().strftime("%d/%m/%Y %H:%M"),
+                            "firma": user["nombre"],
+                            "empresa": mi_empresa
+                        })
+                        guardar_datos()
+                        st.success(f"✅ {cant_usada} × {insumo_sel} registrado correctamente.")
+                        st.rerun()
+                    else:
+                        st.error("❌ Error al actualizar el stock.")
+
+        # === HISTORIAL DE CONSUMOS ===
+        cons_paciente = [c for c in st.session_state.get("consumos_db", []) 
+                        if c.get("paciente") == paciente_sel]
+
         if cons_paciente:
             st.divider()
-            st.caption("Últimos materiales registrados:")
-            st.dataframe(pd.DataFrame(cons_paciente).drop(columns=["paciente", "empresa"], errors='ignore'), use_container_width=True)
+            st.markdown("#### 📋 Materiales registrados para este paciente")
+
+            # Botón para borrar último consumo
+            if st.button("🗑️ Borrar último consumo", 
+                        key="borrar_ultimo_consumo_materiales", 
+                        use_container_width=True):
+                if st.checkbox("¿Confirmar borrado? No se puede deshacer", key="conf_del_consumo"):
+                    st.session_state["consumos_db"].remove(cons_paciente[-1])
+                    guardar_datos()
+                    st.success("Consumo eliminado correctamente.")
+                    st.rerun()
+
+            # Dataframe ordenado por fecha (más reciente primero)
+            df_cons = pd.DataFrame(cons_paciente)
+            if not df_cons.empty:
+                # Ordenar por fecha descendente
+                df_cons['fecha_dt'] = pd.to_datetime(df_cons['fecha'], format="%d/%m/%Y %H:%M", errors='coerce')
+                df_cons = df_cons.sort_values(by='fecha_dt', ascending=False).drop(columns=['fecha_dt'], errors='ignore')
+
+                df_cons = df_cons.rename(columns={
+                    "fecha": "Fecha y Hora",
+                    "insumo": "Insumo Utilizado",
+                    "cantidad": "Cantidad",
+                    "firma": "Registrado por"
+                })
+                
+                st.dataframe(
+                    df_cons.drop(columns=["paciente", "empresa"], errors='ignore'),
+                    use_container_width=True,
+                    hide_index=True
+                )
+        else:
+            st.info("Aún no se han registrado consumos de materiales para este paciente.")
 
 # 8. RECETAS (CON VENCIMIENTO AUTOMÁTICO Y GESTIÓN)
 with tabs[menu.index("💊 Recetas")]:
