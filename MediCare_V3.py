@@ -1981,7 +1981,7 @@ with tabs[menu.index("📹 Telemedicina")]:
 
         with c_vid2:
             st.markdown("### 🔗 Conexión Externa")
-            st.write("Enlace directo para médicos interconsultores o familiares (No requiere instalación de software cliente):")
+            st.write("Enlace directo para médicos interconsultores o familiares:")
             st.code(jitsi_url)
             
             st.divider()
@@ -1989,18 +1989,16 @@ with tabs[menu.index("📹 Telemedicina")]:
             st.markdown("### 📋 Resumen Clínico Inmediato")
             st.write(f"**Paciente:** {paciente_sel}")
             
-            # Consulta a la base de datos en memoria (session_state) para latencia cero
+            # Consulta a la base de datos en memoria
             vitales_paciente = [v for v in st.session_state.get("vitales_db", []) if v.get("paciente") == paciente_sel]
             
             if vitales_paciente:
-                ult = vitales_paciente[-1] # Indexación del array para obtener el registro cronológico más reciente
+                ult = vitales_paciente[-1] 
                 st.success(f"**Último Control ({ult.get('fecha', 'S/D')}):**")
                 
-                # Extracción dinámica de claves: Renderiza cualquier variable registrada ignorando metadatos estructurales
                 claves_excluidas = ["paciente", "fecha", "id", "observaciones", "firma"]
                 for clave, valor in ult.items():
                     if clave not in claves_excluidas and valor != "" and valor is not None:
-                        # Formatea la clave (ej: 'presion_arterial' -> 'Presion arterial')
                         nombre_formateado = str(clave).replace('_', ' ').capitalize()
                         st.write(f"* **{nombre_formateado}:** {valor}")
             else:
@@ -2009,23 +2007,139 @@ with tabs[menu.index("📹 Telemedicina")]:
     else:
         st.info("👈 Seleccione un paciente en el panel lateral para iniciar o programar una teleconsulta.")
 
+# =====================================================================
+# 15. EQUIPO Y SUSCRIPCIONES (SOLO VISIBLE PARA ADMIN/COORDINADOR)
+# =====================================================================
+if "⚙️ Mi Equipo" in menu:
+    with tabs[menu.index("⚙️ Mi Equipo")]:
+        st.subheader(f"Gestión de Personal - {mi_empresa}")
+        with st.form("equipo", clear_on_submit=True):
+            col_id, col_pw, col_pin = st.columns([2, 2, 1])
+            u_id = col_id.text_input("Usuario (Login)"); u_pw = col_pw.text_input("Clave"); u_pin = col_pin.text_input("PIN (4 Nros)", max_chars=4)
+            u_nm = st.text_input("Nombre Completo")
+            col_dni, col_mt = st.columns(2); u_dni = col_dni.text_input("DNI del Profesional"); u_mt = col_mt.text_input("Matrícula")
+            u_ti = st.selectbox("Título", ["Médico/a", "Lic. en Enfermería", "Enfermero/a", "Kinesiólogo/a", "Fonoaudiólogo/a", "Nutricionista", "Psicólogo/a", "Acompañante Terapéutico", "Trabajador/a Social", "Administrativo/a", "Otro"])
+            u_emp = st.text_input("🏢 Asignar a Clínica / Empresa") if rol == "SuperAdmin" else mi_empresa
+            u_rl = st.selectbox("Rol", ["Operativo", "Coordinador", "SuperAdmin"] if rol == "SuperAdmin" else ["Operativo", "Coordinador"])
+            if st.form_submit_button("Habilitar Acceso", width="stretch"):
+                if u_id and u_pw and u_pin and u_dni:
+                    st.session_state["usuarios_db"][u_id.strip().lower()] = { "pass": u_pw.strip(), "nombre": u_nm.strip(), "rol": u_rl, "titulo": u_ti, "empresa": u_emp.strip(), "matricula": u_mt.strip(), "dni": u_dni.strip(), "estado": "Activo", "pin": u_pin.strip()}
+                    guardar_datos(); st.rerun()
+        st.divider(); st.subheader("👥 Control de Accesos")
+        for u, d in list({k: v for k, v in st.session_state["usuarios_db"].items() if v["empresa"] == mi_empresa or rol == "SuperAdmin"}.items()):
+            if u == "admin": continue
+            c1, c2, c3 = st.columns([3, 1, 1])
+            c1.write(f"🏢 {d['empresa']} | 👤 **{d['nombre']}** *(Rol: {d.get('rol', 'Operativo')})* | Login: `{u}` | PIN: `{d.get('pin', 'S/D')}` | Estado: **{d.get('estado', 'Activo')}**")
+            if rol == "SuperAdmin":
+                if d.get("estado", "Activo") == "Activo" and c2.button("⏸️ Suspender", key=f"susp_{u}"): st.session_state["usuarios_db"][u]["estado"] = "Bloqueado"; guardar_datos(); st.rerun()
+                elif d.get("estado", "Activo") != "Activo" and c2.button("▶️ Reactivar", key=f"reac_{u}"): st.session_state["usuarios_db"][u]["estado"] = "Activo"; guardar_datos(); st.rerun()
+            if c3.button("❌ Bajar", key=f"del_{u}"): del st.session_state["usuarios_db"][u]; guardar_datos(); st.rerun()
 
+# =====================================================================
+# 16. AUDITORÍA (SOLO VISIBLE PARA ADMIN/COORDINADOR)
+# =====================================================================
+if "🕵️ Auditoría" in menu:
+    with tabs[menu.index("🕵️ Auditoría")]:
+        st.subheader("Auditoría General de Movimientos")
+        df_logs = pd.DataFrame(st.session_state["logs_db"])
+        
+        if not df_logs.empty:
+            col_b1, col_b2 = st.columns([2, 1])
+            buscar_log = col_b1.text_input("🔍 Filtrar reportes (por Acción, Usuario, etc.):")
+            
+            if buscar_log:
+                mask = df_logs.astype(str).apply(lambda x: x.str.contains(buscar_log, case=False, na=False)).any(axis=1)
+                df_logs_filtrado = df_logs[mask]
+            else:
+                df_logs_filtrado = df_logs
+                
+            st.dataframe(df_logs_filtrado, use_container_width=True)
+            
+            out_logs = io.BytesIO()
+            with pd.ExcelWriter(out_logs, engine='openpyxl') as writer: df_logs_filtrado.to_excel(writer, index=False, sheet_name='Logs_MediCare')
+            st.download_button("📥 DESCARGAR RESULTADOS A EXCEL", data=out_logs.getvalue(), file_name=f"Reporte_Logs_{ahora().strftime('%d_%m_%Y')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        else:
+            st.info("No hay registros en la auditoría.")
+
+# =====================================================================
+# 17. CONTROL DE ASISTENCIA EN VIVO (SOLO ADMIN/COORD)
+# =====================================================================
+if "⏱️ Asistencia en Vivo" in menu:
+    with tabs[menu.index("⏱️ Asistencia en Vivo")]:
+        st.subheader("⏱️ Panel de Control de Asistencias en Vivo")
+        st.info("Monitoreo en tiempo real de los profesionales que se encuentran actualmente trabajando dentro del domicilio de un paciente.")
+        
+        hoy_str = ahora().strftime("%d/%m/%Y")
+        chks_hoy = [c for c in st.session_state.get("checkin_db", []) if c.get("fecha_hora", "").startswith(hoy_str) and c.get("empresa") == mi_empresa]
+        
+        estado_profesionales = {}
+        for c in chks_hoy:
+            prof = c["profesional"]
+            pac = c["paciente"]
+            try:
+                dt = datetime.strptime(c["fecha_hora"], "%d/%m/%Y %H:%M:%S")
+            except:
+                dt = datetime.strptime(c["fecha_hora"], "%d/%m/%Y %H:%M")
+                
+            if "LLEGADA" in c["tipo"]:
+                estado_profesionales[prof] = {"estado": "En Guardia", "llegada": dt, "paciente": pac}
+            elif "SALIDA" in c["tipo"]:
+                estado_profesionales[prof] = {"estado": "Fuera", "llegada": None, "paciente": None}
+                
+        activos = {k: v for k, v in estado_profesionales.items() if v["estado"] == "En Guardia"}
+        
+        if activos:
+            st.markdown("#### 🟢 Profesionales Actualmente en Domicilio")
+            for prof, data in activos.items():
+                with st.container(border=True):
+                    col_info, col_btn = st.columns([3, 1])
+                    dt_llegada = data["llegada"]
+                    
+                    duracion = ahora().replace(tzinfo=None) - dt_llegada
+                    horas, rem = divmod(duracion.seconds, 3600)
+                    minutos, _ = divmod(rem, 60)
+                    
+                    col_info.markdown(f"👤 **{prof}** está en el domicilio de **{data['paciente']}**")
+                    col_info.caption(f"Ingresó a las: {dt_llegada.strftime('%H:%M')} ➔ **Tiempo transcurrido: {horas}h {minutos}m**")
+                    
+                    if col_btn.button("🔴 Forzar Salida", key=f"force_out_{prof}", use_container_width=True):
+                        st.session_state["checkin_db"].append({
+                            "paciente": data["paciente"], 
+                            "profesional": prof, 
+                            "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"), 
+                            "tipo": f"SALIDA (Forzada por Admin: {user['nombre']})", 
+                            "empresa": mi_empresa
+                        })
+                        guardar_datos()
+                        st.success(f"Salida forzada registrada correctamente para {prof}.")
+                        st.rerun()
+        else:
+            st.success("En este momento no hay profesionales con guardias abiertas en los domicilios.")
+            
+        st.divider()
+        st.markdown("#### 📋 Auditoría de todos los movimientos de hoy")
+        if chks_hoy:
+            df_chks = pd.DataFrame(chks_hoy).drop(columns=["empresa"], errors='ignore')
+            df_chks = df_chks.rename(columns={"paciente": "Paciente", "profesional": "Profesional", "fecha_hora": "Fecha y Hora", "tipo": "Acción"})
+            st.dataframe(df_chks.iloc[::-1], use_container_width=True, hide_index=True)
+        else:
+            st.write("Sin movimientos en el día de la fecha.")
+
+# =====================================================================
 # 18. MÓDULO DE RRHH Y FICHAJES (SOLO ADMIN/COORD)
+# =====================================================================
 if "🧑‍⚕️ RRHH y Fichajes" in menu:
     with tabs[menu.index("🧑‍⚕️ RRHH y Fichajes")]:
         st.subheader("🧑‍⚕️ Control de RRHH y Fichaje Histórico")
         st.info("Generá reportes oficiales de presentismo cruzando ingresos, egresos, matrículas y tiempo total trabajado de cada profesional.")
         
-        # 1. Filtros de Fecha
         col_f1, col_f2, col_f3 = st.columns(3)
         fecha_inicio = col_f1.date_input("Desde fecha:", value=ahora().date() - timedelta(days=7))
         fecha_fin = col_f2.date_input("Hasta fecha:", value=ahora().date())
         
-        # 2. Extracción y procesamiento de datos con cálculo de horas
         fichajes_lista = []
-        rastreador_ingresos = {} # Diccionario para cruzar la llegada con la salida
+        rastreador_ingresos = {} 
         
-        # Ordenamos los checkins cronológicamente del más viejo al más nuevo para calcular bien las horas
         def obtener_dt(c):
             try: return datetime.strptime(c.get("fecha_hora", ""), "%d/%m/%Y %H:%M:%S")
             except: 
@@ -2052,22 +2166,20 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
                 fecha_f = dt_actual.strftime("%d/%m/%Y")
                 hora_f = dt_actual.strftime("%H:%M")
                 accion_raw = c.get("tipo", "")
-                tiempo_total = "-" # Por defecto vacío (para ingresos u otros)
+                tiempo_total = "-" 
 
                 if "LLEGADA" in accion_raw.upper():
                     accion = "🟢 INGRESO"
-                    # Guardamos a qué hora entró para calcularlo cuando salga
                     rastreador_ingresos[(prof, pac)] = dt_actual
                 elif "SALIDA" in accion_raw.upper():
                     accion = "🔴 EGRESO"
-                    # Si encontramos una salida, buscamos a qué hora había entrado
                     if (prof, pac) in rastreador_ingresos:
                         dt_ingreso = rastreador_ingresos[(prof, pac)]
                         duracion = dt_actual - dt_ingreso
                         horas, rem = divmod(duracion.seconds, 3600)
                         minutos, _ = divmod(rem, 60)
                         tiempo_total = f"{horas}h {minutos}m"
-                        del rastreador_ingresos[(prof, pac)] # Limpiamos el registro
+                        del rastreador_ingresos[(prof, pac)] 
                     else:
                         tiempo_total = "Sin Ingreso previo"
                 else:
@@ -2082,33 +2194,28 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
                     "Tiempo Trabajado": tiempo_total,
                     "Paciente": pac,
                     "Detalle_GPS": accion_raw,
-                    "fecha_dt": dt_actual # Columna oculta para filtrar
+                    "fecha_dt": dt_actual 
                 })
 
         if fichajes_lista:
             df_fichajes = pd.DataFrame(fichajes_lista)
-            
-            # 3. Aplicamos el filtro de fechas elegido
             mask = (df_fichajes['fecha_dt'].dt.date >= fecha_inicio) & (df_fichajes['fecha_dt'].dt.date <= fecha_fin)
             df_filtrado = df_fichajes[mask].copy()
             
             if not df_filtrado.empty:
-                # Ordenamos para mostrar lo más nuevo arriba y quitamos las columnas de sistema
                 df_mostrar = df_filtrado.sort_values(by="fecha_dt", ascending=False).drop(columns=['fecha_dt', 'Detalle_GPS'])
                 
-                # Opcional: Filtrar por un profesional en particular
                 prof_filtrar = col_f3.selectbox("Filtrar Profesional:", ["Todos"] + sorted(list(df_mostrar["Profesional"].unique())))
                 if prof_filtrar != "Todos":
                     df_mostrar = df_mostrar[df_mostrar["Profesional"] == prof_filtrar]
 
                 st.dataframe(df_mostrar, use_container_width=True, hide_index=True)
                 
-                # 4. GENERACIÓN DEL PDF OFICIAL DE RRHH
                 if FPDF_DISPONIBLE:
                     def t(txt): return str(txt).replace('🟢 ', '').replace('🔴 ', '').encode('latin-1', 'replace').decode('latin-1')
 
                     def generar_pdf_rrhh(datos_tabla, f_ini, f_fin, prof_sel):
-                        pdf = FPDF(orientation='L') # 'L' es Landscape (Apaisado) para que entren más columnas
+                        pdf = FPDF(orientation='L') 
                         pdf.add_page()
                         
                         import os
@@ -2119,7 +2226,6 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
                         except Exception:
                             pass
                             
-                        # Encabezado
                         pdf.set_font("Arial", 'B', 15)
                         pdf.cell(0, 10, t(f"REPORTE OFICIAL DE RRHH Y ASISTENCIA - {mi_empresa}"), ln=True, align='C')
                         pdf.set_font("Arial", '', 10)
@@ -2128,8 +2234,7 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
                         pdf.cell(0, 6, t(f"Generado por: {user['nombre']}{texto_prof}"), ln=True, align='C')
                         pdf.ln(8)
 
-                        # Cabeceras de la Tabla
-                        pdf.set_fill_color(59, 130, 246) # Azul corporativo
+                        pdf.set_fill_color(59, 130, 246) 
                         pdf.set_text_color(255, 255, 255)
                         pdf.set_font("Arial", 'B', 9)
                         pdf.cell(22, 8, "FECHA", 1, 0, 'C', True)
@@ -2140,7 +2245,6 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
                         pdf.cell(24, 8, "TIEMPO", 1, 0, 'C', True) 
                         pdf.cell(122, 8, "PACIENTE", 1, 1, 'C', True)
 
-                        # Filas de la Tabla
                         pdf.set_text_color(0, 0, 0)
                         pdf.set_font("Arial", '', 8)
                         
@@ -2152,18 +2256,16 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
                             pdf.cell(48, 8, t(fila['Profesional']), 1, 0, 'L')
                             pdf.cell(22, 8, t(fila['Matrícula']), 1, 0, 'C')
                             
-                            # Colorear la celda dependiendo si entró o salió
                             if "INGRESO" in fila['Acción']:
-                                pdf.set_text_color(0, 128, 0) # Verde
+                                pdf.set_text_color(0, 128, 0) 
                             elif "EGRESO" in fila['Acción']:
-                                pdf.set_text_color(200, 0, 0) # Rojo
+                                pdf.set_text_color(200, 0, 0) 
                                 
                             pdf.cell(24, 8, t(fila['Acción']), 1, 0, 'C')
-                            pdf.set_text_color(0, 0, 0) # Volver al negro
+                            pdf.set_text_color(0, 0, 0) 
                             
                             pdf.cell(24, 8, t(fila['Tiempo Trabajado']), 1, 0, 'C')
                             
-                            # Truncar nombre del paciente si es muy largo
                             paciente_corto = str(fila['Paciente'])[:70]
                             pdf.cell(122, 8, t(paciente_corto), 1, 1, 'L')
 
@@ -2178,7 +2280,6 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
         else:
             st.info("Aún no existen registros de ingresos o egresos en la base de datos general.")
 
-        # --- 5. GESTIÓN Y ELIMINACIÓN DE REGISTROS (SOLO ADMIN/COORD) ---
         st.divider()
         st.markdown("#### 🛠️ Gestión de Registros (Corregir Errores)")
         st.warning("Si un profesional marcó mal su entrada o salida, podés eliminar ese registro específico acá. Los tiempos de guardia se recalcularán automáticamente.")
@@ -2190,9 +2291,7 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
                 opciones_borrar.append((lbl, c))
                 
         if opciones_borrar:
-            # Ordenamos para ver los más recientes primero en la lista desplegable
             opciones_borrar.sort(key=lambda x: x[0], reverse=True)
-            
             col_del1, col_del2 = st.columns([3, 1])
             registro_a_borrar = col_del1.selectbox("Seleccione el fichaje a eliminar:", options=opciones_borrar, format_func=lambda x: x[0])
             
