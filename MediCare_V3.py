@@ -1699,7 +1699,7 @@ with tabs[menu.index("💊 Recetas")]:
                             '''
                             c_btn.markdown(html_btn_receta, unsafe_allow_html=True)
 # =====================================================================
-# 9. BALANCE HÍDRICO (VERSIÓN FINAL - COLORES CORRECTOS + SCROLL MÁGICO)
+# 9. BALANCE HÍDRICO (VERSIÓN FINAL - LÓGICA MÉDICA INVERTIDA + SCROLL)
 # =====================================================================
 with tabs[menu.index("⚖️ Balance")]:
     if not paciente_sel:
@@ -1765,8 +1765,12 @@ with tabs[menu.index("⚖️ Balance")]:
             df_temp = pd.DataFrame(blp)
             ultimo = df_temp["balance"].iloc[-1] if not df_temp.empty else 0
             col_met1, col_met2, col_met3 = st.columns(3)
+            
+            # LÓGICA MÉDICA: delta_color="inverse" hace que si es positivo (retiene) la flecha sea ROJA
             col_met1.metric("Último Shift", f"{ultimo:+} ml", 
-                           delta="Positivo" if ultimo >= 0 else "Negativo")
+                           delta="Retención (Alerta)" if ultimo > 0 else ("Pérdida" if ultimo < 0 else "Neutro"),
+                           delta_color="inverse")
+                           
             col_met2.metric("Total balances", len(blp))
             col_met3.metric("Balance neto (últimos 3 turnos)", 
                            f"{sum(df_temp['balance'].tail(3)):+} ml")
@@ -1779,12 +1783,12 @@ with tabs[menu.index("⚖️ Balance")]:
             df_bal["Ingresos"] = df_bal["ingresos"].astype(str) + " ml"
             df_bal["Egresos"] = df_bal["egresos"].astype(str) + " ml"
             
-            # COLORES CORRECTOS (usando emoji + texto simple - funciona 100% en st.dataframe)
+            # COLORES INVERTIDOS (LÓGICA CLÍNICA)
             def formato_shift(val):
                 if val > 0:
-                    return f"🟢 +{val} ml"
+                    return f"🔴 +{val} ml" # Retiene líquido -> Alerta Roja
                 elif val < 0:
-                    return f"🔴 {val} ml"
+                    return f"🟢 {val} ml"  # Elimina líquido -> Verde
                 else:
                     return "⚖️ 0 ml"
             
@@ -1802,13 +1806,11 @@ with tabs[menu.index("⚖️ Balance")]:
                     df_mostrar[["Fecha y Hora", "Turno", "Ingresos", "Egresos", "Shift (Resultado)", "Enfermero/a"]],
                     use_container_width=True,
                     hide_index=True,
-                    # El height acá adentro a veces falla, por eso el container afuera es la posta.
-                    # Lo dejamos igual por las dudas.
                     height=450, 
                     column_config={
                         "Shift (Resultado)": st.column_config.TextColumn(
                             "Shift (Resultado)",
-                            help="🟢 Positivo = Verde   |   🔴 Negativo = Rojo"
+                            help="🔴 Retención de líquidos = Rojo   |   🟢 Eliminación = Verde"
                         )
                     }
                 )
