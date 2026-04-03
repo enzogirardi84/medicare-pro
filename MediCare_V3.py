@@ -1370,6 +1370,7 @@ with tabs[menu.index("💉 Materiales")]:
                         key="borrar_ultimo_consumo_materiales", 
                         use_container_width=True):
                 if st.checkbox("¿Confirmar borrado? No se puede deshacer", key="conf_del_consumo"):
+                    # Opcional: Si querés que al borrar se devuelva el stock al inventario, iría acá.
                     st.session_state["consumos_db"].remove(cons_paciente[-1])
                     guardar_datos()
                     st.success("Consumo eliminado correctamente.")
@@ -1389,11 +1390,13 @@ with tabs[menu.index("💉 Materiales")]:
                     "firma": "Registrado por"
                 })
                 
-                st.dataframe(
-                    df_cons.drop(columns=["paciente", "empresa"], errors='ignore'),
-                    use_container_width=True,
-                    hide_index=True
-                )
+                # ==== AQUÍ ESTÁ EL ANTI-COLAPSO DE MATERIALES ====
+                with st.container(height=400, border=True):
+                    st.dataframe(
+                        df_cons.drop(columns=["paciente", "empresa"], errors='ignore'),
+                        use_container_width=True,
+                        hide_index=True
+                    )
         else:
             st.info("Aún no se han registrado consumos de materiales para este paciente.")
             
