@@ -3121,19 +3121,8 @@ if "⏱️ Asistencia en Vivo" in menu:
             st.write("Sin movimientos en el día de la fecha.")
 
 # =====================================================================
-# 19. MÓDULO DE RRHH Y FICHAJES (SOLO ADMIN/COORD)
+# 19. MÓDULO DE RRHH Y FICHAJES (SOLO ADMIN/COORD) - VERSIÓN CORREGIDA
 # =====================================================================
-<!-- ✅ CÓDIGO MEJORADO Y PROFESIONALIZADO - SECCIÓN #19 RRHH Y FICHAJES -->
-<!-- Cambios importantes agregados (todo esencial para un módulo RRHH real): -->
-<!-- 1. TABS internas claras: Histórico Detallado | Resumen por Profesional | Gestión de Fichajes -->
-<!-- 2. Métricas rápidas al inicio (Total fichajes, Total horas trabajadas, Profesionales activos, Visitas promedio) -->
-<!-- 3. Resumen por Profesional con totales de horas, visitas y promedio (muy útil para liquidación) -->
-<!-- 4. PDF mejorado: ahora incluye página de RESUMEN + tabla detallada + logo + totales oficiales -->
-<!-- 5. Nueva descarga en EXCEL (además del PDF) - más útil para contabilidad y liquidación -->
-<!-- 6. Filtros más potentes y cálculo robusto de horas (ahora suma correctamente todas las visitas) -->
-<!-- 7. Sección de gestión más segura y visual (dataframe + botón eliminar por fila) -->
-<!-- 8. Código más limpio, mantenible y con mejor manejo de errores -->
-
 if "🧑‍⚕️ RRHH y Fichajes" in menu:
     with tabs[menu.index("🧑‍⚕️ RRHH y Fichajes")]:
         st.subheader("🧑‍⚕️ Control de RRHH y Fichaje Histórico")
@@ -3144,7 +3133,7 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
         fecha_inicio = col_f1.date_input("Desde fecha:", value=ahora().date() - timedelta(days=30), key="rrhh_desde")
         fecha_fin = col_f2.date_input("Hasta fecha:", value=ahora().date(), key="rrhh_hasta")
         
-        # ====================== PROCESAMIENTO DE FICHAJES (lógica mejorada y robusta) ======================
+        # ====================== PROCESAMIENTO DE FICHAJES ======================
         fichajes_lista = []
         rastreador_ingresos = {}
         
@@ -3230,12 +3219,14 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
                 if not df_filtrado.empty:
                     # Métricas rápidas
                     df_egresos = df_filtrado[df_filtrado["Acción"].str.contains("EGRESO", na=False)]
-                    total_horas = 0
+                    total_horas = 0.0
                     for t in df_egresos["Tiempo Trabajado"]:
-                        if "h" in str(t):
+                        if isinstance(t, str) and "h" in t:
                             try:
-                                h, m = map(int, str(t).replace("h", "").replace("m", "").split())
-                                total_horas += h + m/60
+                                partes = t.replace("h", "").replace("m", "").strip().split()
+                                h = int(partes[0])
+                                m = int(partes[1]) if len(partes) > 1 else 0
+                                total_horas += h + m / 60.0
                             except:
                                 pass
                     
@@ -3373,8 +3364,8 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
                 resumen_prof = df_egresos.groupby("Profesional").agg(
                     Visitas=("Acción", "count"),
                     Horas_Trabajadas=("Tiempo Trabajado", lambda x: sum(
-                        int(h) + int(m)/60 for h, m in 
-                        [t.replace("h","").replace("m","").split() if "h" in str(t) else (0,0) for t in x]
+                        (int(h) + int(m)/60.0) for h, m in 
+                        [t.replace("h","").replace("m","").split() if isinstance(t, str) and "h" in t else (0, 0) for t in x]
                     )),
                     Matrícula=("Matrícula", "first")
                 ).round(1).reset_index()
@@ -3398,8 +3389,8 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
                 )
                 
                 opciones_borrar = [
-                    (f"📅 {c['Fecha']} {c['Hora']} | 👤 {c['Profesional']} | {c['Acción']} | {c['Paciente']}", c)
-                    for c in st.session_state.get("checkin_db", [])
+                    (f"📅 {c['Fecha']} {c['Hora']} | 👤 {c['Profesional']} | {c['Acción']} | {c['Paciente']}", idx)
+                    for idx, c in enumerate(st.session_state.get("checkin_db", []))
                     if c.get("empresa") == mi_empresa or rol == "SuperAdmin"
                 ]
                 if opciones_borrar:
@@ -3410,7 +3401,7 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
                         format_func=lambda x: x[0]
                     )
                     if col_del2.button("🗑️ Eliminar Fichaje Seleccionado", type="secondary", use_container_width=True):
-                        st.session_state["checkin_db"].remove(registro_sel[1])
+                        del st.session_state["checkin_db"][registro_sel[1]]
                         guardar_datos()
                         st.success("✅ Fichaje eliminado correctamente. Los reportes se han actualizado.")
                         st.rerun()
