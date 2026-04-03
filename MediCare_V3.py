@@ -468,6 +468,7 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
         else:
             det = st.session_state["detalles_pacientes_db"].get(paciente_sel, {})
             dire_paciente = det.get("direccion", "No registrada")
+            tel_paciente = det.get("telefono", "")
 
             # === GEOLOCALIZACIÓN ===
             if GEO_DISPONIBLE:
@@ -513,7 +514,7 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
 
             st.divider()
 
-            # ====================== CONTROL DE HORAS DE GUARDIA (CORREGIDO) ======================
+            # ====================== CONTROL DE HORAS DE GUARDIA ======================
             st.markdown("#### ⏳ Control de Horas de Guardia (Hoy)")
 
             hoy_str = ahora().strftime("%d/%m/%Y")
@@ -549,7 +550,7 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
                         horas, rem = divmod(duracion.seconds, 3600)
                         minutos, _ = divmod(rem, 60)
                         st.success(f"✅ Turno completado: {llegada_time.strftime('%H:%M')} → {dt.strftime('%H:%M')} ({horas}h {minutos}m)")
-                        llegada_time = None   # ←←← ESTO ES LO QUE FALTABA
+                        llegada_time = None
 
                 # Si todavía hay una llegada sin salida → guardia abierta
                 if llegada_time:
@@ -566,7 +567,7 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
 
             st.divider()
 
-            # ====================== AGENDA Y WHATSAPP (se mantiene igual) ======================
+            # ====================== AGENDA ======================
             st.subheader("📅 Agendar Próxima Visita")
             with st.form("agenda_form", clear_on_submit=True):
                 c1_ag, c2_ag = st.columns(2)
@@ -597,20 +598,40 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
             if agenda_mia:
                 st.caption("Próximas visitas agendadas:")
                 
-                # ==== AQUÍ ESTÁ EL ANTI-COLAPSO EN LA TABLA DE AGENDA ====
+                # ==== CAJA ANTI-COLAPSO DE AGENDA ====
                 with st.container(height=350, border=True):
-                    # Uso iloc[::-1] para que las últimas agendadas salgan primero
                     df_agenda_mostrar = pd.DataFrame(agenda_mia).drop(columns=["empresa", "paciente"])
                     st.dataframe(df_agenda_mostrar.iloc[::-1], use_container_width=True, hide_index=True)
 
             st.divider()
 
-            # WhatsApp (se mantiene igual)
+            # ====================== CONTACTO Y WHATSAPP ======================
             st.subheader("📲 Contacto y Ubicación")
             if dire_paciente and dire_paciente != "No registrada":
                 st.info(f"🏠 **Domicilio:** {dire_paciente}")
 
-            # ... (el resto del código de WhatsApp se mantiene igual que tenías antes)
+            if tel_paciente:
+                import urllib.parse
+                nombre_corto = paciente_sel.split(" (")[0]
+                
+                # Armamos el mensaje predeterminado y lo codificamos para la URL
+                mensaje_base = f"Hola {nombre_corto}, me comunico desde {mi_empresa} para avisarte sobre tu próxima visita de internación domiciliaria."
+                mensaje_codificado = urllib.parse.quote(mensaje_base)
+                
+                # Creamos el link oficial de la API de WhatsApp
+                link_wpp = f"https://api.whatsapp.com/send?phone={tel_paciente}&text={mensaje_codificado}"
+                
+                html_wpp = f'''
+                <a href="{link_wpp}" target="_blank"
+                   style="display: block; width: 100%; text-align: center; background-color: #25D366; 
+                          color: white; padding: 12px; border-radius: 8px; text-decoration: none; 
+                          font-weight: bold; font-family: sans-serif; margin-top: 10px;">
+                   💬 Enviar mensaje por WhatsApp
+                </a>
+                '''
+                st.markdown(html_wpp, unsafe_allow_html=True)
+            else:
+                st.warning("⚠️ Este paciente no tiene un número de teléfono registrado para enviarle WhatsApp.")
 
        
 if "📈 Dashboard" in menu:
