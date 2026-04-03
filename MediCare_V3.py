@@ -2499,28 +2499,29 @@ if "📑 Cierre Diario" in menu:
     with tabs[menu.index("📑 Cierre Diario")]:
         st.subheader("📑 Conciliación y Cierre Diario de Operaciones")
         st.info("Seleccioná un día para auditar todos los insumos consumidos, la facturación ingresada y el estado del stock de farmacia en esa fecha.")
-
+        
         c1_rep, c2_rep = st.columns([1, 2])
         fecha_reporte = c1_rep.date_input("Filtrar por Fecha:", value=ahora().date())
         fecha_str = fecha_reporte.strftime("%d/%m/%Y")
-
-        consumos_dia = [c for c in st.session_state.get("consumos_db", []) 
+        
+        # Filtros del día seleccionado
+        consumos_dia = [c for c in st.session_state.get("consumos_db", [])
                        if c.get("fecha", "").startswith(fecha_str) and c.get("empresa") == mi_empresa]
-        facturacion_dia = [f for f in st.session_state.get("facturacion_db", []) 
+        facturacion_dia = [f for f in st.session_state.get("facturacion_db", [])
                           if f.get("fecha", "").startswith(fecha_str) and f.get("empresa") == mi_empresa]
-        stock_actual = [i for i in st.session_state.get("inventario_db", []) 
+        stock_actual = [i for i in st.session_state.get("inventario_db", [])
                        if i.get("empresa") == mi_empresa]
 
         # ====================== MÉTRICAS RÁPIDAS ======================
         total_insumos = sum(c.get("cantidad", 0) for c in consumos_dia)
         total_facturado = sum(f.get("monto", 0) for f in facturacion_dia)
         stock_critico = len([s for s in stock_actual if s.get("stock", 0) <= 10])
-
+        
         col_m1, col_m2, col_m3 = st.columns(3)
         col_m1.metric("📦 Insumos Consumidos", f"{total_insumos} unidades")
         col_m2.metric("💰 Facturado del Día", f"${total_facturado:,.2f}")
         col_m3.metric("⚠️ Stock Crítico", f"{stock_critico} insumos", delta=None)
-
+        
         st.divider()
 
         # ====================== EXPANDERS (se mantiene toda la lógica original) ======================
@@ -2532,7 +2533,7 @@ if "📑 Cierre Diario" in menu:
                 )
             else:
                 st.write("No hubo registro de uso de insumos en este día.")
-
+        
         with st.expander(f"💳 2. Procedimientos y Facturación el {fecha_str}", expanded=True):
             if facturacion_dia:
                 st.success(f"**Total Facturado en el día: ${total_facturado:,.2f}**")
@@ -2542,7 +2543,7 @@ if "📑 Cierre Diario" in menu:
                 )
             else:
                 st.write("No hubo facturación registrada en este día.")
-
+        
         with st.expander("⚕️ 3. Estado de Stock de Farmacia Actual", expanded=False):
             if stock_actual:
                 st.dataframe(
@@ -2551,13 +2552,13 @@ if "📑 Cierre Diario" in menu:
                 )
             else:
                 st.write("No hay stock cargado.")
-
+        
         st.divider()
 
-        # ====================== GENERACIÓN DE PDF OFICIAL (mejorado) ======================
+        # ====================== GENERACIÓN DE PDF OFICIAL (mejorado y reutilizable) ======================
         if FPDF_DISPONIBLE:
             st.markdown("#### 🔒 Generar Documento Oficial de Cierre")
-
+            
             def t(txt):
                 if not txt:
                     return ""
@@ -2566,67 +2567,95 @@ if "📑 Cierre Diario" in menu:
                 for old, new in replacements.items():
                     txt = txt.replace(old, new)
                 return str(txt).encode('latin-1', 'replace').decode('latin-1')
-
-            def generar_pdf_cierre():
+            
+            # Función mejorada: ahora acepta fecha opcional (para "Cierre de Hoy")
+            def generar_pdf_cierre(fecha_para_pdf=None):
+                if fecha_para_pdf is None:
+                    # Usar fecha seleccionada en el date_input
+                    fecha_str_pdf = fecha_str
+                    consumos_pdf = consumos_dia
+                    facturacion_pdf = facturacion_dia
+                    total_facturado_pdf = total_facturado
+                else:
+                    # Para "Cierre de Hoy" o cualquier otra fecha
+                    if isinstance(fecha_para_pdf, date):
+                        fecha_str_pdf = fecha_para_pdf.strftime("%d/%m/%Y")
+                    else:
+                        fecha_str_pdf = str(fecha_para_pdf)
+                    consumos_pdf = [c for c in st.session_state.get("consumos_db", [])
+                                   if c.get("fecha", "").startswith(fecha_str_pdf) and c.get("empresa") == mi_empresa]
+                    facturacion_pdf = [f for f in st.session_state.get("facturacion_db", [])
+                                      if f.get("fecha", "").startswith(fecha_str_pdf) and f.get("empresa") == mi_empresa]
+                    total_facturado_pdf = sum(f.get("monto", 0) for f in facturacion_pdf)
+                
                 pdf = FPDF()
                 pdf.add_page()
                 pdf.set_font("Arial", 'B', 15)
                 pdf.cell(0, 12, t(f"REPORTE DE CIERRE DIARIO - {mi_empresa}"), ln=True, align='C')
                 pdf.set_font("Arial", 'I', 10)
-                pdf.cell(0, 8, t(f"Fecha auditada: {fecha_str} | Generado por: {user['nombre']} a las {ahora().strftime('%H:%M')}"), 
+                pdf.cell(0, 8, t(f"Fecha auditada: {fecha_str_pdf} | Generado por: {user['nombre']} a las {ahora().strftime('%H:%M')}"),
                         ln=True, align='C')
                 pdf.ln(8)
-
+                
                 # 1. Insumos
                 pdf.set_font("Arial", 'B', 12)
                 pdf.cell(0, 10, t("1. INSUMOS CONSUMIDOS EN EL DÍA"), ln=True)
                 pdf.set_font("Arial", '', 10)
-                if not consumos_dia:
-                    pdf.cell(0, 6, t("   No hubo consumos registrados."), ln=True)
+                if not consumos_pdf:
+                    pdf.cell(0, 6, t(" No hubo consumos registrados."), ln=True)
                 else:
-                    for c in consumos_dia:
-                        pdf.cell(0, 6, t(f"   • {c.get('cantidad')}x {c.get('insumo')} | Paciente: {c.get('paciente')}"), ln=True)
-
+                    for c in consumos_pdf:
+                        pdf.cell(0, 6, t(f" • {c.get('cantidad')}x {c.get('insumo')} | Paciente: {c.get('paciente')}"), ln=True)
                 pdf.ln(8)
-
+                
                 # 2. Facturación
                 pdf.set_font("Arial", 'B', 12)
                 pdf.cell(0, 10, t("2. PROCEDIMIENTOS Y FACTURACIÓN DEL DÍA"), ln=True)
                 pdf.set_font("Arial", '', 10)
-                if not facturacion_dia:
-                    pdf.cell(0, 6, t("   No hubo facturación registrada."), ln=True)
+                if not facturacion_pdf:
+                    pdf.cell(0, 6, t(" No hubo facturación registrada."), ln=True)
                 else:
-                    for f in facturacion_dia:
-                        pdf.cell(0, 6, t(f"   • ${f.get('monto')} | {f.get('serv')} | {f.get('paciente')}"), ln=True)
+                    for f in facturacion_pdf:
+                        pdf.cell(0, 6, t(f" • ${f.get('monto')} | {f.get('serv')} | {f.get('paciente')}"), ln=True)
                     pdf.set_font("Arial", 'B', 11)
-                    pdf.cell(0, 10, t(f"TOTAL FACTURADO DEL DÍA: ${total_facturado:,.2f}"), ln=True)
-
+                    pdf.cell(0, 10, t(f"TOTAL FACTURADO DEL DÍA: ${total_facturado_pdf:,.2f}"), ln=True)
                 pdf.ln(8)
-
+                
                 # 3. Stock
                 pdf.set_font("Arial", 'B', 12)
                 pdf.cell(0, 10, t("3. BALANCE DE STOCK EN FARMACIA (AL CIERRE)"), ln=True)
                 pdf.set_font("Arial", '', 10)
                 if not stock_actual:
-                    pdf.cell(0, 6, t("   No hay stock registrado."), ln=True)
+                    pdf.cell(0, 6, t(" No hay stock registrado."), ln=True)
                 else:
                     for s in stock_actual:
-                        pdf.cell(0, 6, t(f"   • {s.get('item')}: {s.get('stock')} unidades"), ln=True)
-
+                        pdf.cell(0, 6, t(f" • {s.get('item')}: {s.get('stock')} unidades"), ln=True)
                 pdf.ln(15)
                 pdf.set_font("Arial", '', 9)
                 pdf.cell(0, 6, t("Documento generado automáticamente por MediCare Enterprise PRO"), ln=True, align='C')
+                
                 return pdf.output(dest='S').encode('latin-1')
-
-            # Botón rápido + botón original
+            
+            # ====================== BOTONES (ahora ambos funcionan) ======================
             col_btn1, col_btn2 = st.columns([1, 1])
+            
             if col_btn1.button("📅 Generar Cierre de Hoy", use_container_width=True, type="primary"):
-                # Reutiliza la función con fecha de hoy
-                fecha_hoy_str = ahora().strftime("%d/%m/%Y")
-                # (puedes reutilizar la misma lógica si querés, pero por ahora mantenemos el botón original)
-                pass
-
-            if col_btn2.button(f"📄 Generar y Guardar Reporte PDF del {fecha_str}", 
+                hoy_fecha = ahora().date()
+                hoy_str = hoy_fecha.strftime("%d/%m/%Y")
+                b64_pdf = base64.b64encode(generar_pdf_cierre(hoy_fecha)).decode('utf-8')
+                
+                st.session_state["reportes_diarios_db"].append({
+                    "fecha_reporte": hoy_str,
+                    "fecha_generacion": ahora().strftime("%d/%m/%Y %H:%M"),
+                    "generado_por": user["nombre"],
+                    "empresa": mi_empresa,
+                    "pdf_base64": b64_pdf
+                })
+                guardar_datos()
+                st.success(f"✅ ¡Cierre del día {hoy_str} (HOY) guardado exitosamente!")
+                st.rerun()
+            
+            if col_btn2.button(f"📄 Generar y Guardar Reporte PDF del {fecha_str}",
                              use_container_width=True, type="secondary"):
                 b64_pdf = base64.b64encode(generar_pdf_cierre()).decode('utf-8')
                 st.session_state["reportes_diarios_db"].append({
@@ -2639,37 +2668,37 @@ if "📑 Cierre Diario" in menu:
                 guardar_datos()
                 st.success(f"✅ ¡Cierre del día {fecha_str} guardado exitosamente!")
                 st.rerun()
-
+        
         st.divider()
 
-        # ====================== ARCHIVO HISTÓRICO (más bonito) ======================
-        st.subheader("🗄️ Archivo Histórico de Cierres Diarios")
-        reportes_mios = [r for r in reversed(st.session_state.get("reportes_diarios_db", [])) 
-                        if r.get("empresa") == mi_empresa]
-
-        if reportes_mios:
-            for r in reportes_mios:
-                with st.container(border=True):
-                    c1_hist, c2_hist = st.columns([4, 1])
-                    c1_hist.markdown(f"**📄 Cierre del día {r['fecha_reporte']}**")
-                    c1_hist.caption(f"Generado el {r['fecha_generacion']} por {r['generado_por']}")
-
-                    # Botón descarga seguro (anti-404)
-                    b64_pdf_cierre = r['pdf_base64']
-                    nombre_arch_cierre = f"Cierre_Diario_{r['fecha_reporte'].replace('/','-')}.pdf"
-
-                    html_btn_cierre = f'''
-                    <a href="data:application/pdf;base64,{b64_pdf_cierre}" 
-                       download="{nombre_arch_cierre}"
-                       style="display: block; width: 100%; text-align: center; 
-                              background-color: #2563eb; color: white; padding: 10px; 
-                              border-radius: 8px; text-decoration: none; font-weight: 600;">
-                       📥 Descargar PDF
-                    </a>
-                    '''
-                    c2_hist.markdown(html_btn_cierre, unsafe_allow_html=True)
-        else:
-            st.info("Aún no hay reportes de cierre diario guardados.")
+        # ====================== ARCHIVO HISTÓRICO (¡LA CAJITA CON SCROLL QUE PEDISTE!) ======================
+        with st.expander("🗄️ Archivo Histórico de Cierres Diarios", expanded=False):
+            reportes_mios = [r for r in reversed(st.session_state.get("reportes_diarios_db", []))
+                            if r.get("empresa") == mi_empresa]
+            
+            if reportes_mios:
+                st.caption("📋 Lista de todos los cierres guardados (más recientes primero)")
+                for r in reportes_mios:
+                    with st.container(border=True):
+                        c1_hist, c2_hist = st.columns([4, 1])
+                        c1_hist.markdown(f"**📄 Cierre del día {r['fecha_reporte']}**")
+                        c1_hist.caption(f"Generado el {r['fecha_generacion']} por {r['generado_por']}")
+                        
+                        # Botón descarga seguro
+                        b64_pdf_cierre = r['pdf_base64']
+                        nombre_arch_cierre = f"Cierre_Diario_{r['fecha_reporte'].replace('/','-')}.pdf"
+                        html_btn_cierre = f'''
+                        <a href="data:application/pdf;base64,{b64_pdf_cierre}"
+                           download="{nombre_arch_cierre}"
+                           style="display: block; width: 100%; text-align: center;
+                                  background-color: #2563eb; color: white; padding: 10px;
+                                  border-radius: 8px; text-decoration: none; font-weight: 600;">
+                           📥 Descargar PDF
+                        </a>
+                        '''
+                        c2_hist.markdown(html_btn_cierre, unsafe_allow_html=True)
+            else:
+                st.info("Aún no hay reportes de cierre diario guardados. Generá el primero con los botones de arriba.")
 
 # 15. TELEMEDICINA (JITSI EMBEBIDO + FIX MÓVILES + EXTRACCIÓN DINÁMICA DE VITALES)
 with tabs[menu.index("📹 Telemedicina")]:
