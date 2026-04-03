@@ -1699,7 +1699,7 @@ with tabs[menu.index("💊 Recetas")]:
                             '''
                             c_btn.markdown(html_btn_receta, unsafe_allow_html=True)
 # =====================================================================
-# 9. BALANCE HÍDRICO (VERSIÓN FINAL - COLORES CORRECTOS + SCROLL)
+# 9. BALANCE HÍDRICO (VERSIÓN FINAL - COLORES CORRECTOS + SCROLL MÁGICO)
 # =====================================================================
 with tabs[menu.index("⚖️ Balance")]:
     if not paciente_sel:
@@ -1796,19 +1796,24 @@ with tabs[menu.index("⚖️ Balance")]:
                 "firma": "Enfermero/a"
             })
             
-            # Tabla con SCROLL FIJO (anti-colapso)
-            st.dataframe(
-                df_mostrar[["Fecha y Hora", "Turno", "Ingresos", "Egresos", "Shift (Resultado)", "Enfermero/a"]],
-                use_container_width=True,
-                hide_index=True,
-                height=480,                    # ← SCROLL FIJO
-                column_config={
-                    "Shift (Resultado)": st.column_config.TextColumn(
-                        "Shift (Resultado)",
-                        help="🟢 Positivo = Verde   |   🔴 Negativo = Rojo"
-                    )
-                }
-            )
+            # === ACÁ ESTÁ EL CONTENEDOR ANTI-COLAPSO MÁGICO ===
+            with st.container(height=450, border=True):
+                st.dataframe(
+                    df_mostrar[["Fecha y Hora", "Turno", "Ingresos", "Egresos", "Shift (Resultado)", "Enfermero/a"]],
+                    use_container_width=True,
+                    hide_index=True,
+                    # El height acá adentro a veces falla, por eso el container afuera es la posta.
+                    # Lo dejamos igual por las dudas.
+                    height=450, 
+                    column_config={
+                        "Shift (Resultado)": st.column_config.TextColumn(
+                            "Shift (Resultado)",
+                            help="🟢 Positivo = Verde   |   🔴 Negativo = Rojo"
+                        )
+                    }
+                )
+            
+            st.divider()
             
             # Botón borrar
             if st.button("🗑️ Borrar último balance", use_container_width=True, type="secondary"):
