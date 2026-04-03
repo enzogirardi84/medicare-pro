@@ -1796,7 +1796,7 @@ with tabs[menu.index("⚖️ Balance")]:
             )
         else:
             st.info("Aún no hay balances hídricos registrados para este paciente.")
-# 10. INVENTARIO - VERSIÓN UNIFICADA EN TONO BORDO OSCURO
+# 10. INVENTARIO - VERSIÓN UNIFICADA EN TONO BORDO OSCURO (CON ANTI-COLAPSO)
 with tabs[menu.index("📦 Inventario")]:
     st.subheader("📦 Gestión de Inventario y Stock de Farmacia")
 
@@ -1806,8 +1806,10 @@ with tabs[menu.index("📦 Inventario")]:
     stock_critico = [i for i in inv_mio if i.get("stock", 0) <= 10]
     if stock_critico:
         st.markdown("#### 🚨 **ALERTA DE STOCK CRÍTICO**")
-        for item in stock_critico:
-            st.error(f"**{item.get('item')}** → Quedan solo **{item.get('stock', 0)}** unidades")
+        # ACÁ ESTÁ LA MAGIA ANTI-COLAPSO PARA LAS ALERTAS
+        with st.container(height=350, border=True):
+            for item in stock_critico:
+                st.error(f"**{item.get('item')}** → Quedan solo **{item.get('stock', 0)}** unidades")
 
     st.divider()
 
