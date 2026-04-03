@@ -2927,7 +2927,8 @@ if "⚙️ Mi Equipo" in menu:
                         
                         with col1:
                             st.markdown(f"**{d.get('nombre', 'Sin nombre')}**")
-                            st.caption(f"Login: `{u}` | {d.get('titulo', '')} | DNI: {d.get('dni', 'S/D')} | PIN: `{d.get('pin', 'S/D')}`")
+                            # ==== ACÁ ESTÁ LA MEJORA: AHORA FIGURA EL ROL ====
+                            st.caption(f"Login: `{u}` | Rol: **{d.get('rol', 'S/D')}** | {d.get('titulo', '')} | DNI: {d.get('dni', 'S/D')} | PIN: `{d.get('pin', 'S/D')}`")
 
                         with col2:
                             st.markdown(f"{estado_color} **{d.get('estado', 'Activo')}**")
