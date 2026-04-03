@@ -2883,92 +2883,178 @@ if "⚙️ Mi Equipo" in menu:
 # 17. AUDITORÍA (SOLO VISIBLE PARA ADMIN/COORDINADOR)
 if "🕵️ Auditoría" in menu:
     with tabs[menu.index("🕵️ Auditoría")]:
-        st.subheader("Auditoría General de Movimientos")
-        df_logs = pd.DataFrame(st.session_state["logs_db"])
-        
-        if not df_logs.empty:
-            col_b1, col_b2 = st.columns([2, 1])
-            buscar_log = col_b1.text_input("🔍 Filtrar reportes (por Acción, Usuario, etc.):")
-            
-            if buscar_log:
-                mask = df_logs.astype(str).apply(lambda x: x.str.contains(buscar_log, case=False, na=False)).any(axis=1)
-                df_logs_filtrado = df_logs[mask]
-            else:
-                df_logs_filtrado = df_logs
-                
-            st.dataframe(df_logs_filtrado, use_container_width=True)
-            
-            # --- BOTÓN HTML ANTI-404 PARA EXCEL DE AUDITORÍA ---
-            out_logs = io.BytesIO()
-            with pd.ExcelWriter(out_logs, engine='openpyxl') as writer: 
-                df_logs_filtrado.to_excel(writer, index=False, sheet_name='Logs_MediCare')
-            
-            b64_excel_logs = base64.b64encode(out_logs.getvalue()).decode('utf-8')
-            nombre_arch_excel_logs = f"Reporte_Logs_{ahora().strftime('%d_%m_%Y')}.xlsx"
-            
-            html_btn_excel_logs = f'''
-            <a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64_excel_logs}" download="{nombre_arch_excel_logs}" 
-               style="display: block; width: 100%; text-align: center; background-color: #10b981; 
-                      color: white; padding: 12px; border-radius: 8px; text-decoration: none; 
-                      font-weight: 600; font-family: sans-serif; margin-top: 10px;">
-               📥 DESCARGAR RESULTADOS A EXCEL (Seguro)
-            </a>
-            '''
-            st.markdown(html_btn_excel_logs, unsafe_allow_html=True)
-        else:
-            st.info("No hay registros en la auditoría.")
-            
-        st.divider()
-        st.subheader("📄 Reporte RRHH (Auditoría de Asistencia por Profesional)")
-        if FPDF_DISPONIBLE:
-            profesionales_lista = list(set([v['nombre'] for k, v in st.session_state["usuarios_db"].items()]))
-            profesionales_historicos = list(set([c.get("profesional", "") for c in st.session_state["checkin_db"]]))
-            profesionales_lista = list(set(profesionales_lista + profesionales_historicos))
-            
-            if profesionales_lista:
-                profesionales_lista.sort()
-                prof_sel = st.selectbox("Seleccionar Profesional para liquidación:", profesionales_lista)
-                
-                def t(txt): return str(txt).replace('⚖️', '').replace('⚠️', '').replace('📌', '').replace('📅', '').replace('📸', '').replace('🗄️', '').encode('latin-1', 'replace').decode('latin-1')
+        st.subheader("🕵️ Auditoría General de Movimientos")
+        st.info("Consulta completa de todos los movimientos del sistema. Solo visible para Admin/Coordinador.")
 
-                pdf = FPDF(); pdf.add_page()
-                pdf.set_font("Arial", 'B', 14)
-                pdf.cell(0, 10, t(f"REPORTE DE ASISTENCIA Y GPS - {mi_empresa}"), ln=True, align='C')
-                pdf.set_font("Arial", 'B', 11)
-                pdf.cell(0, 10, t(f"Profesional Auditado: {prof_sel}"), ln=True)
-                pdf.set_font("Arial", 'I', 9)
-                pdf.cell(0, 5, t(f"Fecha de emisión: {ahora().strftime('%d/%m/%Y %H:%M')}"), ln=True)
-                pdf.ln(5)
+        # ====================== TABS INTERNAS ======================
+        tab_logs, tab_rrhh = st.tabs(["📋 Logs Generales del Sistema", "👥 Reporte RRHH - Asistencia por Profesional"])
+
+        # ====================== TAB 1: LOGS GENERALES ======================
+        with tab_logs:
+            df_logs = pd.DataFrame(st.session_state.get("logs_db", []))
+
+            if not df_logs.empty:
+                # --- FILTROS AVANZADOS ---
+                col_f1, col_f2, col_f3 = st.columns([2, 2, 1])
                 
-                pdf.set_font("Arial", '', 9)
-                chks_prof = [c for c in st.session_state["checkin_db"] if c.get("profesional", "") == prof_sel]
+                # Filtro por fecha (esencial en auditoría)
+                fecha_inicio = col_f1.date_input("Desde:", value=ahora().date().replace(day=1), key="log_desde")
+                fecha_fin = col_f2.date_input("Hasta:", value=ahora().date(), key="log_hasta")
                 
-                if not chks_prof:
-                    pdf.cell(0, 10, t("No hay registros de visitas (Llegada/Salida) para este profesional."), ln=True)
-                else:
-                    for c in reversed(chks_prof):
-                        texto_linea = f"[{c.get('fecha_hora', '')}] PACIENTE: {c.get('paciente', '')} | ACCION: {c.get('tipo', '')}"
-                        pdf.multi_cell(0, 6, t(texto_linea), border=1)
-                        pdf.ln(2)
-                        
-                pdf_bytes_rrhh = pdf.output(dest='S').encode('latin-1')
+                # Filtro por usuario
+                usuarios_unicos = sorted(df_logs["usuario"].astype(str).unique()) if "usuario" in df_logs.columns else []
+                usuario_filtro = col_f3.selectbox("Usuario:", ["Todos"] + usuarios_unicos, key="log_usuario")
                 
-                # --- BOTÓN HTML ANTI-404 PARA PDF RRHH ---
-                b64_pdf_rrhh = base64.b64encode(pdf_bytes_rrhh).decode('utf-8')
-                nombre_arch_pdf_rrhh = f"Auditoria_RRHH_{prof_sel.replace(' ', '_')}.pdf"
+                # Búsqueda textual
+                buscar_log = st.text_input("🔍 Buscar en acción, usuario, detalle, etc.:", key="buscar_log")
+
+                # Aplicar filtros
+                df_filtrado = df_logs.copy()
                 
-                html_btn_pdf_rrhh = f'''
-                <a href="data:application/pdf;base64,{b64_pdf_rrhh}" download="{nombre_arch_pdf_rrhh}" 
-                   style="display: block; width: 100%; text-align: center; background-color: #2563eb; 
-                          color: white; padding: 12px; border-radius: 8px; text-decoration: none; 
-                          font-weight: 600; font-family: sans-serif; margin-top: 10px;">
-                   📥 DESCARGAR REPORTE RRHH (Seguro)
+                # Filtro fecha
+                if "fecha" in df_filtrado.columns:
+                    df_filtrado["fecha_dt"] = pd.to_datetime(df_filtrado["fecha"], errors="coerce")
+                    df_filtrado = df_filtrado[
+                        (df_filtrado["fecha_dt"].dt.date >= fecha_inicio) &
+                        (df_filtrado["fecha_dt"].dt.date <= fecha_fin)
+                    ]
+                
+                # Filtro usuario
+                if usuario_filtro != "Todos" and "usuario" in df_filtrado.columns:
+                    df_filtrado = df_filtrado[df_filtrado["usuario"] == usuario_filtro]
+                
+                # Filtro texto
+                if buscar_log:
+                    mask = df_filtrado.astype(str).apply(
+                        lambda x: x.str.contains(buscar_log, case=False, na=False)
+                    ).any(axis=1)
+                    df_filtrado = df_filtrado[mask]
+
+                # Métricas rápidas
+                col_m1, col_m2, col_m3 = st.columns(3)
+                col_m1.metric("Total Registros", len(df_filtrado))
+                col_m2.metric("Usuarios Únicos", df_filtrado["usuario"].nunique() if "usuario" in df_filtrado.columns else 0)
+                col_m3.metric("Último Registro", df_filtrado["fecha"].max() if "fecha" in df_filtrado.columns else "—")
+
+                st.dataframe(df_filtrado.drop(columns=["fecha_dt"], errors="ignore"), use_container_width=True)
+
+                # --- DESCARGA EXCEL (mejorado) ---
+                out_logs = io.BytesIO()
+                with pd.ExcelWriter(out_logs, engine='openpyxl') as writer:
+                    df_filtrado.drop(columns=["fecha_dt"], errors="ignore").to_excel(
+                        writer, index=False, sheet_name='Auditoria_MediCare'
+                    )
+                
+                b64_excel = base64.b64encode(out_logs.getvalue()).decode('utf-8')
+                nombre_excel = f"Auditoria_Logs_{ahora().strftime('%d_%m_%Y_%H%M')}.xlsx"
+                
+                html_btn = f'''
+                <a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64_excel}"
+                   download="{nombre_excel}"
+                   style="display: block; width: 100%; text-align: center; background-color: #10b981;
+                          color: white; padding: 14px; border-radius: 8px; text-decoration: none;
+                          font-weight: 700; margin-top: 15px;">
+                   📥 DESCARGAR AUDITORÍA COMPLETA EN EXCEL
                 </a>
                 '''
-                st.markdown(html_btn_pdf_rrhh, unsafe_allow_html=True)
+                st.markdown(html_btn, unsafe_allow_html=True)
+            else:
+                st.info("Aún no hay registros de auditoría. Los movimientos se irán registrando automáticamente.")
 
-        else:
-            st.error("Librería FPDF no disponible. Instalar para generar reportes.")
+        # ====================== TAB 2: REPORTE RRHH ======================
+        with tab_rrhh:
+            st.subheader("📄 Auditoría de Asistencia y Visitas por Profesional")
+
+            if FPDF_DISPONIBLE:
+                # Lista de profesionales (usuarios + históricos)
+                profesionales_lista = list(set([v.get('nombre', '') for v in st.session_state.get("usuarios_db", {}).values()]))
+                profesionales_historicos = list(set([c.get("profesional", "") for c in st.session_state.get("checkin_db", [])]))
+                profesionales_lista = sorted(list(set(profesionales_lista + profesionales_historicos)))
+
+                if profesionales_lista:
+                    prof_sel = st.selectbox("Seleccionar Profesional:", profesionales_lista, key="prof_rrhh")
+
+                    # Filtro de fechas para el reporte RRHH (esencial)
+                    col_r1, col_r2 = st.columns(2)
+                    fecha_rrhh_desde = col_r1.date_input("Desde:", value=ahora().date().replace(day=1), key="rrhh_desde")
+                    fecha_rrhh_hasta = col_r2.date_input("Hasta:", value=ahora().date(), key="rrhh_hasta")
+
+                    # Filtrar checkins del profesional y rango de fechas
+                    chks_prof = [
+                        c for c in st.session_state.get("checkin_db", [])
+                        if c.get("profesional") == prof_sel
+                        and fecha_rrhh_desde <= pd.to_datetime(c.get("fecha_hora", "")).date() <= fecha_rrhh_hasta
+                    ]
+
+                    # Métricas de asistencia
+                    total_visitas = len(chks_prof)
+                    st.success(f"**{total_visitas}** visitas registradas para **{prof_sel}** en el período seleccionado")
+
+                    if chks_prof:
+                        # Mostrar tabla previa
+                        df_rrhh = pd.DataFrame(chks_prof)
+                        st.dataframe(df_rrhh, use_container_width=True)
+
+                        # ====================== GENERACIÓN DE PDF PROFESIONAL ======================
+                        def generar_pdf_rrhh():
+                            pdf = FPDF()
+                            pdf.add_page()
+                            pdf.set_font("Arial", 'B', 15)
+                            pdf.cell(0, 12, t(f"REPORTE RRHH - ASISTENCIA Y GPS - {mi_empresa}"), ln=True, align='C')
+                            pdf.set_font("Arial", 'B', 12)
+                            pdf.cell(0, 10, t(f"Profesional: {prof_sel}"), ln=True)
+                            pdf.set_font("Arial", 'I', 10)
+                            pdf.cell(0, 8, t(f"Período: {fecha_rrhh_desde.strftime('%d/%m/%Y')} - {fecha_rrhh_hasta.strftime('%d/%m/%Y')}"), ln=True)
+                            pdf.cell(0, 8, t(f"Generado: {ahora().strftime('%d/%m/%Y %H:%M')}"), ln=True)
+                            pdf.ln(10)
+
+                            # Cabecera tabla
+                            pdf.set_font("Arial", 'B', 10)
+                            pdf.cell(30, 8, t("Fecha"), border=1)
+                            pdf.cell(45, 8, t("Paciente"), border=1)
+                            pdf.cell(35, 8, t("Acción"), border=1)
+                            pdf.cell(40, 8, t("GPS"), border=1)
+                            pdf.cell(40, 8, t("Duración aprox."), border=1, ln=True)
+
+                            pdf.set_font("Arial", '', 9)
+                            for c in reversed(chks_prof):
+                                fecha = c.get('fecha_hora', '')[:16]
+                                paciente = c.get('paciente', '—')[:25]
+                                accion = c.get('tipo', '—')
+                                gps = c.get('gps', '—')[:25]
+                                duracion = "—"
+                                
+                                pdf.cell(30, 8, t(fecha), border=1)
+                                pdf.cell(45, 8, t(paciente), border=1)
+                                pdf.cell(35, 8, t(accion), border=1)
+                                pdf.cell(40, 8, t(gps), border=1)
+                                pdf.cell(40, 8, t(duracion), border=1, ln=True)
+
+                            pdf.ln(10)
+                            pdf.set_font("Arial", '', 9)
+                            pdf.cell(0, 6, t("Documento generado automáticamente por MediCare Enterprise PRO"), ln=True, align='C')
+                            return pdf.output(dest='S').encode('latin-1')
+
+                        pdf_bytes = generar_pdf_rrhh()
+
+                        b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+                        nombre_pdf = f"RRHH_{prof_sel.replace(' ', '_')}_{fecha_rrhh_desde.strftime('%d%m%Y')}-{fecha_rrhh_hasta.strftime('%d%m%Y')}.pdf"
+
+                        html_btn_pdf = f'''
+                        <a href="data:application/pdf;base64,{b64_pdf}" download="{nombre_pdf}"
+                           style="display: block; width: 100%; text-align: center; background-color: #2563eb;
+                                  color: white; padding: 14px; border-radius: 8px; text-decoration: none;
+                                  font-weight: 700; margin-top: 15px;">
+                           📥 DESCARGAR REPORTE RRHH EN PDF (Oficial)
+                        </a>
+                        '''
+                        st.markdown(html_btn_pdf, unsafe_allow_html=True)
+                    else:
+                        st.warning("No se encontraron registros de asistencia para el profesional y período seleccionado.")
+                else:
+                    st.info("No hay profesionales registrados aún.")
+            else:
+                st.error("Librería FPDF no disponible. Contacte al administrador.")
 
 # =====================================================================
 # 18. CONTROL DE ASISTENCIA EN VIVO (SOLO ADMIN/COORD)
