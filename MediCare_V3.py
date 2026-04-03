@@ -614,12 +614,25 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
                 import urllib.parse
                 nombre_corto = paciente_sel.split(" (")[0]
                 
-                # Armamos el mensaje predeterminado y lo codificamos para la URL
-                mensaje_base = f"Hola {nombre_corto}, me comunico desde {mi_empresa} para avisarte sobre tu próxima visita de internación domiciliaria."
+                # MAGIA 1: Formateo estricto para Argentina (+54 9)
+                tel_limpio = "".join(filter(str.isdigit, str(tel_paciente)))
+                if tel_limpio and not tel_limpio.startswith("54"):
+                    tel_limpio = "549" + tel_limpio
+                
+                # MAGIA 2: Mensaje inteligente buscando la última visita
+                if agenda_mia:
+                    ultima_visita = agenda_mia[-1] # Agarra la última que agendaste
+                    fecha_v = ultima_visita.get("fecha", "")
+                    hora_v = ultima_visita.get("hora", "")
+                    mensaje_base = f"Hola {nombre_corto}, me comunico desde {mi_empresa} para confirmarte que el día {fecha_v} a las {hora_v} hs estaré pasando por tu domicilio para realizar la visita correspondiente. ¡Saludos!"
+                else:
+                    # Mensaje por defecto si no le agendaste nada todavía
+                    mensaje_base = f"Hola {nombre_corto}, me comunico desde {mi_empresa} para coordinar tu próxima visita de internación domiciliaria."
+                
                 mensaje_codificado = urllib.parse.quote(mensaje_base)
                 
-                # Creamos el link oficial de la API de WhatsApp
-                link_wpp = f"https://api.whatsapp.com/send?phone={tel_paciente}&text={mensaje_codificado}"
+                # Link blindado
+                link_wpp = f"https://api.whatsapp.com/send?phone={tel_limpio}&text={mensaje_codificado}"
                 
                 html_wpp = f'''
                 <a href="{link_wpp}" target="_blank"
@@ -632,7 +645,6 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
                 st.markdown(html_wpp, unsafe_allow_html=True)
             else:
                 st.warning("⚠️ Este paciente no tiene un número de teléfono registrado para enviarle WhatsApp.")
-
        
 if "📈 Dashboard" in menu:
     with tabs[menu.index("📈 Dashboard")]:
