@@ -3121,7 +3121,7 @@ if "⏱️ Asistencia en Vivo" in menu:
             st.write("Sin movimientos en el día de la fecha.")
 
 # =====================================================================
-# 19. MÓDULO DE RRHH Y FICHAJES (SOLO ADMIN/COORD) - VERSIÓN FINAL
+# 19. MÓDULO DE RRHH Y FICHAJES (SOLO ADMIN/COORD) - VERSIÓN FINAL CORREGIDA
 # =====================================================================
 if "🧑‍⚕️ RRHH y Fichajes" in menu:
     with tabs[menu.index("🧑‍⚕️ RRHH y Fichajes")]:
@@ -3133,12 +3133,12 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
         fecha_inicio = col_f1.date_input(
             "Desde fecha:", 
             value=ahora().date() - timedelta(days=30), 
-            key="fichajes_desde"          # ← clave única (cambiado)
+            key="fichajes_desde"
         )
         fecha_fin = col_f2.date_input(
             "Hasta fecha:", 
             value=ahora().date(), 
-            key="fichajes_hasta"          # ← clave única (cambiado)
+            key="fichajes_hasta"
         )
         
         # ====================== PROCESAMIENTO DE FICHAJES ======================
@@ -3167,7 +3167,6 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
             if dt_actual == datetime.min:
                 continue
             
-            # Buscar matrícula
             matricula = "S/D"
             for u_data in st.session_state.get("usuarios_db", {}).values():
                 if u_data.get("nombre") == prof:
@@ -3225,7 +3224,6 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
                 df_filtrado = df_fichajes[mask].copy()
                 
                 if not df_filtrado.empty:
-                    # Métricas rápidas
                     df_egresos = df_filtrado[df_filtrado["Acción"].str.contains("EGRESO", na=False)]
                     total_horas = 0.0
                     for t in df_egresos["Tiempo Trabajado"]:
@@ -3244,7 +3242,6 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
                     col_m3.metric("👥 Profesionales", df_filtrado["Profesional"].nunique())
                     col_m4.metric("🏠 Visitas Completadas", len(df_egresos))
                     
-                    # Dataframe
                     df_mostrar = df_filtrado.sort_values(by="fecha_dt", ascending=False).drop(
                         columns=['fecha_dt', 'raw_tipo'], errors='ignore'
                     )
@@ -3282,14 +3279,12 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
                             pdf.cell(0, 8, t(f"Generado por: {user['nombre']}{texto_prof}"), ln=True, align='C')
                             pdf.ln(10)
                             
-                            # Resumen
                             pdf.set_font("Arial", 'B', 12)
                             pdf.cell(0, 10, t("RESUMEN DEL PERÍODO"), ln=True)
                             pdf.set_font("Arial", '', 10)
                             pdf.cell(0, 8, t(f"Total fichajes: {len(df_pdf)} | Horas trabajadas: {total_horas:.1f} hs | Visitas completadas: {len(df_egresos)}"), ln=True)
                             pdf.ln(8)
                             
-                            # Tabla
                             pdf.set_fill_color(59, 130, 246)
                             pdf.set_text_color(255, 255, 255)
                             pdf.set_font("Arial", 'B', 9)
@@ -3393,11 +3388,13 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
                     hide_index=True
                 )
                 
+                # === CORRECCIÓN DEL ERROR KeyError ===
                 opciones_borrar = [
-                    (f"📅 {c['Fecha']} {c['Hora']} | 👤 {c['Profesional']} | {c['Acción']} | {c['Paciente']}", idx)
+                    (f"📅 {c.get('fecha_hora', '—')} | 👤 {c.get('profesional', 'S/D')} | {c.get('tipo', '—')} | Paciente: {c.get('paciente', 'S/D')}", idx)
                     for idx, c in enumerate(st.session_state.get("checkin_db", []))
                     if c.get("empresa") == mi_empresa or rol == "SuperAdmin"
                 ]
+                
                 if opciones_borrar:
                     col_del1, col_del2 = st.columns([3, 1])
                     registro_sel = col_del1.selectbox(
