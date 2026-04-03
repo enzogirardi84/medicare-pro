@@ -1940,7 +1940,7 @@ with tabs[menu.index("📦 Inventario")]:
                 guardar_datos()
                 st.success(f"Insumo **{del_item}** eliminado definitivamente.")
                 st.rerun()
-# 11. CAJA - VERSIÓN MEJORADA Y CORREGIDA (SIN ERROR UNICODE Y CON ANTI-COLAPSO)
+# 11. CAJA - VERSIÓN MEJORADA Y CORREGIDA (SIN ERROR UNICODE Y CON ANTI-COLAPSO TOTAL)
 with tabs[menu.index("💳 Caja")]:
     if paciente_sel:
         st.subheader("💳 Facturación y Caja Diaria")
@@ -2116,8 +2116,9 @@ with tabs[menu.index("💳 Caja")]:
                 if "empresa" in df_mostrar.columns:
                     df_mostrar = df_mostrar.drop(columns=["empresa", "operador_dni"], errors='ignore')
 
-                # st.dataframe ya tiene scroll interno por defecto, así que no colapsa
-                st.dataframe(df_mostrar.iloc[::-1], use_container_width=True, hide_index=True)
+                # ==== AQUÍ ESTÁ EL ANTI-COLAPSO DE LA TABLA DE AUDITORÍA ====
+                with st.container(height=400, border=True):
+                    st.dataframe(df_mostrar.iloc[::-1], use_container_width=True, hide_index=True)
 
                 # Descarga Excel segura
                 output = io.BytesIO()
@@ -2142,7 +2143,6 @@ with tabs[menu.index("💳 Caja")]:
 
     else:
         st.info("👈 Seleccioná un paciente en el menú lateral para ver su cuenta corriente.")
-
 # 12. HISTORIAL COMPLETO (CONTENEDORES CON SCROLL MÓVIL)
 with tabs[menu.index("📚 Historial")]:
     if paciente_sel:
