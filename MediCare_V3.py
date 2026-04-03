@@ -1699,7 +1699,7 @@ with tabs[menu.index("💊 Recetas")]:
                             '''
                             c_btn.markdown(html_btn_receta, unsafe_allow_html=True)
 # =====================================================================
-# 9. BALANCE HÍDRICO (MEJORADO)
+# 9. BALANCE HÍDRICO (VERSIÓN FINAL - COLORES CORRECTOS + SCROLL)
 # =====================================================================
 with tabs[menu.index("⚖️ Balance")]:
     if not paciente_sel:
@@ -1707,7 +1707,7 @@ with tabs[menu.index("⚖️ Balance")]:
     else:
         st.subheader("⚖️ Balance Hídrico Estricto")
         
-        # ====================== FORMULARIO DE BALANCE ======================
+        # ====================== FORMULARIO ======================
         with st.form("bal", clear_on_submit=True):
             col_meta1, col_meta2, col_meta3 = st.columns(3)
             fecha_bal = col_meta1.date_input("📅 Fecha de control", value=ahora().date(), key="fecha_bal")
@@ -1751,10 +1751,10 @@ with tabs[menu.index("⚖️ Balance")]:
                     "firma": user["nombre"]
                 })
                 guardar_datos()
-                st.success(f"✅ Balance guardado correctamente → Shift: {'+' if balance >= 0 else ''}{balance} ml")
+                st.success(f"✅ Balance guardado → Shift: {'+' if balance >= 0 else ''}{balance} ml")
                 st.rerun()
 
-        # ====================== HISTORIAL DE BALANCES (MEJORADO) ======================
+        # ====================== HISTORIAL ======================
         blp = [x for x in st.session_state.get("balance_db", []) if x.get("paciente") == paciente_sel]
         
         if blp:
@@ -1763,33 +1763,32 @@ with tabs[menu.index("⚖️ Balance")]:
             
             # Métricas rápidas
             df_temp = pd.DataFrame(blp)
-            ultimo_balance = df_temp["balance"].iloc[-1] if not df_temp.empty else 0
+            ultimo = df_temp["balance"].iloc[-1] if not df_temp.empty else 0
             col_met1, col_met2, col_met3 = st.columns(3)
-            col_met1.metric("Último Shift", f"{ultimo_balance:+} ml", 
-                           delta="Positivo" if ultimo_balance >= 0 else "Negativo")
-            col_met2.metric("Total balances registrados", len(blp))
+            col_met1.metric("Último Shift", f"{ultimo:+} ml", 
+                           delta="Positivo" if ultimo >= 0 else "Negativo")
+            col_met2.metric("Total balances", len(blp))
             col_met3.metric("Balance neto (últimos 3 turnos)", 
                            f"{sum(df_temp['balance'].tail(3)):+} ml")
             
-            # Preparar DataFrame con colores
+            # DataFrame con colores (sin HTML)
             df_bal = pd.DataFrame(blp)
             df_bal['fecha_dt'] = pd.to_datetime(df_bal['fecha'], format="%d/%m/%Y %H:%M", errors='coerce')
             df_bal = df_bal.sort_values(by='fecha_dt', ascending=False).drop(columns=['fecha_dt'], errors='ignore')
             
-            # Formato de columnas
             df_bal["Ingresos"] = df_bal["ingresos"].astype(str) + " ml"
             df_bal["Egresos"] = df_bal["egresos"].astype(str) + " ml"
             
-            # COLORACIÓN CORRECTA del Shift (verde positivo - rojo negativo)
-            def color_shift(val):
+            # COLORES CORRECTOS (usando emoji + texto simple - funciona 100% en st.dataframe)
+            def formato_shift(val):
                 if val > 0:
-                    return f'<span style="color:#22c55e; font-weight:bold;">🟢 +{val} ml</span>'
+                    return f"🟢 +{val} ml"
                 elif val < 0:
-                    return f'<span style="color:#ef4444; font-weight:bold;">🔴 {val} ml</span>'
+                    return f"🔴 {val} ml"
                 else:
-                    return '<span style="color:#64748b; font-weight:bold;">⚖️ 0 ml</span>'
+                    return "⚖️ 0 ml"
             
-            df_bal["Shift (Resultado)"] = df_bal["balance"].apply(color_shift)
+            df_bal["Shift (Resultado)"] = df_bal["balance"].apply(formato_shift)
             
             df_mostrar = df_bal.rename(columns={
                 "fecha": "Fecha y Hora",
@@ -1797,29 +1796,27 @@ with tabs[menu.index("⚖️ Balance")]:
                 "firma": "Enfermero/a"
             })
             
-            # Mostrar tabla con SCROLL y altura fija (anti-colapso)
+            # Tabla con SCROLL FIJO (anti-colapso)
             st.dataframe(
                 df_mostrar[["Fecha y Hora", "Turno", "Ingresos", "Egresos", "Shift (Resultado)", "Enfermero/a"]],
                 use_container_width=True,
                 hide_index=True,
-                height=420,                    # ← SCROLL FIJO (ajustable)
+                height=480,                    # ← SCROLL FIJO
                 column_config={
                     "Shift (Resultado)": st.column_config.TextColumn(
                         "Shift (Resultado)",
-                        help="Balance del turno (verde = positivo / rojo = negativo)"
+                        help="🟢 Positivo = Verde   |   🔴 Negativo = Rojo"
                     )
                 }
             )
             
-            # Botón de borrado más seguro y bonito
-            col_tit, col_btn = st.columns([3, 1])
-            if col_btn.button("🗑️ Borrar último balance", use_container_width=True, type="secondary"):
-                if len(blp) > 0:
-                    if st.checkbox("¿Confirmás eliminar el **último** balance? (irreversible)", key="conf_del_balance"):
-                        st.session_state["balance_db"].remove(blp[-1])
-                        guardar_datos()
-                        st.success("✅ Último balance eliminado.")
-                        st.rerun()
+            # Botón borrar
+            if st.button("🗑️ Borrar último balance", use_container_width=True, type="secondary"):
+                if st.checkbox("¿Estás seguro? Esta acción es irreversible", key="conf_del_balance"):
+                    st.session_state["balance_db"].remove(blp[-1])
+                    guardar_datos()
+                    st.success("✅ Último balance eliminado")
+                    st.rerun()
         else:
             st.info("Aún no hay balances hídricos registrados para este paciente.")
 # 10. INVENTARIO - VERSIÓN UNIFICADA EN TONO BORDO OSCURO (CON ANTI-COLAPSO)
