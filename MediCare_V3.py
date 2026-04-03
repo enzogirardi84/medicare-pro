@@ -1910,7 +1910,7 @@ with tabs[menu.index("📦 Inventario")]:
                 guardar_datos()
                 st.success(f"Insumo **{del_item}** eliminado definitivamente.")
                 st.rerun()
-# 11. CAJA - VERSIÓN MEJORADA Y CORREGIDA (SIN ERROR UNICODE)
+# 11. CAJA - VERSIÓN MEJORADA Y CORREGIDA (SIN ERROR UNICODE Y CON ANTI-COLAPSO)
 with tabs[menu.index("💳 Caja")]:
     if paciente_sel:
         st.subheader("💳 Facturación y Caja Diaria")
@@ -2031,29 +2031,31 @@ with tabs[menu.index("💳 Caja")]:
 
                 return pdf.output(dest='S').encode('latin-1')
 
-            # Mostrar historial en tarjetas
-            for i, mov in enumerate(reversed(fact_paciente)):
-                with st.container(border=True):
-                    col_r1, col_r2 = st.columns([4, 1])
-                    estado_color = "🟢" if "✅" in mov.get("estado", "") else "🟡"
-                    
-                    with col_r1:
-                        st.markdown(f"**{mov['fecha']}** — {mov['serv']}")
-                        st.caption(f"{estado_color} {mov.get('estado', 'S/D')} | {mov.get('metodo', 'S/D')} | **${mov['monto']:,.2f}**")
-                    
-                    # Botón PDF seguro
-                    pdf_bytes = generar_recibo_pdf(mov)
-                    b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
-                    file_name = f"Recibo_{mov['fecha'][:10].replace('/','-')}_{i+1}.pdf"
-                    
-                    html_btn = f'''
-                    <a href="data:application/pdf;base64,{b64_pdf}" download="{file_name}"
-                       style="display:block; width:100%; text-align:center; background:#2563eb; color:white; 
-                              padding:10px; border-radius:8px; text-decoration:none; font-weight:600;">
-                       📄 Descargar PDF
-                    </a>
-                    '''
-                    col_r2.markdown(html_btn, unsafe_allow_html=True)
+            # --- ACÁ ESTÁ EL ANTI-COLAPSO DE LOS RECIBOS ---
+            with st.container(height=400):
+                # Mostrar historial en tarjetas
+                for i, mov in enumerate(reversed(fact_paciente)):
+                    with st.container(border=True):
+                        col_r1, col_r2 = st.columns([4, 1])
+                        estado_color = "🟢" if "✅" in mov.get("estado", "") else "🟡"
+                        
+                        with col_r1:
+                            st.markdown(f"**{mov['fecha']}** — {mov['serv']}")
+                            st.caption(f"{estado_color} {mov.get('estado', 'S/D')} | {mov.get('metodo', 'S/D')} | **${mov['monto']:,.2f}**")
+                        
+                        # Botón PDF seguro
+                        pdf_bytes = generar_recibo_pdf(mov)
+                        b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+                        file_name = f"Recibo_{mov['fecha'][:10].replace('/','-')}_{i+1}.pdf"
+                        
+                        html_btn = f'''
+                        <a href="data:application/pdf;base64,{b64_pdf}" download="{file_name}"
+                           style="display:block; width:100%; text-align:center; background:#2563eb; color:white; 
+                                  padding:10px; border-radius:8px; text-decoration:none; font-weight:600;">
+                           📄 Descargar PDF
+                        </a>
+                        '''
+                        col_r2.markdown(html_btn, unsafe_allow_html=True)
 
         else:
             st.info("No hay movimientos registrados para este paciente aún.")
@@ -2084,6 +2086,7 @@ with tabs[menu.index("💳 Caja")]:
                 if "empresa" in df_mostrar.columns:
                     df_mostrar = df_mostrar.drop(columns=["empresa", "operador_dni"], errors='ignore')
 
+                # st.dataframe ya tiene scroll interno por defecto, así que no colapsa
                 st.dataframe(df_mostrar.iloc[::-1], use_container_width=True, hide_index=True)
 
                 # Descarga Excel segura
