@@ -3121,7 +3121,7 @@ if "⏱️ Asistencia en Vivo" in menu:
             st.write("Sin movimientos en el día de la fecha.")
 
 # =====================================================================
-# 19. MÓDULO DE RRHH Y FICHAJES (SOLO ADMIN/COORD) - VERSIÓN CORREGIDA
+# 19. MÓDULO DE RRHH Y FICHAJES (SOLO ADMIN/COORD) - VERSIÓN FINAL
 # =====================================================================
 if "🧑‍⚕️ RRHH y Fichajes" in menu:
     with tabs[menu.index("🧑‍⚕️ RRHH y Fichajes")]:
@@ -3130,8 +3130,16 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
 
         # ====================== FILTROS PRINCIPALES ======================
         col_f1, col_f2, col_f3 = st.columns([2, 2, 1])
-        fecha_inicio = col_f1.date_input("Desde fecha:", value=ahora().date() - timedelta(days=30), key="rrhh_desde")
-        fecha_fin = col_f2.date_input("Hasta fecha:", value=ahora().date(), key="rrhh_hasta")
+        fecha_inicio = col_f1.date_input(
+            "Desde fecha:", 
+            value=ahora().date() - timedelta(days=30), 
+            key="fichajes_desde"          # ← clave única (cambiado)
+        )
+        fecha_fin = col_f2.date_input(
+            "Hasta fecha:", 
+            value=ahora().date(), 
+            key="fichajes_hasta"          # ← clave única (cambiado)
+        )
         
         # ====================== PROCESAMIENTO DE FICHAJES ======================
         fichajes_lista = []
@@ -3259,8 +3267,6 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
                         def generar_pdf_rrhh(df_pdf, f_ini, f_fin, prof_sel):
                             pdf = FPDF(orientation='L')
                             pdf.add_page()
-                            
-                            # Logo
                             try:
                                 import os
                                 ruta_logo = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logo_medicare_pro.jpeg")
@@ -3331,7 +3337,6 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
                             '''
                             st.markdown(html_btn_pdf, unsafe_allow_html=True)
                         
-                        # Excel export
                         with col_exp2:
                             out_excel = io.BytesIO()
                             with pd.ExcelWriter(out_excel, engine='openpyxl') as writer:
@@ -3407,6 +3412,5 @@ if "🧑‍⚕️ RRHH y Fichajes" in menu:
                         st.rerun()
             else:
                 st.info("No hay registros para gestionar.")
-
 # --- FIN DEL SISTEMA MEDICARE PRO V9.12 ---
 
