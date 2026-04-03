@@ -596,8 +596,12 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
                          if a.get("empresa") == mi_empresa and a.get("paciente") == paciente_sel]
             if agenda_mia:
                 st.caption("Próximas visitas agendadas:")
-                st.dataframe(pd.DataFrame(agenda_mia).drop(columns=["empresa", "paciente"]).tail(5), 
-                           use_container_width=True)
+                
+                # ==== AQUÍ ESTÁ EL ANTI-COLAPSO EN LA TABLA DE AGENDA ====
+                with st.container(height=350, border=True):
+                    # Uso iloc[::-1] para que las últimas agendadas salgan primero
+                    df_agenda_mostrar = pd.DataFrame(agenda_mia).drop(columns=["empresa", "paciente"])
+                    st.dataframe(df_agenda_mostrar.iloc[::-1], use_container_width=True, hide_index=True)
 
             st.divider()
 
