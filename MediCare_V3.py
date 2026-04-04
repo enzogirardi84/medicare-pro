@@ -145,50 +145,61 @@ with st.sidebar:
         st.session_state.theme = "dark" if st.session_state.theme == "light" else "light"
         st.rerun()
 
-# ====================== DISEÑO VISUAL ENTERPRISE PREMIUM v4.1 (CORREGIDO) ======================
+# ====================== DISEÑO VISUAL ENTERPRISE PREMIUM v4.2 ======================
 page_bg_css = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {{
-    --bg-app: {('#f8fafc' if st.session_state.theme == 'light' else '#0a0a0f')};
-    --bg-card: {('rgba(255,255,255,0.98)' if st.session_state.theme == 'light' else 'rgba(30,30,46,0.95)')};
-    --bg-sidebar: {('#ffffff' if st.session_state.theme == 'light' else '#111117')};
-    --border-color: {('rgba(15,23,42,0.10)' if st.session_state.theme == 'light' else 'rgba(248,250,252,0.10)')};
-    --text-color: {('#0f172a' if st.session_state.theme == 'light' else '#f8fafc')};
-    --accent: {('#2563eb' if st.session_state.theme == 'light' else '#60a5fa')};
-    --shadow-base: {('0 10px 30px -5px rgb(0 0 0 / 0.08)' if st.session_state.theme == 'light' else '0 10px 30px -5px rgb(0 0 0 / 0.45)')};
-    --glass-blur: blur(20px);
+    /* Paleta de colores refinada según el tema */
+    --bg-app: {('#f4f7f6' if st.session_state.theme == 'light' else '#0b0f19')};
+    --bg-card: {('#ffffff' if st.session_state.theme == 'light' else '#111827')};
+    --bg-sidebar: {('#ffffff' if st.session_state.theme == 'light' else '#0d1117')};
+    --border-color: {('rgba(0,0,0,0.08)' if st.session_state.theme == 'light' else 'rgba(255,255,255,0.08)')};
+    --text-color: {('#1e293b' if st.session_state.theme == 'light' else '#f8fafc')};
+    --text-muted: {('#64748b' if st.session_state.theme == 'light' else '#94a3b8')};
+    --accent: {('#2563eb' if st.session_state.theme == 'light' else '#3b82f6')};
+    --accent-hover: {('#1d4ed8' if st.session_state.theme == 'light' else '#60a5fa')};
+    
+    /* Sombras ajustadas para que no se vean sucias en modo claro */
+    --shadow-base: {('0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)' if st.session_state.theme == 'light' else '0 10px 25px -5px rgba(0, 0, 0, 0.5)')};
+    --shadow-hover: {('0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)' if st.session_state.theme == 'light' else '0 20px 30px -5px rgba(0, 0, 0, 0.7)')};
 }}
 
 /* ==================== BASE ==================== */
 html, body, [class*="css"] {{
     font-family: 'Inter', sans-serif !important;
-    color: var(--text-color);
+    color: var(--text-color) !important;
 }}
 .stApp {{
     background-color: var(--bg-app);
-    transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 0.3s ease;
 }}
 [data-testid="stSidebar"] {{
     background-color: var(--bg-sidebar);
     border-right: 1px solid var(--border-color);
 }}
 
+/* Forzar color de texto para que Streamlit no lo sobrescriba al cambiar tema */
+p, li, span, label, div {{
+    color: var(--text-color);
+}}
+
 /* ==================== TARJETAS GLASS PREMIUM ==================== */
+/* Solo aplica a Formularios y a nuestros contenedores con borde */
 div[data-testid="stForm"],
-div[data-testid="stVerticalBlock"] > div {{
+div[data-testid="stVerticalBlock"] > div[style*="border"] {{
     background-color: var(--bg-card) !important;
     border: 1px solid var(--border-color) !important;
-    border-radius: 20px;
+    border-radius: 16px;
     padding: 24px;
     box-shadow: var(--shadow-base);
-    backdrop-filter: var(--glass-blur);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }}
 div[data-testid="stForm"]:hover,
-div[data-testid="stVerticalBlock"] > div:hover {{
-    box-shadow: 0 20px 40px -10px rgba(37, 99, 235, 0.25);
+div[data-testid="stVerticalBlock"] > div[style*="border"]:hover {{
+    box-shadow: var(--shadow-hover);
+    border-color: var(--accent) !important;
     transform: translateY(-2px);
 }}
 
@@ -197,40 +208,60 @@ div[data-testid="stVerticalBlock"] > div:hover {{
     background: linear-gradient(135deg, var(--accent), #3b82f6);
     color: white !important;
     border: none;
-    min-height: 54px;
-    border-radius: 14px;
+    min-height: 50px;
+    border-radius: 12px;
     font-weight: 600;
-    box-shadow: 0 6px 20px rgba(37,99,235,0.3);
+    box-shadow: 0 4px 12px rgba(37,99,235,0.25);
     transition: all 0.25s ease;
 }}
 .stButton>button:hover {{
-    transform: translateY(-4px);
-    box-shadow: 0 12px 30px rgba(37,99,235,0.4);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(37,99,235,0.4);
+    background: linear-gradient(135deg, var(--accent-hover), var(--accent));
 }}
 
-/* ==================== MÉTRICAS ==================== */
+/* ==================== MÉTRICAS (Signos Vitales/Caja) ==================== */
 div[data-testid="stMetric"] {{
     background-color: var(--bg-card);
-    border-radius: 16px;
-    border-left: 6px solid var(--accent);
+    border-radius: 14px;
+    padding: 18px;
+    border: 1px solid var(--border-color);
+    border-left: 5px solid var(--accent);
     box-shadow: var(--shadow-base);
 }}
 
 /* ==================== EXPANSORES Y TABS ==================== */
 div[data-testid="stExpander"] {{
-    border-radius: 16px;
+    border-radius: 14px;
     border: 1px solid var(--border-color);
     background-color: var(--bg-card);
 }}
+.stTabs [data-testid="stTab"] {{
+    font-weight: 500;
+    color: var(--text-muted);
+}}
 .stTabs [data-testid="stTab"][aria-selected="true"] {{
-    background: linear-gradient(135deg, var(--accent), #3b82f6);
+    background: var(--accent);
     color: white !important;
+    border-radius: 8px;
+    padding: 8px 16px;
+}}
+
+/* ==================== INPUTS Y SELECTS ==================== */
+div[data-baseweb="select"] > div,
+div[data-baseweb="input"] > div,
+input[type="number"] {{
+    background-color: var(--bg-app);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-color);
 }}
 
 /* ==================== DATAFRAMES Y SCROLLBAR ==================== */
 [data-testid="stDataFrame"] {{
-    border-radius: 16px;
+    border-radius: 14px;
     border: 1px solid var(--border-color);
+    background-color: var(--bg-card);
 }}
 ::-webkit-scrollbar {{
     width: 8px;
@@ -238,13 +269,24 @@ div[data-testid="stExpander"] {{
 }}
 ::-webkit-scrollbar-thumb {{
     background: var(--accent);
-    border-radius: 20px;
+    border-radius: 10px;
+}}
+::-webkit-scrollbar-track {{
+    background: transparent;
 }}
 
 /* ==================== TÍTULOS Y DETALLES ==================== */
-h1, h2, h3, h4 {{
+h1, h2, h3, h4, h5, h6 {{
     font-weight: 700;
-    letter-spacing: -0.8px;
+    color: var(--text-color) !important;
+    letter-spacing: -0.5px;
+}}
+
+/* Ocultar flechas numéricas */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {{ 
+    -webkit-appearance: none; 
+    margin: 0; 
 }}
 </style>
 """
