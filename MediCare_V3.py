@@ -74,6 +74,58 @@ VADEMECUM_BASE = sorted([
     "Zolpidem 10mg", "Zopiclona 7.5mg"
 ])
 
+# ====================== PANTALLA DE PUBLICIDAD / LANDING PAGE ======================
+# Esta pantalla aparece primero como presentación profesional
+if "entered_app" not in st.session_state:
+    st.session_state.entered_app = False
+
+if not st.session_state.entered_app:
+    st.markdown("""
+    <style>
+        .landing {
+            background: linear-gradient(135deg, #0f172a 0%, #000000 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            padding: 40px 20px;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown('<div class="landing">', unsafe_allow_html=True)
+        
+        # Logo (usa el que ya tenés en la carpeta)
+        try:
+            st.image("logo_medicare_pro.jpeg", width=240)
+        except:
+            st.markdown("""
+            <h1 style="font-size: 4.8rem; font-weight: 900; margin-bottom: 20px; color:#38bdf8;">
+                MediCare PRO
+            </h1>
+            """, unsafe_allow_html=True)
+        
+        st.markdown("""
+        <h1 style="font-size: 3.8rem; font-weight: 900; line-height: 1.05; margin-bottom: 30px;">
+            Todo lo que tu práctica<br>domiciliaria necesita.
+        </h1>
+        <p style="font-size: 1.55rem; color:#94a3b8; margin-bottom: 50px;">
+            GPS en tiempo real • Firma digital legal • Stock inteligente •<br>
+            Historia clínica • Facturación • Telemedicina
+        </p>
+        """, unsafe_allow_html=True)
+        
+        if st.button("🚀 INGRESAR AL SISTEMA", type="primary", use_container_width=True, key="btn_enter_app"):
+            st.session_state.entered_app = True
+            st.rerun()
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.stop()   # ← IMPORTANTE: detiene el resto del programa hasta que el usuario ingrese
 # --- 1. CONFIGURACIÓN DE LIBRERÍAS ---
 FPDF_DISPONIBLE = False
 try:
