@@ -74,6 +74,170 @@ VADEMECUM_BASE = sorted([
     "Zolpidem 10mg", "Zopiclona 7.5mg"
 ])
 
+import streamlit as st
+import streamlit.components.v1 as components
+
+def mostrar_inicio_publicitario():
+    """
+    Renderiza la Landing Page profesional con la grilla completa de funciones
+    dentro de la interfaz de Streamlit.
+    """
+    
+    # HTML y CSS con diseño OLED Slate y grilla de funciones
+    html_landing = """
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+        <script src="https://unpkg.com/lucide@latest"></script>
+        <style>
+            body { 
+                font-family: 'Inter', sans-serif; 
+                background-color: #000000; 
+                color: #F8FAFC; 
+                margin: 0; 
+                overflow-x: hidden; 
+            }
+            .glass-card { 
+                background: rgba(15, 23, 42, 0.6); 
+                backdrop-filter: blur(16px); 
+                border: 1px solid rgba(56, 189, 248, 0.15); 
+                transition: all 0.3s ease;
+            }
+            .hero-gradient { 
+                background: radial-gradient(circle at top right, #0F172A 0%, #000000 100%); 
+            }
+            .feature-card:hover { 
+                transform: translateY(-5px); 
+                border-color: rgba(56, 189, 248, 0.4); 
+                background: rgba(15, 23, 42, 0.8);
+            }
+            ::-webkit-scrollbar { width: 5px; }
+            ::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 10px; }
+        </style>
+    </head>
+    <body>
+        <main class="w-full">
+            <!-- HERO PUBLICITARIO -->
+            <section class="relative min-h-[60vh] flex flex-col items-center justify-center py-16 px-6 hero-gradient text-center">
+                <div class="max-w-4xl relative z-10">
+                    <div class="inline-flex items-center gap-2 px-5 py-2 rounded-full glass-card text-sky-400 text-xs font-bold uppercase tracking-widest mb-8">
+                        SISTEMAS E.G. • ARGENTINA 2026
+                    </div>
+                    <h1 class="text-5xl md:text-7xl font-black mb-6 leading-tight tracking-tight">
+                        Tu clínica,<br>
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-sky-300 via-sky-500 to-indigo-500">en una sola App.</span>
+                    </h1>
+                    <p class="text-xl text-slate-400 max-w-2xl mx-auto mb-4 font-light">
+                        Gestioná visitas, stock e historias clínicas con <span class="text-sky-400 font-bold">Inteligencia Artificial</span> y control GPS en tiempo real.
+                    </p>
+                </div>
+            </section>
+
+            <!-- GRILLA DE FUNCIONES (CUADRITOS BONITOS) -->
+            <section class="py-12 px-6 max-w-7xl mx-auto">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-black uppercase tracking-tighter text-white">Módulos de Gestión Integral</h2>
+                    <div class="h-1 w-20 bg-sky-500 mx-auto mt-2 rounded-full"></div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Fichaje GPS -->
+                    <div class="glass-card p-6 rounded-3xl feature-card">
+                        <i data-lucide="map-pin" class="text-sky-400 w-8 h-8 mb-4"></i>
+                        <h4 class="text-lg font-bold mb-2 text-white">Fichaje GPS</h4>
+                        <p class="text-slate-400 text-xs leading-relaxed">Control de asistencia verificado por coordenadas exactas del servidor.</p>
+                    </div>
+                    <!-- Evolución -->
+                    <div class="glass-card p-6 rounded-3xl feature-card">
+                        <i data-lucide="file-text" class="text-emerald-400 w-8 h-8 mb-4"></i>
+                        <h4 class="text-lg font-bold mb-2 text-white">Evolución Médica</h4>
+                        <p class="text-slate-400 text-xs leading-relaxed">Carga digital de parámetros clínicos y diagnósticos en el domicilio.</p>
+                    </div>
+                    <!-- Farmacia -->
+                    <div class="glass-card p-6 rounded-3xl feature-card">
+                        <i data-lucide="pill" class="text-purple-400 w-8 h-8 mb-4"></i>
+                        <h4 class="text-lg font-bold mb-2 text-white">Stock Farmacia</h4>
+                        <p class="text-slate-400 text-xs leading-relaxed">Descuento automático de insumos al momento de realizar la práctica.</p>
+                    </div>
+                    <!-- Firma Digital -->
+                    <div class="glass-card p-6 rounded-3xl feature-card">
+                        <i data-lucide="pen-tool" class="text-amber-400 w-8 h-8 mb-4"></i>
+                        <h4 class="text-lg font-bold mb-2 text-white">Firma Digital</h4>
+                        <p class="text-slate-400 text-xs leading-relaxed">Firma de recetas y consentimientos en pantalla con validez legal.</p>
+                    </div>
+                    <!-- Telemedicina -->
+                    <div class="glass-card p-6 rounded-3xl feature-card">
+                        <i data-lucide="video" class="text-rose-400 w-8 h-8 mb-4"></i>
+                        <h4 class="text-lg font-bold mb-2 text-white">Telemedicina</h4>
+                        <p class="text-slate-400 text-xs leading-relaxed">Videollamadas encriptadas integradas al historial del paciente.</p>
+                    </div>
+                    <!-- Pediatría -->
+                    <div class="glass-card p-6 rounded-3xl feature-card">
+                        <i data-lucide="baby" class="text-sky-400 w-8 h-8 mb-4"></i>
+                        <h4 class="text-lg font-bold mb-2 text-white">Pediatría</h4>
+                        <p class="text-slate-400 text-xs leading-relaxed">Control de crecimiento, percentiles y desarrollo infantil automático.</p>
+                    </div>
+                    <!-- Balance Hídrico -->
+                    <div class="glass-card p-6 rounded-3xl feature-card">
+                        <i data-lucide="droplet" class="text-indigo-400 w-8 h-8 mb-4"></i>
+                        <h4 class="text-lg font-bold mb-2 text-white">Balance Hídrico</h4>
+                        <p class="text-slate-400 text-xs leading-relaxed">Cálculo de ingresos y egresos con alertas de retención líquida.</p>
+                    </div>
+                    <!-- Auditoría -->
+                    <div class="glass-card p-6 rounded-3xl feature-card">
+                        <i data-lucide="clipboard-list" class="text-orange-400 w-8 h-8 mb-4"></i>
+                        <h4 class="text-lg font-bold mb-2 text-white">Auditoría RRHH</h4>
+                        <p class="text-slate-400 text-xs leading-relaxed">Generación de cierres diarios para liquidación y facturación.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+        <script>lucide.createIcons();</script>
+    </body>
+    </html>
+    """
+
+    # Mostramos el HTML publicitario
+    components.html(html_landing, height=1000, scrolling=True)
+
+# Lógica de flujo para tu MediCare_V3.py
+if __name__ == "__main__":
+    st.set_page_config(page_title="MediCare PRO", layout="wide", initial_sidebar_state="collapsed")
+    
+    # Manejo de sesión para la "puerta de entrada"
+    if 'ingresado' not in st.session_state:
+        st.session_state.ingresado = False
+
+    if not st.session_state.ingresado:
+        # Mostramos la landing decorativa
+        mostrar_inicio_publicitario()
+        
+        # El botón de ingreso real de Streamlit
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button("🚀 INGRESAR AL SISTEMA PROFESIONAL", type="primary", use_container_width=True):
+                st.session_state.ingresado = True
+                st.rerun()
+            st.markdown("<p style='text-align: center; color: gray; font-size: 12px;'>Sistemas E.G. &copy; 2026</p>", unsafe_allow_html=True)
+    else:
+        # Aquí empieza tu programa real
+        st.title("🏥 Panel Principal - MediCare PRO")
+        st.sidebar.success(f"Usuario: Enzo Girardi")
+        
+        # Botón para volver (útil para pruebas)
+        if st.sidebar.button("Cerrar Sesión / Ver Publicidad"):
+            st.session_state.ingresado = False
+            st.rerun()
+            
+        st.write("---")
+        st.subheader("Bienvenido al sistema de gestión de salud.")
+        # Acá sigue el resto de tu código de MediCare_V3.py...
+
+
 # --- 1. CONFIGURACIÓN DE LIBRERÍAS ---
 FPDF_DISPONIBLE = False
 try:
