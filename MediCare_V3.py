@@ -1704,7 +1704,20 @@ with tabs[menu.index("💊 Recetas")]:
             med_manual = c2.text_input("O 2. Escribir manualmente:")
 
             col3, col4, col5 = st.columns([2, 2, 1])
-            via = col3.selectbox("Vía de Administración", ["Oral", "EV", "IM", "SC", "Tópica", "Inhalatoria", "Otro"])
+            
+            # --- CORRECCIÓN LEGAL: Vías de administración con nombres completos ---
+            via = col3.selectbox("Vía de Administración", [
+                "Vía Oral", 
+                "Vía Endovenosa (EV)", 
+                "Vía Intramuscular (IM)", 
+                "Vía Subcutánea (SC)", 
+                "Vía Sublingual",
+                "Vía Tópica", 
+                "Vía Inhalatoria", 
+                "Vía Rectal",
+                "Otra vía de administración"
+            ])
+            
             frecuencia = col4.selectbox("Frecuencia", [
                 "Cada 1 hora", "Cada 2 horas", "Cada 4 horas", "Cada 6 horas", "Cada 8 horas",
                 "Cada 12 horas", "Cada 24 horas", "Dosis única", "Según necesidad (SOS)"
@@ -1780,12 +1793,12 @@ with tabs[menu.index("💊 Recetas")]:
             for r in recs_activas: # Solo mostramos a enfermería las ACTIVAS
                 partes = r['med'].split(" | ")
                 nombre = partes[0].strip()
-                via = partes[1].replace("Vía: ", "") if len(partes) > 1 else ""
+                via_texto = partes[1].replace("Vía: ", "") if len(partes) > 1 else ""
                 freq = partes[2] if len(partes) > 2 else ""
 
                 fila = {
                     "Medicamento": nombre,
-                    "Vía": via,
+                    "Vía": via_texto,
                     "Frecuencia": freq,
                     "Médico": r.get("medico_nombre", "—"),
                     "Matrícula": r.get("medico_matricula", "—")
