@@ -131,191 +131,115 @@ supabase = init_supabase()
 # --- 🎨 DISEÑO VISUAL ENTERPRISE PREMIUM v3.0 (MODO CLARO / OSCURO ADAPTATIVO) ---
 page_bg_css = """
 <style>
-/* =========================================================
-   1. VARIABLES DE COLOR (LA MAGIA DEL MODO CLARO/OSCURO)
-   ========================================================= */
 
-/* Por defecto: MODO CLARO (Blanco Cristal) */
-:root {
-    --bg-app: #f8fafc;
-    --bg-card: rgba(255, 255, 255, 0.85);
-    --bg-sidebar: #ffffff;
-    --border-color: rgba(0, 0, 0, 0.08);
-    --shadow-base: 0 8px 32px rgba(0, 0, 0, 0.06);
-    --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.12);
-    --text-color: #0f172a;
-    --glass-blur: blur(16px);
-    --metric-bg: rgba(255, 255, 255, 0.9);
-    --expander-bg: rgba(255, 255, 255, 0.6);
-}
+# ====================== 1 TOGGLE DE TEMA (CLARO / OSCURO) ======================
+if "theme" not in st.session_state:
+    st.session_state.theme = "light"   # Modo por defecto: Claro
 
-/* Si el sistema está en: MODO OSCURO (Enterprise Dark) */
-@media (prefers-color-scheme: dark) {
-    :root {
-        --bg-app: #0f0f12;
-        --bg-card: rgba(255, 255, 255, 0.04);
-        --bg-sidebar: #0a0a0d;
-        --border-color: rgba(255, 255, 255, 0.08);
-        --shadow-base: 0 8px 32px rgba(0, 0, 0, 0.25);
-        --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.4);
-        --text-color: #f8fafc;
-        --metric-bg: rgba(255, 255, 255, 0.06);
-        --expander-bg: rgba(255, 255, 255, 0.03);
-    }
-}
+# Botón elegante en el sidebar (después del login)
+with st.sidebar:
+    st.markdown("### 🎨 Tema")
+    if st.button(
+        "☀️ Modo Claro" if st.session_state.theme == "dark" else "🌙 Modo Oscuro",
+        use_container_width=True,
+        help="Cambiar entre modo claro y oscuro"
+    ):
+        st.session_state.theme = "dark" if st.session_state.theme == "light" else "light"
+        st.rerun()
 
-/* =========================================================
-   2. CONFIGURACIÓN BASE Y FUENTES
-   ========================================================= */
+# ====================== DISEÑO VISUAL ENTERPRISE PREMIUM v4.0 ======================
+page_bg_css = f"""
+<style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-html, body, [class*="css"] {
+:root {{
+    --bg-app: {'#f8fafc' if st.session_state.theme == 'light' else '#0a0a0f'};
+    --bg-card: {'rgba(255,255,255,0.95)' if st.session_state.theme == 'light' else 'rgba(30,30,46,0.95)'};
+    --bg-sidebar: {'#ffffff' if st.session_state.theme == 'light' else '#111117'};
+    --border-color: {'rgba(15,23,42,0.12)' if st.session_state.theme == 'light' else 'rgba(248,250,252,0.12)'};
+    --text-color: {'#0f172a' if st.session_state.theme == 'light' else '#f8fafc'};
+    --accent: {'#2563eb' if st.session_state.theme == 'light' else '#60a5fa'};
+    --shadow-base: {'0 10px 30px -5px rgb(0 0 0 / 0.08)' if st.session_state.theme == 'light' else '0 10px 30px -5px rgb(0 0 0 / 0.4)'};
+    --glass-blur: blur(20px);
+}}
+
+/* ==================== BASE ==================== */
+html, body, [class*="css"] {{
     font-family: 'Inter', sans-serif !important;
     color: var(--text-color);
-}
-
-body { overscroll-behavior-y: none; }
-* { text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
-
-/* Fondo fluido principal */
-.stApp {
+}}
+.stApp {{
     background-color: var(--bg-app);
-    transition: background-color 0.3s ease;
-}
-
-/* Sidebar elegante */
-[data-testid="stSidebar"] {
+    transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}}
+[data-testid="stSidebar"] {{
     background-color: var(--bg-sidebar);
     border-right: 1px solid var(--border-color);
-}
+}}
 
-/* =========================================================
-   3. TARJETAS FLOTANTES (GLASS EFFECT ADAPTATIVO)
-   ========================================================= */
-div[data-testid="stForm"], 
-div[data-testid="stVerticalBlock"] > div[style*="border"] {
+/* ==================== TARJETAS GLASS PREMIUM ==================== */
+div[data-testid="stForm"], div[data-testid="stVerticalBlock"] > div {{
     background-color: var(--bg-card) !important;
     border: 1px solid var(--border-color) !important;
-    border-radius: 16px;
+    border-radius: 20px;
     padding: 24px;
     box-shadow: var(--shadow-base);
     backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
+}}
+div[data-testid="stForm"]:hover, div[data-testid="stVerticalBlock"] > div:hover {{
+    box-shadow: 0 20px 40px -10px rgba(37, 99, 235, 0.25);
+    transform: translateY(-2px);
+}}
 
-div[data-testid="stForm"]:hover,
-div[data-testid="stVerticalBlock"] > div[style*="border"]:hover {
-    box-shadow: var(--shadow-hover);
-    border-color: rgba(59, 130, 246, 0.4) !important;
-}
-
-/* =========================================================
-   4. BOTONES 3D PREMIUM
-   ========================================================= */
-.stButton>button {
-    background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+/* ==================== BOTONES 3D ==================== */
+.stButton>button {{
+    background: linear-gradient(135deg, var(--accent), #3b82f6);
     color: white !important;
     border: none;
-    min-height: 52px;
-    border-radius: 12px;
-    font-weight: 600;
-    letter-spacing: 0.4px;
-    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.35);
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.stButton>button:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.45);
-}
-.stButton>button:active {
-    transform: scale(0.96);
-}
-
-/* =========================================================
-   5. MÉTRICAS (SIGNOS VITALES / CAJA)
-   ========================================================= */
-div[data-testid="stMetric"] {
-    background-color: var(--metric-bg);
+    min-height: 54px;
     border-radius: 14px;
-    padding: 18px 20px;
-    border: 1px solid var(--border-color);
-    border-left: 5px solid #3b82f6;
+    font-weight: 600;
+    box-shadow: 0 6px 20px rgba(37,99,235,0.3);
+    transition: all 0.25s ease;
+}}
+.stButton>button:hover {{
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(37,99,235,0.4);
+}}
+
+/* ==================== MÉTRICAS ==================== */
+div[data-testid="stMetric"] {{
+    background-color: var(--bg-card);
+    border-radius: 16px;
+    border-left: 6px solid var(--accent);
     box-shadow: var(--shadow-base);
-    backdrop-filter: var(--glass-blur);
-}
+}}
 
-/* =========================================================
-   6. EXPANSORES Y TABS
-   ========================================================= */
-div[data-testid="stExpander"] {
-    border-radius: 14px;
+/* ==================== EXPANSORES Y TABS ==================== */
+div[data-testid="stExpander"] {{
+    border-radius: 16px;
     border: 1px solid var(--border-color);
-    background-color: var(--expander-bg);
-    overflow: hidden;
-    backdrop-filter: var(--glass-blur);
-}
-div[data-testid="stExpander"] details summary {
-    font-weight: 600;
-    padding: 14px 18px;
-    font-size: 15.5px;
-}
-
-.stTabs [data-testid="stTab"] {
-    font-weight: 500;
-    padding: 12px 20px;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-}
-.stTabs [data-testid="stTab"][aria-selected="true"] {
-    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    background-color: var(--bg-card);
+}}
+.stTabs [data-testid="stTab"][aria-selected="true"] {{
+    background: linear-gradient(135deg, var(--accent), #3b82f6);
     color: white !important;
-    box-shadow: 0 4px 12px rgba(37,99,235,0.3);
-    border: none;
-}
+}}
 
-/* =========================================================
-   7. DATAFRAMES Y SCROLLBARS
-   ========================================================= */
-[data-testid="stDataFrame"] {
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    overflow: hidden;
-}
-
-::-webkit-scrollbar {
+/* ==================== SCROLLBAR BONITA ==================== */
+::-webkit-scrollbar {{
     width: 8px;
     height: 8px;
-}
-::-webkit-scrollbar-thumb {
-    background: rgba(59, 130, 246, 0.4);
+}}
+::-webkit-scrollbar-thumb {{
+    background: var(--accent);
     border-radius: 20px;
-}
-::-webkit-scrollbar-thumb:hover {
-    background: #3b82f6;
-}
+}}
 
-/* =========================================================
-   8. DETALLES FINALES
-   ========================================================= */
-h1, h2, h3, h4 {
-    font-weight: 600;
-    letter-spacing: -0.5px;
-}
-
-*:focus {
-    outline: 2px solid #3b82f6;
-    outline-offset: 3px;
-}
-
-input[type=number]::-webkit-inner-spin-button,
-input[type=number]::-webkit-outer-spin-button { 
-    -webkit-appearance: none; 
-    margin: 0; 
-}
-input[type=number] { 
-    -moz-appearance: textfield; 
-}
+/* ==================== OTROS DETALLES ==================== */
+h1, h2, h3, h4 {{ font-weight: 700; letter-spacing: -0.8px; }}
+[data-testid="stDataFrame"] {{ border-radius: 16px; border: 1px solid var(--border-color); }}
 </style>
 """
 st.markdown(page_bg_css, unsafe_allow_html=True)
