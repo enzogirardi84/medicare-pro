@@ -18,12 +18,11 @@ import altair as alt
 # 1. CONFIGURACIÓN INICIAL (DEBE SER LA PRIMERA LÍNEA DE STREAMLIT DESPUÉS DE LOS IMPORTS)
 st.set_page_config(page_title="MediCare PRO V9.11", layout="wide", initial_sidebar_state="collapsed")
 
-# --- VADEMÉCUM GLOBAL MASIVO ---
 
 def mostrar_inicio_publicitario():
     """
     Renderiza la cuadrícula de funciones en HTML con animaciones, Glassmorphism 2.0
-    y sección de Contacto/Contrataciones, con altura ajustada para no cortar contenido.
+    y sección de Contacto/Contrataciones, con código HTML limpio y responsivo.
     """
     html_landing = """
     <!DOCTYPE html>
@@ -147,28 +146,28 @@ def mostrar_inicio_publicitario():
                 </div>
 
                 <div class="glass-card-contact p-8 animate-fade-up" style="animation-delay: 0.9s;">
-                    <div class="text-center mb-6">
+                    <div class="text-center mb-8">
                         <h3 class="text-2xl font-bold text-white mb-2">¿Desea implementar el sistema o reportar un problema?</h3>
                         <p class="text-slate-400 text-sm">Contáctenos directamente para contrataciones, demostraciones o soporte técnico.</p>
                     </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                        <div class="flex flex-col items-center p-4 rounded-xl bg-slate-800/30 border border-slate-700/50">
-                            <h4 class="text-lg font-bold text-sky-400">Enzo Nicolás Girardi</h4>
-                            <p class="text-slate-400 text-xs mb-4 uppercase tracking-wider">Desarrollo y Soporte Técnico</p>
+                        <div class="flex flex-col items-center p-6 rounded-xl bg-slate-800/40 border border-slate-700/50 hover:border-sky-500/50 transition-colors">
+                            <h4 class="text-xl font-bold text-sky-400 mb-1">Enzo Nicolás Girardi</h4>
+                            <p class="text-slate-400 text-xs mb-5 uppercase tracking-wider font-semibold">Desarrollo y Soporte Técnico</p>
                             <div class="flex flex-wrap justify-center gap-3">
                                 <a href="https://wa.me/5493584302024" target="_blank" class="btn-contact btn-wpp">
                                     <i data-lucide="message-circle" class="w-4 h-4"></i> WhatsApp
-                                                                    </a>
-                                                                    <a href="mailto:enzogirardi84@gmail.com" class="btn-contact btn-mail">
-                                                                        <i data-lucide="mail" class="w-4 h-4"></i> Email
-                                                                    </a>
-                                                                </div>
-                                                            </div>
+                                </a>
+                                <a href="mailto:enzogirardi84@gmail.com" class="btn-contact btn-mail">
+                                    <i data-lucide="mail" class="w-4 h-4"></i> Email
+                                </a>
+                            </div>
+                        </div>
 
-                        <div class="flex flex-col items-center p-4 rounded-xl bg-slate-800/30 border border-slate-700/50">
-                            <h4 class="text-lg font-bold text-sky-400">Darío Lanfranco</h4>
-                            <p class="text-slate-400 text-xs mb-4 uppercase tracking-wider">Implementación y Contrataciones</p>
+                        <div class="flex flex-col items-center p-6 rounded-xl bg-slate-800/40 border border-slate-700/50 hover:border-sky-500/50 transition-colors">
+                            <h4 class="text-xl font-bold text-sky-400 mb-1">Darío Lanfranco</h4>
+                            <p class="text-slate-400 text-xs mb-5 uppercase tracking-wider font-semibold">Implementación y Contratos</p>
                             <div class="flex flex-wrap justify-center gap-3">
                                 <a href="https://wa.me/5493584201263" target="_blank" class="btn-contact btn-wpp">
                                     <i data-lucide="message-circle" class="w-4 h-4"></i> WhatsApp
@@ -188,8 +187,8 @@ def mostrar_inicio_publicitario():
     </html>
     """
     
-    # LA SOLUCIÓN: Aumentamos la altura de 880 a 1200 para dar espacio a los textos detallados y contacto.
-    components.html(html_landing, height=1200, scrolling=False)
+    # LA SOLUCIÓN DEFINITIVA: Altura subida a 1350 para cubrir pantallas móviles donde todo se apila.
+    components.html(html_landing, height=1350, scrolling=False)
 # =====================================================================
 # ACÁ EMPIEZA TU CÓDIGO NORMAL DEL SISTEMA (BASE DE DATOS, VADEMECUM, ETC.)
 # =====================================================================
