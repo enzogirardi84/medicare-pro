@@ -15,8 +15,7 @@ import tempfile
 from PIL import Image
 import altair as alt
 
-# 1. CONFIGURACIÓN INICIAL (DEBE SER LA PRIMERA LÍNEA DE STREAMLIT DESPUÉS DE LOS IMPORTS)
-st.set_page_config(page_title="MediCare PRO V9.11", layout="wide", initial_sidebar_state="collapsed")
+
 
 
 def mostrar_inicio_publicitario():
