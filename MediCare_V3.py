@@ -19,265 +19,84 @@ import altair as alt
 st.set_page_config(page_title="MediCare PRO V9.11", layout="wide", initial_sidebar_state="collapsed")
 
 
-def aplicar_estilos_streamlit():
-    """
-    Inyecta CSS global en Streamlit para ocultar menús, fusionar fondos
-    y crear un botón de ingreso con efecto Neón Premium sin superposición.
-    """
-    st.markdown("""
-        <style>
-            #MainMenu {visibility: hidden;}
-            header {visibility: hidden;}
-            footer {visibility: hidden;}
-            .block-container {
-                padding-top: 0rem !important; 
-                padding-bottom: 0rem !important; 
-                max-width: 100% !important;
-            }
-            .stApp {
-                background-color: #020617 !important;
-                background-image: radial-gradient(circle at top right, #0F172A 0%, #020617 100%) !important;
-            }
-            div.stButton {
-                display: flex;
-                justify-content: center;
-                margin-top: 20px; 
-                padding-bottom: 50px;
-                z-index: 50;
-                position: relative;
-            }
-            div.stButton > button {
-                background: linear-gradient(135deg, #0ea5e9 0%, #4f46e5 100%) !important;
-                color: white !important;
-                border: 1px solid rgba(255,255,255,0.1) !important;
-                padding: 1.2rem 3.5rem !important;
-                border-radius: 9999px !important;
-                font-family: 'Inter', sans-serif !important;
-                font-size: 1.15rem !important;
-                font-weight: 800 !important;
-                letter-spacing: 1.5px !important;
-                text-transform: uppercase;
-                box-shadow: 0 0 20px rgba(14, 165, 233, 0.4), inset 0 0 10px rgba(255,255,255,0.2) !important;
-                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
-                width: auto !important;
-                animation: pulseGlow 2.5s infinite;
-            }
-            div.stButton > button:hover {
-                transform: translateY(-5px) scale(1.02) !important;
-                box-shadow: 0 0 30px rgba(99, 102, 241, 0.6), inset 0 0 15px rgba(255,255,255,0.3) !important;
-                background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%) !important;
-            }
-            div.stButton > button:active {
-                transform: translateY(2px) scale(0.98) !important;
-            }
-            @keyframes pulseGlow {
-                0% { box-shadow: 0 0 20px rgba(14, 165, 233, 0.4); }
-                50% { box-shadow: 0 0 35px rgba(14, 165, 233, 0.7); }
-                100% { box-shadow: 0 0 20px rgba(14, 165, 233, 0.4); }
-            }
-        </style>
-    """, unsafe_allow_html=True)
-
-
 def mostrar_inicio_publicitario():
     """
-    Renderiza la publicidad de forma NATIVA con st.markdown().
-    Al no usar iframes fijos, el contenido se expande hacia abajo según
-    lo necesite la pantalla (100% Responsivo).
+    Renderiza la publicidad NATIVA sin errores de indentación.
     """
     html_landing = """
-    <style>
-        .landing-wrapper {
-            font-family: 'Inter', system-ui, sans-serif;
-            color: #F8FAFC; 
-            width: 100%; 
-            max-width: 1100px;
-            margin: 0 auto; 
-            padding: 2rem 1rem; 
-            box-sizing: border-box;
-        }
-        
-        .hero-section { text-align: center; margin-bottom: 3.5rem; position: relative; }
-        
-        .hero-badge {
-            display: inline-flex; align-items: center; gap: 8px;
-            padding: 6px 16px; border-radius: 9999px;
-            background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(51, 65, 85, 0.8);
-            color: #38bdf8; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em;
-            margin-bottom: 1.5rem; text-transform: uppercase;
-        }
-        .hero-dot { width: 10px; height: 10px; background: #0ea5e9; border-radius: 50%; box-shadow: 0 0 8px #0ea5e9; }
-        
-        .hero-title { font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 800; line-height: 1.1; margin: 0 0 1rem 0; }
-        .text-gradient { background: linear-gradient(to right, #38bdf8, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .hero-subtitle { font-size: clamp(1rem, 2.5vw, 1.25rem); color: #94a3b8; max-width: 700px; margin: 0 auto; line-height: 1.6; }
-        
-        /* Grilla Móvil Perfecta (Responsiva) */
-        .grid-cards { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
-            gap: 1.5rem; 
-            margin-bottom: 3rem; 
-        }
-        
-        .glass-card-pro { 
-            background: linear-gradient(145deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.4) 100%);
-            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 1.5rem;
-            padding: 1.5rem; transition: all 0.3s ease; text-align: left;
-        }
-        .glass-card-pro:hover {
-            transform: translateY(-5px); border-color: rgba(56, 189, 248, 0.4);
-            box-shadow: 0 15px 30px -5px rgba(0,0,0,0.5), 0 0 15px rgba(56,189,248,0.15);
-        }
-        .icon-box-pro {
-            width: 48px; height: 48px; border-radius: 1rem; display: flex; align-items: center; justify-content: center;
-            font-size: 1.5rem; margin-bottom: 1rem; background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.3);
-        }
-        .card-title-pro { font-size: 1.25rem; font-weight: 700; color: white; margin: 0 0 0.5rem 0; }
-        .card-text-pro { font-size: 0.875rem; color: #94a3b8; margin: 0; line-height: 1.5; }
+<style>
+    .landing-wrapper { font-family: 'Inter', system-ui, sans-serif; color: #F8FAFC; width: 100%; max-width: 1100px; margin: 0 auto; padding: 2rem 1rem; box-sizing: border-box; }
+    .hero-section { text-align: center; margin-bottom: 3.5rem; position: relative; }
+    .hero-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border-radius: 9999px; background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(51, 65, 85, 0.8); color: #38bdf8; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; margin-bottom: 1.5rem; text-transform: uppercase; }
+    .hero-dot { width: 10px; height: 10px; background: #0ea5e9; border-radius: 50%; box-shadow: 0 0 8px #0ea5e9; }
+    .hero-title { font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 800; line-height: 1.1; margin: 0 0 1rem 0; }
+    .text-gradient { background: linear-gradient(to right, #38bdf8, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero-subtitle { font-size: clamp(1rem, 2.5vw, 1.25rem); color: #94a3b8; max-width: 700px; margin: 0 auto; line-height: 1.6; }
+    .grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 3rem; }
+    .glass-card-pro { background: linear-gradient(145deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.4) 100%); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 1.5rem; padding: 1.5rem; transition: all 0.3s ease; text-align: left; }
+    .glass-card-pro:hover { transform: translateY(-5px); border-color: rgba(56, 189, 248, 0.4); box-shadow: 0 15px 30px -5px rgba(0,0,0,0.5), 0 0 15px rgba(56,189,248,0.15); }
+    .icon-box-pro { width: 48px; height: 48px; border-radius: 1rem; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 1rem; background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.3); }
+    .card-title-pro { font-size: 1.25rem; font-weight: 700; color: white; margin: 0 0 0.5rem 0; }
+    .card-text-pro { font-size: 0.875rem; color: #94a3b8; margin: 0; line-height: 1.5; }
+    .contact-section-pro { background: linear-gradient(145deg, rgba(14, 165, 233, 0.1) 0%, rgba(15, 23, 42, 0.4) 100%); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 1.5rem; padding: 2rem; text-align: center; margin-bottom: 1rem; }
+    .contact-grid-pro { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }
+    .contact-profile-pro { background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(51, 65, 85, 0.5); border-radius: 1rem; padding: 1.5rem; transition: border-color 0.3s; }
+    .contact-profile-pro:hover { border-color: rgba(56, 189, 248, 0.5); }
+    .contact-name { font-size: 1.25rem; font-weight: 700; color: #38bdf8; margin: 0 0 0.25rem 0; }
+    .contact-role { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin: 0 0 1.2rem 0; }
+    .btn-flex-pro { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;}
+    .btn-link-pro { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.2rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 600; text-decoration: none; transition: all 0.2s; }
+    .wpp-pro { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .wpp-pro:hover { background: rgba(16, 185, 129, 0.3); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); }
+    .mail-pro { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3); }
+    .mail-pro:hover { background: rgba(148, 163, 184, 0.3); color: white; transform: translateY(-2px); }
+</style>
 
-        /* Sección de Contacto Responsiva */
-        .contact-section-pro {
-            background: linear-gradient(145deg, rgba(14, 165, 233, 0.1) 0%, rgba(15, 23, 42, 0.4) 100%);
-            border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 1.5rem; padding: 2rem; text-align: center;
-            margin-bottom: 1rem;
-        }
-        .contact-grid-pro { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); 
-            gap: 1.5rem; 
-            margin-top: 1.5rem; 
-        }
-        .contact-profile-pro {
-            background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(51, 65, 85, 0.5);
-            border-radius: 1rem; padding: 1.5rem; transition: border-color 0.3s;
-        }
-        .contact-profile-pro:hover { border-color: rgba(56, 189, 248, 0.5); }
-        .contact-name { font-size: 1.25rem; font-weight: 700; color: #38bdf8; margin: 0 0 0.25rem 0; }
-        .contact-role { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin: 0 0 1.2rem 0; }
-        
-        .btn-flex-pro { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;}
-        .btn-link-pro {
-            display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.2rem;
-            border-radius: 9999px; font-size: 0.875rem; font-weight: 600; text-decoration: none; transition: all 0.2s;
-        }
-        .wpp-pro { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
-        .wpp-pro:hover { background: rgba(16, 185, 129, 0.3); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); }
-        .mail-pro { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3); }
-        .mail-pro:hover { background: rgba(148, 163, 184, 0.3); color: white; transform: translateY(-2px); }
-    </style>
+<div class="landing-wrapper">
+    <div class="hero-section">
+        <div class="hero-badge"><div class="hero-dot"></div> Sistemas E.G. • Enterprise 2026</div>
+        <h1 class="hero-title">Tu clínica, <br><span class="text-gradient">en una sola App.</span></h1>
+        <p class="hero-subtitle">Módulos integrados con <span style="color:#7dd3fc; font-weight:600;">Inteligencia Artificial</span> para llevar la gestión de tu internación domiciliaria al máximo nivel.</p>
+    </div>
     
-    <div class="landing-wrapper">
-        <div class="hero-section">
-            <div class="hero-badge"><div class="hero-dot"></div> Sistemas E.G. • Enterprise 2026</div>
-            <h1 class="hero-title">Tu clínica, <br><span class="text-gradient">en una sola App.</span></h1>
-            <p class="hero-subtitle">Módulos integrados con <span style="color:#7dd3fc; font-weight:600;">Inteligencia Artificial</span> para llevar la gestión de tu internación domiciliaria al máximo nivel.</p>
-        </div>
+    <div class="grid-cards">
+        <div class="glass-card-pro"><div class="icon-box-pro">📍</div><h4 class="card-title-pro">Fichaje GPS</h4><p class="card-text-pro">Control de asistencia verificado por coordenadas exactas. Registra llegadas y salidas desde el domicilio del paciente.</p></div>
+        <div class="glass-card-pro"><div class="icon-box-pro">📄</div><h4 class="card-title-pro">Evolución Médica</h4><p class="card-text-pro">Carga digital de signos vitales, parámetros clínicos y fotografías de heridas directamente en la historia del paciente.</p></div>
+        <div class="glass-card-pro"><div class="icon-box-pro">💊</div><h4 class="card-title-pro">Stock Farmacia</h4><p class="card-text-pro">Gestión de inventario inteligente. Descuento automático de insumos en tiempo real al registrar prácticas de enfermería.</p></div>
+        <div class="glass-card-pro"><div class="icon-box-pro">✍️</div><h4 class="card-title-pro">Firma Digital</h4><p class="card-text-pro">Recetas médicas y consentimientos informados generados en pantalla y en PDF con validez legal garantizada.</p></div>
+        <div class="glass-card-pro"><div class="icon-box-pro">📹</div><h4 class="card-title-pro">Telemedicina</h4><p class="card-text-pro">Módulo de videollamadas P2P encriptadas para interconsultas remotas, integradas al historial del paciente.</p></div>
+        <div class="glass-card-pro"><div class="icon-box-pro">👶</div><h4 class="card-title-pro">Pediatría</h4><p class="card-text-pro">Control de crecimiento, curvas de percentiles y seguimiento del desarrollo infantil de forma gráfica y automatizada.</p></div>
+        <div class="glass-card-pro"><div class="icon-box-pro">💧</div><h4 class="card-title-pro">Balance Hídrico</h4><p class="card-text-pro">Cálculo estricto de ingresos y egresos por turno, con sistema de alertas clínicas por retención o pérdida de líquidos.</p></div>
+        <div class="glass-card-pro"><div class="icon-box-pro">📋</div><h4 class="card-title-pro">Auditoría RRHH</h4><p class="card-text-pro">Registro de caja, cierres diarios y reportes de desempeño del equipo para facilitar la liquidación de sueldos.</p></div>
+    </div>
+    
+    <div class="contact-section-pro">
+        <h3 style="font-size: 1.5rem; font-weight: 700; color: white; margin: 0 0 0.5rem 0;">¿Desea implementar el sistema o reportar un problema?</h3>
+        <p style="color: #94a3b8; font-size: 0.9rem; margin: 0;">Contáctenos directamente para contrataciones, demostraciones o soporte técnico.</p>
         
-        <div class="grid-cards">
-            <div class="glass-card-pro">
-                <div class="icon-box-pro">📍</div>
-                <h4 class="card-title-pro">Fichaje GPS</h4>
-                <p class="card-text-pro">Control de asistencia verificado por coordenadas exactas. Registra llegadas y salidas desde el domicilio del paciente.</p>
-            </div>
-            <div class="glass-card-pro">
-                <div class="icon-box-pro">📄</div>
-                <h4 class="card-title-pro">Evolución Médica</h4>
-                <p class="card-text-pro">Carga digital de signos vitales, parámetros clínicos y fotografías de heridas directamente en la historia del paciente.</p>
-            </div>
-            <div class="glass-card-pro">
-                <div class="icon-box-pro">💊</div>
-                <h4 class="card-title-pro">Stock Farmacia</h4>
-                <p class="card-text-pro">Gestión de inventario inteligente. Descuento automático de insumos en tiempo real al registrar prácticas de enfermería.</p>
-            </div>
-            <div class="glass-card-pro">
-                <div class="icon-box-pro">✍️</div>
-                <h4 class="card-title-pro">Firma Digital</h4>
-                <p class="card-text-pro">Recetas médicas y consentimientos informados generados en pantalla y en PDF con validez legal garantizada.</p>
-            </div>
-            <div class="glass-card-pro">
-                <div class="icon-box-pro">📹</div>
-                <h4 class="card-title-pro">Telemedicina</h4>
-                <p class="card-text-pro">Módulo de videollamadas P2P encriptadas para interconsultas remotas, integradas al historial del paciente.</p>
-            </div>
-            <div class="glass-card-pro">
-                <div class="icon-box-pro">👶</div>
-                <h4 class="card-title-pro">Pediatría</h4>
-                <p class="card-text-pro">Control de crecimiento, curvas de percentiles y seguimiento del desarrollo infantil de forma gráfica y automatizada.</p>
-            </div>
-            <div class="glass-card-pro">
-                <div class="icon-box-pro">💧</div>
-                <h4 class="card-title-pro">Balance Hídrico</h4>
-                <p class="card-text-pro">Cálculo estricto de ingresos y egresos por turno, con sistema de alertas clínicas por retención o pérdida de líquidos.</p>
-            </div>
-            <div class="glass-card-pro">
-                <div class="icon-box-pro">📋</div>
-                <h4 class="card-title-pro">Auditoría RRHH</h4>
-                <p class="card-text-pro">Registro de caja, cierres diarios y reportes de desempeño del equipo para facilitar la liquidación de sueldos.</p>
-            </div>
-        </div>
-        
-        <div class="contact-section-pro">
-            <h3 style="font-size: 1.5rem; font-weight: 700; color: white; margin: 0 0 0.5rem 0;">¿Desea implementar el sistema o reportar un problema?</h3>
-            <p style="color: #94a3b8; font-size: 0.9rem; margin: 0;">Contáctenos directamente para contrataciones, demostraciones o soporte técnico.</p>
-            
-            <div class="contact-grid-pro">
-                <div class="contact-profile-pro">
-                    <h4 class="contact-name">Enzo Nicolás Girardi</h4>
-                    <p class="contact-role">Desarrollo y Soporte Técnico</p>
-                    <div class="btn-flex-pro">
-                        <a href="https://wa.me/5493584302024" target="_blank" class="btn-link-pro wpp-pro">💬 WhatsApp</a>
-                        <a href="mailto:enzogirardi84@gmail.com" class="btn-link-pro mail-pro">✉️ Email</a>
-                    </div>
+        <div class="contact-grid-pro">
+            <div class="contact-profile-pro">
+                <h4 class="contact-name">Enzo Nicolás Girardi</h4>
+                <p class="contact-role">Desarrollo y Soporte Técnico</p>
+                <div class="btn-flex-pro">
+                    <a href="https://wa.me/5493584302024" target="_blank" class="btn-link-pro wpp-pro">💬 WhatsApp</a>
+                    <a href="mailto:enzogirardi84@gmail.com" class="btn-link-pro mail-pro">✉️ Email</a>
                 </div>
-                <div class="contact-profile-pro">
-                    <h4 class="contact-name">Darío Lanfranco</h4>
-                    <p class="contact-role">Implementación y Contratos</p>
-                    <div class="btn-flex-pro">
-                        <a href="https://wa.me/5493584201263" target="_blank" class="btn-link-pro wpp-pro">💬 WhatsApp</a>
-                        <a href="mailto:dariolanfrancoruffener@gmail.com" class="btn-link-pro mail-pro">✉️ Email</a>
-                    </div>
+            </div>
+            <div class="contact-profile-pro">
+                <h4 class="contact-name">Darío Lanfranco</h4>
+                <p class="contact-role">Implementación y Contratos</p>
+                <div class="btn-flex-pro">
+                    <a href="https://wa.me/5493584201263" target="_blank" class="btn-link-pro wpp-pro">💬 WhatsApp</a>
+                    <a href="mailto:dariolanfrancoruffener@gmail.com" class="btn-link-pro mail-pro">✉️ Email</a>
                 </div>
             </div>
         </div>
     </div>
-    """
+</div>
+"""
     
-    # LA MAGIA PARA CELULARES: Ya no usamos components.html()
-    # Ahora usamos st.markdown nativo. Esto hace que la página fluya libremente hacia abajo.
     st.markdown(html_landing, unsafe_allow_html=True)
-
-
-# =====================================================================
-# --- CONTROL DE FLUJO: PUBLICIDAD VS SISTEMA (MÉTODO URL INFALIBLE) ---
-# =====================================================================
-# Obtenemos los parámetros de la URL actual
-query_params = st.query_params
-
-# PANTALLA 1: PUBLICIDAD (Se muestra si la URL NO dice "?app=login")
-if query_params.get("app") != "login":
-    aplicar_estilos_streamlit()
-    mostrar_inicio_publicitario()
-    
-    # Botón mágico que cambia la URL
-    if st.button("🚀 INGRESAR AL SISTEMA PROFESIONAL"):
-        st.query_params["app"] = "login"
-        st.rerun()
-        
-    # FRENO OBLIGATORIO: Detiene la ejecución aquí. El Login nunca se carga abajo.
-    st.stop() 
-
-
-# PANTALLA 2: EL SISTEMA REAL (Login y Dashboard)
-# Solo llega hasta acá si la URL tiene "?app=login"
-st.markdown("<style>#MainMenu {visibility: visible;} header {visibility: visible;} .block-container {padding-top: 3rem !important;}</style>", unsafe_allow_html=True)
-
-st.sidebar.markdown("---")
-# Botón para volver atrás
-if st.sidebar.button("⬅️ Volver a la Publicidad"):
-    st.query_params.clear()
-    st.rerun()
 
 
 # =====================================================================
