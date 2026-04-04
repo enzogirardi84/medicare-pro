@@ -129,37 +129,35 @@ def init_supabase() -> Client:
 supabase = init_supabase()
 
 # --- 🎨 DISEÑO VISUAL ENTERPRISE PREMIUM v3.0 (MODO CLARO / OSCURO ADAPTATIVO) ---
-page_bg_css = """
-<style>
-
-# ====================== 1 TOGGLE DE TEMA (CLARO / OSCURO) ======================
+# ====================== TOGGLE DE TEMA (CLARO / OSCURO) ======================
 if "theme" not in st.session_state:
-    st.session_state.theme = "light"   # Modo por defecto: Claro
+    st.session_state.theme = "light"   # Modo por defecto: Claro (bonito y profesional)
 
 # Botón elegante en el sidebar (después del login)
 with st.sidebar:
-    st.markdown("### 🎨 Tema")
+    st.markdown("### 🎨 Tema de la Aplicación")
     if st.button(
-        "☀️ Modo Claro" if st.session_state.theme == "dark" else "🌙 Modo Oscuro",
+        "☀️ Cambiar a Modo Claro" if st.session_state.theme == "dark" else "🌙 Cambiar a Modo Oscuro",
         use_container_width=True,
-        help="Cambiar entre modo claro y oscuro"
+        type="secondary",
+        help="Alternar entre modo claro y oscuro"
     ):
         st.session_state.theme = "dark" if st.session_state.theme == "light" else "light"
         st.rerun()
 
-# ====================== DISEÑO VISUAL ENTERPRISE PREMIUM v4.0 ======================
+# ====================== DISEÑO VISUAL ENTERPRISE PREMIUM v4.1 (CORREGIDO) ======================
 page_bg_css = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {{
-    --bg-app: {'#f8fafc' if st.session_state.theme == 'light' else '#0a0a0f'};
-    --bg-card: {'rgba(255,255,255,0.95)' if st.session_state.theme == 'light' else 'rgba(30,30,46,0.95)'};
-    --bg-sidebar: {'#ffffff' if st.session_state.theme == 'light' else '#111117'};
-    --border-color: {'rgba(15,23,42,0.12)' if st.session_state.theme == 'light' else 'rgba(248,250,252,0.12)'};
-    --text-color: {'#0f172a' if st.session_state.theme == 'light' else '#f8fafc'};
-    --accent: {'#2563eb' if st.session_state.theme == 'light' else '#60a5fa'};
-    --shadow-base: {'0 10px 30px -5px rgb(0 0 0 / 0.08)' if st.session_state.theme == 'light' else '0 10px 30px -5px rgb(0 0 0 / 0.4)'};
+    --bg-app: {('#f8fafc' if st.session_state.theme == 'light' else '#0a0a0f')};
+    --bg-card: {('rgba(255,255,255,0.98)' if st.session_state.theme == 'light' else 'rgba(30,30,46,0.95)')};
+    --bg-sidebar: {('#ffffff' if st.session_state.theme == 'light' else '#111117')};
+    --border-color: {('rgba(15,23,42,0.10)' if st.session_state.theme == 'light' else 'rgba(248,250,252,0.10)')};
+    --text-color: {('#0f172a' if st.session_state.theme == 'light' else '#f8fafc')};
+    --accent: {('#2563eb' if st.session_state.theme == 'light' else '#60a5fa')};
+    --shadow-base: {('0 10px 30px -5px rgb(0 0 0 / 0.08)' if st.session_state.theme == 'light' else '0 10px 30px -5px rgb(0 0 0 / 0.45)')};
     --glass-blur: blur(20px);
 }}
 
@@ -178,7 +176,8 @@ html, body, [class*="css"] {{
 }}
 
 /* ==================== TARJETAS GLASS PREMIUM ==================== */
-div[data-testid="stForm"], div[data-testid="stVerticalBlock"] > div {{
+div[data-testid="stForm"],
+div[data-testid="stVerticalBlock"] > div {{
     background-color: var(--bg-card) !important;
     border: 1px solid var(--border-color) !important;
     border-radius: 20px;
@@ -187,7 +186,8 @@ div[data-testid="stForm"], div[data-testid="stVerticalBlock"] > div {{
     backdrop-filter: var(--glass-blur);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }}
-div[data-testid="stForm"]:hover, div[data-testid="stVerticalBlock"] > div:hover {{
+div[data-testid="stForm"]:hover,
+div[data-testid="stVerticalBlock"] > div:hover {{
     box-shadow: 0 20px 40px -10px rgba(37, 99, 235, 0.25);
     transform: translateY(-2px);
 }}
@@ -227,7 +227,11 @@ div[data-testid="stExpander"] {{
     color: white !important;
 }}
 
-/* ==================== SCROLLBAR BONITA ==================== */
+/* ==================== DATAFRAMES Y SCROLLBAR ==================== */
+[data-testid="stDataFrame"] {{
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+}}
 ::-webkit-scrollbar {{
     width: 8px;
     height: 8px;
@@ -237,9 +241,11 @@ div[data-testid="stExpander"] {{
     border-radius: 20px;
 }}
 
-/* ==================== OTROS DETALLES ==================== */
-h1, h2, h3, h4 {{ font-weight: 700; letter-spacing: -0.8px; }}
-[data-testid="stDataFrame"] {{ border-radius: 16px; border: 1px solid var(--border-color); }}
+/* ==================== TÍTULOS Y DETALLES ==================== */
+h1, h2, h3, h4 {{
+    font-weight: 700;
+    letter-spacing: -0.8px;
+}}
 </style>
 """
 st.markdown(page_bg_css, unsafe_allow_html=True)
