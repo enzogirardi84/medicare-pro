@@ -1705,7 +1705,6 @@ with tabs[menu.index("💊 Recetas")]:
 
             col3, col4, col5 = st.columns([2, 2, 1])
             
-            # --- CORRECCIÓN LEGAL: Vías de administración con nombres completos ---
             via = col3.selectbox("Vía de Administración", [
                 "Vía Oral", 
                 "Vía Endovenosa (EV)", 
@@ -1767,7 +1766,7 @@ with tabs[menu.index("💊 Recetas")]:
                             "medico_matricula": medico_matricula.strip(),
                             "firma_b64": firma_b64,
                             "firmado_por": user["nombre"],
-                            "estado_receta": "Activa" # <-- CLAVE DE LA CAJA FUERTE
+                            "estado_receta": "Activa"
                         })
                         guardar_datos()
                         st.success(f"✅ Prescripción de **{med_final}** guardada con firma médica.")
@@ -1790,7 +1789,7 @@ with tabs[menu.index("💊 Recetas")]:
             all_horarios = [f"{h:02d}:00" for h in range(24)]
 
             table_data = []
-            for r in recs_activas: # Solo mostramos a enfermería las ACTIVAS
+            for r in recs_activas:
                 partes = r['med'].split(" | ")
                 nombre = partes[0].strip()
                 via_texto = partes[1].replace("Vía: ", "") if len(partes) > 1 else ""
@@ -1809,21 +1808,23 @@ with tabs[menu.index("💊 Recetas")]:
                         a.get("med") == nombre and a.get("hora", "").startswith(h[:2])
                         for a in admin_hoy
                     )
-                    fila[h] = "✅" if realizada else "⭕"
+                    # Acá está la magia: le metemos espacios " " a los costados para forzar el ancho de la celda
+                    fila[h] = "   ✅   " if realizada else "   ⭕   "
 
                 table_data.append(fila)
 
             df = pd.DataFrame(table_data)
 
+            # Estilos reforzados para centrar y agrandar los íconos
             def style_medicacion(row):
                 styles = []
                 for col in row.index:
                     if col in ["Medicamento", "Vía", "Frecuencia", "Médico", "Matrícula"]:
-                        styles.append('background-color: #1e1e1e; color: #ffffff; font-weight: 500')
-                    elif row[col] == "✅":
-                        styles.append('background-color: #1a3c2e; color: #4ade80; font-weight: bold')
+                        styles.append('background-color: #1e1e1e; color: #ffffff; font-weight: 500; text-align: left;')
+                    elif "✅" in str(row[col]):
+                        styles.append('background-color: #1a3c2e; color: #4ade80; font-weight: bold; text-align: center; font-size: 18px;')
                     else:
-                        styles.append('background-color: #2c1f1f; color: #f87171')
+                        styles.append('background-color: #2c1f1f; color: #f87171; text-align: center; font-size: 18px;')
                 return styles
 
             styled_df = df.style.apply(style_medicacion, axis=1)
@@ -1884,13 +1885,12 @@ with tabs[menu.index("💊 Recetas")]:
                 for r in st.session_state["indicaciones_db"]:
                     if r["paciente"] == paciente_sel and f"[{r.get('fecha', '')}] {r.get('med', '')}" == receta_seleccionada:
                         if accion_receta == "Suspender / Anular":
-                            r["estado_receta"] = "Suspendida" # NO BORRA, CAMBIA EL ESTADO
+                            r["estado_receta"] = "Suspendida"
                             r["fecha_suspension"] = ahora().strftime("%d/%m/%Y %H:%M")
                             st.success("✅ Indicación suspendida. Quedará en el historial legal.")
                         elif accion_receta == "Editar indicación" and nuevo_texto_receta:
-                            r["estado_receta"] = "Modificada" # La original queda como modificada
+                            r["estado_receta"] = "Modificada"
                             r["fecha_suspension"] = ahora().strftime("%d/%m/%Y %H:%M")
-                            # Creamos una NUEVA receta con la modificación
                             st.session_state["indicaciones_db"].append({
                                 "paciente": paciente_sel,
                                 "med": nuevo_texto_receta,
@@ -1940,13 +1940,12 @@ with tabs[menu.index("💊 Recetas")]:
                 pdf.line(10, pdf.get_y()+2, 138, pdf.get_y()+2)
                 pdf.ln(8)
                 
-                # ¡NUEVO!: SI ESTÁ SUSPENDIDA, EL PDF SALE CON MARCA DE ANULADA
                 estado_pdf = r_data.get("estado_receta", "Activa")
                 if estado_pdf != "Activa":
-                    pdf.set_text_color(220, 38, 38) # Color rojo
+                    pdf.set_text_color(220, 38, 38)
                     pdf.set_font("Arial", 'B', 14)
                     pdf.cell(0, 8, t(f"ANULADA / {estado_pdf.upper()}"), ln=True, align='C')
-                    pdf.set_text_color(0, 0, 0) # Vuelve al negro
+                    pdf.set_text_color(0, 0, 0)
                 
                 pdf.set_font("Arial", 'B', 12)
                 pdf.cell(0, 8, t("Rp/"), ln=True)
@@ -1989,7 +1988,6 @@ with tabs[menu.index("💊 Recetas")]:
                             c_info.markdown(f"**Indicado por:** {r.get('medico_nombre', '—')} | **Matrícula:** {r.get('medico_matricula', '—')}")
                             c_info.markdown(f"~~*{r.get('med', '')}*~~")
                             
-                        # ¡MAGIA!: EL BOTON AZUL AHORA ESTA AFUERA DEL IF, SE DIBUJA SIEMPRE
                         if FPDF_DISPONIBLE:
                             pdf_bytes = generar_pdf_receta(r)
                             b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
