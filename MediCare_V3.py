@@ -131,7 +131,7 @@ supabase = init_supabase()
 # --- 🎨 DISEÑO VISUAL ENTERPRISE PREMIUM v3.0 (MODO CLARO / OSCURO ADAPTATIVO) ---
 # ====================== TOGGLE DE TEMA (CLARO / OSCURO) ======================
 # =========================================================================================
-# 🎨 DISEÑO VISUAL ENTERPRISE PREMIUM v11.0 (ONLY DARK MODE - DEEP SPACE MEDICAL)
+# 🎨 DISEÑO VISUAL ENTERPRISE PREMIUM v12.0 (ONLY DARK MODE - TABS CAPSULARES)
 # =========================================================================================
 page_bg_css = """
 <style>
@@ -202,7 +202,7 @@ div[data-testid="stMetric"] {
     border: 1px solid var(--border-col) !important;
     border-top: 3px solid var(--accent) !important;
     border-radius: 12px !important;
-    padding: 16px 20px !important;
+    padding: 16px 14px !important;
     box-shadow: 0 6px 15px rgba(0,0,0,0.4) !important;
     transition: transform 0.2s ease !important;
 }
@@ -221,32 +221,46 @@ div[data-testid="stMetric"]:hover {
 [data-testid="stMetricValue"] div { 
     color: var(--metric-color) !important; 
     font-weight: 700 !important; 
-    font-size: 2.2rem !important;
+    /* ACHICADO PARA QUE NO SE CORTE LA TEMPERATURA O SATURACIÓN */
+    font-size: 1.85rem !important; 
     text-shadow: 0 0 15px rgba(16, 185, 129, 0.4) !important; 
 }
 
-/* ==================== 5. PESTAÑAS (TABS) ULTRA PREMIUM ==================== */
+/* ==================== 5. PESTAÑAS (TABS CAPSULARES PREMIUM) ==================== */
 .stTabs [data-testid="stTab"] {
-    background-color: transparent !important;
-    border: none !important;
-    border-bottom: 2px solid transparent !important;
-    padding: 10px 16px !important;
-    margin-right: 4px !important;
-    border-radius: 0 !important;
+    background-color: var(--bg-input) !important; /* Fondo tipo botón base */
+    border: 1px solid var(--border-col) !important;
+    border-radius: 8px !important;
+    padding: 8px 16px !important;
+    margin-right: 6px !important;
+    margin-bottom: 8px !important;
     transition: all 0.2s ease !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
 }
-.stTabs [data-testid="stTab"] p { color: var(--text-muted) !important; font-weight: 500 !important; }
-.stTabs [data-testid="stTab"]:hover p { color: var(--text-main) !important; }
+.stTabs [data-testid="stTab"] p { 
+    color: var(--text-muted) !important; 
+    font-weight: 500 !important; 
+}
+/* Al pasar el mouse por pestaña apagada */
+.stTabs [data-testid="stTab"]:hover { 
+    background-color: var(--border-col) !important;
+    border-color: rgba(0, 229, 255, 0.3) !important;
+    transform: translateY(-1px) !important;
+}
+.stTabs [data-testid="stTab"]:hover p { 
+    color: var(--text-main) !important; 
+}
 
 /* Pestaña Activa */
 .stTabs [data-testid="stTab"][aria-selected="true"] {
-    background: linear-gradient(0deg, rgba(0, 229, 255, 0.08) 0%, transparent 100%) !important;
-    border-bottom: 2px solid var(--accent) !important;
+    background: linear-gradient(135deg, rgba(0, 229, 255, 0.15) 0%, rgba(0, 229, 255, 0.02) 100%) !important;
+    border: 1px solid var(--accent) !important;
+    box-shadow: 0 4px 15px var(--accent-glow) !important;
 }
 .stTabs [data-testid="stTab"][aria-selected="true"] p { 
     color: var(--accent) !important; 
     font-weight: 600 !important;
-    text-shadow: 0 0 12px var(--accent-glow) !important;
+    text-shadow: 0 0 8px var(--accent-glow) !important;
 }
 
 /* ==================== 6. BOTONES ==================== */
