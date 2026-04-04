@@ -131,28 +131,30 @@ supabase = init_supabase()
 # --- 🎨 DISEÑO VISUAL ENTERPRISE PREMIUM v3.0 (MODO CLARO / OSCURO ADAPTATIVO) ---
 # ====================== TOGGLE DE TEMA (CLARO / OSCURO) ======================
 # =========================================================================================
-# 🎨 DISEÑO VISUAL ENTERPRISE PREMIUM v12.0 (ONLY DARK MODE - TABS CAPSULARES)
+# 🎨 DISEÑO VISUAL ENTERPRISE PREMIUM v13.0 (ERGONOMIC DARK - ANTI FATIGA VISUAL)
 # =========================================================================================
 page_bg_css = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-    /* Paleta de colores Dark Premium OLED */
-    --bg-app: #06090F;          /* Fondo base ultra oscuro */
-    --bg-sidebar: #090D14;      /* Sidebar sutilmente distinto */
-    --bg-card: #111827;         /* Tarjetas (Gris azulado oscuro) */
-    --bg-input: #0B101A;        /* Inputs hundidos */
+    /* Paleta Ergonomica (Slate / Azul Pizarra) - Descansa la vista */
+    --bg-app: #0F172A;          /* Azul pizarra oscuro para el fondo general */
+    --bg-sidebar: #0B1121;      /* Apenas más oscuro para separar el menú lateral */
+    --bg-card: #1E293B;         /* Tarjetas un poco más claras (elevación) */
     
-    --border-col: #1E293B;      /* Bordes sutiles */
-    --border-hover: #00E5FF;    /* Borde Cian al pasar el mouse */
+    /* 🔥 LA CLAVE: Inputs mucho más claros para que resalten fácil 🔥 */
+    --bg-input: #334155;        
     
-    --text-main: #F8FAFC;       /* Texto blanco brillante */
-    --text-muted: #94A3B8;      /* Texto grisáceo para subtítulos */
+    --border-col: #3F4F66;      /* Bordes visibles pero suaves */
+    --border-hover: #38BDF8;    /* Celeste claro al pasar el mouse */
     
-    --accent: #00E5FF;          /* Cian Médico Neón */
-    --accent-glow: rgba(0, 229, 255, 0.2);
-    --metric-color: #10B981;    /* Verde Monitor Vital */
+    --text-main: #F8FAFC;       /* Blanco suave (no quema) */
+    --text-muted: #94A3B8;      /* Gris claro para subtítulos y placeholders */
+    
+    --accent: #38BDF8;          /* Celeste luminoso y amigable */
+    --accent-glow: rgba(56, 189, 248, 0.25);
+    --metric-color: #34D399;    /* Verde esmeralda suave para vitales */
 }
 
 /* ==================== 1. FONDOS Y ESTRUCTURA ==================== */
@@ -161,55 +163,46 @@ html, body, .stApp {
     font-family: 'Inter', sans-serif !important;
 }
 
-/* Sidebar */
 [data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {
     background-color: var(--bg-sidebar) !important;
     border-right: 1px solid var(--border-col) !important;
 }
-
 header[data-testid="stHeader"] { background-color: transparent !important; }
 
 /* ==================== 2. TEXTOS ==================== */
 p, span, div, h1, h2, h3, h4, h5, h6, label, li {
     color: var(--text-main) !important;
 }
-p, label { font-weight: 400 !important; }
+p, label { font-weight: 400 !important; font-size: 0.95rem !important; }
 h1, h2, h3, h4 { font-weight: 600 !important; letter-spacing: -0.5px; }
 
-/* Excepciones */
 .stButton button p, .stButton button span { color: inherit !important; }
 
 /* ==================== 3. TARJETAS Y CONTENEDORES ==================== */
 div[data-testid="stForm"],
 div[data-testid="stVerticalBlock"] > div[style*="border"],
 div[data-testid="stExpander"] {
-    background: linear-gradient(145deg, var(--bg-card) 0%, #0D131F 100%) !important;
+    background-color: var(--bg-card) !important;
     border: 1px solid var(--border-col) !important;
     border-radius: 16px !important;
     padding: 24px !important;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.5) !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
     transition: all 0.3s ease !important;
 }
 div[data-testid="stForm"]:hover,
 div[data-testid="stVerticalBlock"] > div[style*="border"]:hover {
-    border-color: rgba(0, 229, 255, 0.3) !important;
-    box-shadow: 0 10px 30px var(--accent-glow) !important;
+    border-color: #475569 !important;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3) !important;
 }
 
 /* ==================== 4. MÉTRICAS (SIGNOS VITALES) ==================== */
 div[data-testid="stMetric"] {
-    background: var(--bg-card) !important;
+    background-color: var(--bg-card) !important;
     border: 1px solid var(--border-col) !important;
     border-top: 3px solid var(--accent) !important;
     border-radius: 12px !important;
     padding: 16px 14px !important;
-    box-shadow: 0 6px 15px rgba(0,0,0,0.4) !important;
-    transition: transform 0.2s ease !important;
-}
-div[data-testid="stMetric"]:hover {
-    transform: translateY(-2px) !important;
-    border-color: var(--accent) !important;
-    box-shadow: 0 8px 20px var(--accent-glow) !important;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15) !important;
 }
 [data-testid="stMetricLabel"] p { 
     color: var(--text-muted) !important; 
@@ -221,68 +214,73 @@ div[data-testid="stMetric"]:hover {
 [data-testid="stMetricValue"] div { 
     color: var(--metric-color) !important; 
     font-weight: 700 !important; 
-    /* ACHICADO PARA QUE NO SE CORTE LA TEMPERATURA O SATURACIÓN */
     font-size: 1.85rem !important; 
-    text-shadow: 0 0 15px rgba(16, 185, 129, 0.4) !important; 
+    text-shadow: 0 0 10px rgba(52, 211, 153, 0.3) !important; 
 }
 
-/* ==================== 5. PESTAÑAS (TABS CAPSULARES PREMIUM) ==================== */
+/* ==================== 5. INPUTS Y SELECTS (AHORA MUCHO MÁS CLAROS) ==================== */
+div[data-baseweb="select"] > div,
+div[data-baseweb="input"] > div,
+input[type="number"], input[type="text"], textarea {
+    background-color: var(--bg-input) !important; /* Más clarito, se ve perfecto */
+    border: 1px solid var(--border-col) !important;
+    border-radius: 8px !important;
+    color: #FFFFFF !important;
+    padding: 4px 10px !important;
+    font-size: 15px !important;
+    transition: all 0.2s ease !important;
+}
+
+/* Efecto cuando hacés clic para escribir */
+div[data-baseweb="select"] > div:focus-within,
+div[data-baseweb="input"] > div:focus-within { 
+    border-color: var(--accent) !important; 
+    background-color: #1E293B !important; /* Se oscurece un toque al escribir */
+    box-shadow: 0 0 0 3px var(--accent-glow) !important;
+}
+input::placeholder, textarea::placeholder { color: #CBD5E1 !important; }
+
+/* ==================== 6. PESTAÑAS (TABS) ==================== */
 .stTabs [data-testid="stTab"] {
-    background-color: var(--bg-input) !important; /* Fondo tipo botón base */
+    background-color: var(--bg-input) !important;
     border: 1px solid var(--border-col) !important;
     border-radius: 8px !important;
     padding: 8px 16px !important;
     margin-right: 6px !important;
     margin-bottom: 8px !important;
     transition: all 0.2s ease !important;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
 }
-.stTabs [data-testid="stTab"] p { 
-    color: var(--text-muted) !important; 
-    font-weight: 500 !important; 
-}
-/* Al pasar el mouse por pestaña apagada */
+.stTabs [data-testid="stTab"] p { color: var(--text-muted) !important; font-weight: 500 !important; }
 .stTabs [data-testid="stTab"]:hover { 
     background-color: var(--border-col) !important;
-    border-color: rgba(0, 229, 255, 0.3) !important;
-    transform: translateY(-1px) !important;
 }
-.stTabs [data-testid="stTab"]:hover p { 
-    color: var(--text-main) !important; 
-}
-
-/* Pestaña Activa */
+.stTabs [data-testid="stTab"]:hover p { color: var(--text-main) !important; }
 .stTabs [data-testid="stTab"][aria-selected="true"] {
-    background: linear-gradient(135deg, rgba(0, 229, 255, 0.15) 0%, rgba(0, 229, 255, 0.02) 100%) !important;
+    background-color: var(--bg-card) !important;
     border: 1px solid var(--accent) !important;
-    box-shadow: 0 4px 15px var(--accent-glow) !important;
+    box-shadow: 0 4px 10px var(--accent-glow) !important;
 }
 .stTabs [data-testid="stTab"][aria-selected="true"] p { 
     color: var(--accent) !important; 
     font-weight: 600 !important;
-    text-shadow: 0 0 8px var(--accent-glow) !important;
 }
 
-/* ==================== 6. BOTONES ==================== */
+/* ==================== 7. BOTONES ==================== */
 .stButton > button {
     border-radius: 10px !important;
     font-weight: 600 !important;
     min-height: 48px !important;
     transition: all 0.2s ease !important;
-    text-transform: uppercase;
     letter-spacing: 0.5px;
-    font-size: 0.9rem !important;
 }
 .stButton > button[kind="primary"] {
-    background: linear-gradient(135deg, #0052D4, #4364F7, #6FB1FC) !important;
+    background: linear-gradient(135deg, #0284C7, #38BDF8) !important;
     color: #FFFFFF !important;
     border: none !important;
-    box-shadow: 0 4px 15px rgba(67, 100, 247, 0.3) !important;
 }
 .stButton > button[kind="primary"]:hover {
     transform: translateY(-2px) !important;
-    filter: brightness(1.15);
-    box-shadow: 0 6px 20px rgba(67, 100, 247, 0.5) !important;
+    box-shadow: 0 6px 15px rgba(56, 189, 248, 0.4) !important;
 }
 .stButton > button[kind="secondary"] {
     background-color: var(--bg-input) !important;
@@ -292,44 +290,22 @@ div[data-testid="stMetric"]:hover {
 .stButton > button[kind="secondary"]:hover { 
     border-color: var(--accent) !important;
     color: var(--accent) !important;
-    box-shadow: 0 0 15px var(--accent-glow) !important;
 }
 
-/* ==================== 7. INPUTS Y SELECTS ==================== */
-div[data-baseweb="select"] > div,
-div[data-baseweb="input"] > div,
-input[type="number"], input[type="text"], textarea {
-    background-color: var(--bg-input) !important;
-    border: 1px solid var(--border-col) !important;
-    border-radius: 8px !important;
-    color: var(--text-main) !important;
-    padding: 2px 8px !important;
-    transition: all 0.2s ease !important;
-}
-div[data-baseweb="select"] > div:focus-within,
-div[data-baseweb="input"] > div:focus-within { 
-    border-color: var(--accent) !important; 
-    box-shadow: 0 0 0 2px var(--accent-glow) !important;
-}
-input::placeholder, textarea::placeholder { color: var(--text-muted) !important; }
-
-/* ==================== 8. DATAFRAMES Y TABLAS ==================== */
+/* ==================== 8. DATAFRAMES ==================== */
 [data-testid="stDataFrame"] {
     border-radius: 12px !important;
     border: 1px solid var(--border-col) !important;
     background-color: var(--bg-card) !important;
 }
-[data-testid="stTable"] {
-    background-color: transparent !important;
-}
+[data-testid="stTable"] { background-color: transparent !important; }
 
-/* ==================== 9. SCROLLBAR Y EXTRAS ==================== */
+/* ==================== 9. EXTRAS ==================== */
 img { filter: none !important; background: transparent !important; }
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg-app); }
 ::-webkit-scrollbar-thumb { background: var(--border-col); border-radius: 20px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
-
 </style>
 """
 st.markdown(page_bg_css, unsafe_allow_html=True)
