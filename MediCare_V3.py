@@ -128,40 +128,91 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# --- 🎨 DISEÑO VISUAL ENTERPRISE PREMIUM v2.0 (OPTIMIZADO) ---
+# --- 🎨 DISEÑO VISUAL ENTERPRISE PREMIUM v3.0 (MODO CLARO / OSCURO ADAPTATIVO) ---
 page_bg_css = """
 <style>
-/* 1. Fuente moderna y profesional (Inter) */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-html, body, [class*="css"] {
-    font-family: 'Inter', sans-serif !important;
+/* =========================================================
+   1. VARIABLES DE COLOR (LA MAGIA DEL MODO CLARO/OSCURO)
+   ========================================================= */
+
+/* Por defecto: MODO CLARO (Blanco Cristal) */
+:root {
+    --bg-app: #f8fafc;
+    --bg-card: rgba(255, 255, 255, 0.85);
+    --bg-sidebar: #ffffff;
+    --border-color: rgba(0, 0, 0, 0.08);
+    --shadow-base: 0 8px 32px rgba(0, 0, 0, 0.06);
+    --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.12);
+    --text-color: #0f172a;
+    --glass-blur: blur(16px);
+    --metric-bg: rgba(255, 255, 255, 0.9);
+    --expander-bg: rgba(255, 255, 255, 0.6);
 }
 
-/* Bloqueo de recarga en celulares (Pull-to-refresh) */
+/* Si el sistema está en: MODO OSCURO (Enterprise Dark) */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-app: #0f0f12;
+        --bg-card: rgba(255, 255, 255, 0.04);
+        --bg-sidebar: #0a0a0d;
+        --border-color: rgba(255, 255, 255, 0.08);
+        --shadow-base: 0 8px 32px rgba(0, 0, 0, 0.25);
+        --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.4);
+        --text-color: #f8fafc;
+        --metric-bg: rgba(255, 255, 255, 0.06);
+        --expander-bg: rgba(255, 255, 255, 0.03);
+    }
+}
+
+/* =========================================================
+   2. CONFIGURACIÓN BASE Y FUENTES
+   ========================================================= */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+html, body, [class*="css"] {
+    font-family: 'Inter', sans-serif !important;
+    color: var(--text-color);
+}
+
 body { overscroll-behavior-y: none; }
 * { text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
 
-/* 2. Fondo fluido + variables oscuras premium */
+/* Fondo fluido principal */
 .stApp {
-    background-color: #0f0f12;
+    background-color: var(--bg-app);
+    transition: background-color 0.3s ease;
 }
 
-/* 3. Tarjetas Flotantes mejoradas (con glass effect) */
-div[data-testid="stForm"] {
-    background-color: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.1);
+/* Sidebar elegante */
+[data-testid="stSidebar"] {
+    background-color: var(--bg-sidebar);
+    border-right: 1px solid var(--border-color);
+}
+
+/* =========================================================
+   3. TARJETAS FLOTANTES (GLASS EFFECT ADAPTATIVO)
+   ========================================================= */
+div[data-testid="stForm"], 
+div[data-testid="stVerticalBlock"] > div[style*="border"] {
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
     border-radius: 16px;
     padding: 24px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
-    backdrop-filter: blur(12px);
+    box-shadow: var(--shadow-base);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-div[data-testid="stForm"]:hover {
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
-    border-color: rgba(59, 130, 246, 0.3);
+
+div[data-testid="stForm"]:hover,
+div[data-testid="stVerticalBlock"] > div[style*="border"]:hover {
+    box-shadow: var(--shadow-hover);
+    border-color: rgba(59, 130, 246, 0.4) !important;
 }
 
-/* 4. Botones Primarios 3D Premium */
+/* =========================================================
+   4. BOTONES 3D PREMIUM
+   ========================================================= */
 .stButton>button {
     background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
     color: white !important;
@@ -181,22 +232,28 @@ div[data-testid="stForm"]:hover {
     transform: scale(0.96);
 }
 
-/* 5. Métricas (Signos Vitales) más elegantes */
+/* =========================================================
+   5. MÉTRICAS (SIGNOS VITALES / CAJA)
+   ========================================================= */
 div[data-testid="stMetric"] {
-    background-color: rgba(255,255,255,0.06);
+    background-color: var(--metric-bg);
     border-radius: 14px;
     padding: 18px 20px;
-    border: 1px solid rgba(255,255,255,0.08);
+    border: 1px solid var(--border-color);
     border-left: 5px solid #3b82f6;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    box-shadow: var(--shadow-base);
+    backdrop-filter: var(--glass-blur);
 }
 
-/* 6. Expansores (Historial clínico) */
+/* =========================================================
+   6. EXPANSORES Y TABS
+   ========================================================= */
 div[data-testid="stExpander"] {
     border-radius: 14px;
-    border: 1px solid rgba(255,255,255,0.1);
-    background-color: rgba(255,255,255,0.04);
+    border: 1px solid var(--border-color);
+    background-color: var(--expander-bg);
     overflow: hidden;
+    backdrop-filter: var(--glass-blur);
 }
 div[data-testid="stExpander"] details summary {
     font-weight: 600;
@@ -204,49 +261,28 @@ div[data-testid="stExpander"] details summary {
     font-size: 15.5px;
 }
 
-/* 7. Botón WhatsApp Premium */
-.wa-btn {
-    display: block; width: 100%; text-align: center;
-    background: linear-gradient(135deg, #128C7E 0%, #25D366 100%);
-    color: white !important; padding: 15px; border-radius: 12px; 
-    font-weight: 700; text-decoration: none;
-    margin: 12px 0;
-    box-shadow: 0 4px 15px rgba(37, 211, 102, 0.35);
-    transition: all 0.25s ease;
-}
-.wa-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(37, 211, 102, 0.45);
-}
-
-/* 8. NUEVAS MEJORAS AÑADIDAS */
-
-/* Sidebar más elegante */
-[data-testid="stSidebar"] {
-    background-color: #0a0a0d;
-    border-right: 1px solid rgba(255,255,255,0.08);
-}
-
-/* Tabs más modernas */
 .stTabs [data-testid="stTab"] {
     font-weight: 500;
     padding: 12px 20px;
     border-radius: 8px;
+    transition: all 0.2s ease;
 }
 .stTabs [data-testid="stTab"][aria-selected="true"] {
     background: linear-gradient(135deg, #2563eb, #3b82f6);
-    color: white;
+    color: white !important;
     box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+    border: none;
 }
 
-/* Dataframes y tablas más premium */
+/* =========================================================
+   7. DATAFRAMES Y SCROLLBARS
+   ========================================================= */
 [data-testid="stDataFrame"] {
     border-radius: 12px;
-    border: 1px solid rgba(255,255,255,0.08);
+    border: 1px solid var(--border-color);
     overflow: hidden;
 }
 
-/* Scrollbar customizada */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -259,19 +295,19 @@ div[data-testid="stExpander"] details summary {
     background: #3b82f6;
 }
 
-/* Mejora en títulos y subtítulos */
+/* =========================================================
+   8. DETALLES FINALES
+   ========================================================= */
 h1, h2, h3, h4 {
     font-weight: 600;
     letter-spacing: -0.5px;
 }
 
-/* Focus accesible */
 *:focus {
     outline: 2px solid #3b82f6;
     outline-offset: 3px;
 }
 
-/* Ocultar flechas numéricas */
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button { 
     -webkit-appearance: none; 
