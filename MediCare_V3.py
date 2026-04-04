@@ -131,166 +131,202 @@ supabase = init_supabase()
 # --- 🎨 DISEÑO VISUAL ENTERPRISE PREMIUM v3.0 (MODO CLARO / OSCURO ADAPTATIVO) ---
 # ====================== TOGGLE DE TEMA (CLARO / OSCURO) ======================
 if "theme" not in st.session_state:
-    st.session_state.theme = "light"   # Modo por defecto: Claro (bonito y profesional)
+    st.session_state.theme = "light"
 
-# Botón elegante en el sidebar (después del login)
 with st.sidebar:
     st.markdown("### 🎨 Tema de la Aplicación")
     if st.button(
         "☀️ Cambiar a Modo Claro" if st.session_state.theme == "dark" else "🌙 Cambiar a Modo Oscuro",
         use_container_width=True,
-        type="secondary",
-        help="Alternar entre modo claro y oscuro"
+        type="secondary"
     ):
         st.session_state.theme = "dark" if st.session_state.theme == "light" else "light"
         st.rerun()
 
-# ====================== DISEÑO VISUAL ENTERPRISE PREMIUM v4.2 ======================
+# ====================== DISEÑO VISUAL ENTERPRISE PREMIUM v5.0 (MODERNO Y LIMPIO) ======================
+# Definición de paleta estricta según el tema seleccionado
+bg_app = "#f8fafc" if st.session_state.theme == "light" else "#0f172a"
+bg_sidebar = "#ffffff" if st.session_state.theme == "light" else "#1e293b"
+bg_card = "#ffffff" if st.session_state.theme == "light" else "#1e293b"
+text_main = "#1e293b" if st.session_state.theme == "light" else "#f8fafc"
+text_muted = "#64748b" if st.session_state.theme == "light" else "#94a3b8"
+border_col = "#e2e8f0" if st.session_state.theme == "light" else "#334155"
+accent = "#2563eb" if st.session_state.theme == "light" else "#3b82f6"
+accent_hover = "#1d4ed8" if st.session_state.theme == "light" else "#60a5fa"
+shadow_card = "0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05)" if st.session_state.theme == "light" else "0 10px 15px -3px rgba(0, 0, 0, 0.4)"
+
 page_bg_css = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-:root {{
-    /* Paleta de colores refinada según el tema */
-    --bg-app: {('#f4f7f6' if st.session_state.theme == 'light' else '#0b0f19')};
-    --bg-card: {('#ffffff' if st.session_state.theme == 'light' else '#111827')};
-    --bg-sidebar: {('#ffffff' if st.session_state.theme == 'light' else '#0d1117')};
-    --border-color: {('rgba(0,0,0,0.08)' if st.session_state.theme == 'light' else 'rgba(255,255,255,0.08)')};
-    --text-color: {('#1e293b' if st.session_state.theme == 'light' else '#f8fafc')};
-    --text-muted: {('#64748b' if st.session_state.theme == 'light' else '#94a3b8')};
-    --accent: {('#2563eb' if st.session_state.theme == 'light' else '#3b82f6')};
-    --accent-hover: {('#1d4ed8' if st.session_state.theme == 'light' else '#60a5fa')};
-    
-    /* Sombras ajustadas para que no se vean sucias en modo claro */
-    --shadow-base: {('0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)' if st.session_state.theme == 'light' else '0 10px 25px -5px rgba(0, 0, 0, 0.5)')};
-    --shadow-hover: {('0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)' if st.session_state.theme == 'light' else '0 20px 30px -5px rgba(0, 0, 0, 0.7)')};
-}}
-
-/* ==================== BASE ==================== */
+/* ==================== BASE Y ESTRUCTURA ==================== */
 html, body, [class*="css"] {{
     font-family: 'Inter', sans-serif !important;
-    color: var(--text-color) !important;
+    color: {text_main} !important;
 }}
+
+/* Fondo de la aplicación */
 .stApp {{
-    background-color: var(--bg-app);
-    transition: background-color 0.3s ease;
+    background-color: {bg_app};
 }}
+
+/* Ocultar header por defecto de Streamlit para look nativo */
+header[data-testid="stHeader"] {{
+    background: transparent !important;
+}}
+
+/* Sidebar */
 [data-testid="stSidebar"] {{
-    background-color: var(--bg-sidebar);
-    border-right: 1px solid var(--border-color);
+    background-color: {bg_sidebar} !important;
+    border-right: 1px solid {border_col};
+    box-shadow: 2px 0 8px rgba(0,0,0,0.02);
 }}
 
-/* Forzar color de texto para que Streamlit no lo sobrescriba al cambiar tema */
-p, li, span, label, div {{
-    color: var(--text-color);
-}}
-
-/* ==================== TARJETAS GLASS PREMIUM ==================== */
-/* Solo aplica a Formularios y a nuestros contenedores con borde */
+/* ==================== TARJETAS Y CONTENEDORES (EL SECRETO DEL DISEÑO) ==================== */
 div[data-testid="stForm"],
 div[data-testid="stVerticalBlock"] > div[style*="border"] {{
-    background-color: var(--bg-card) !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: var(--shadow-base);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background-color: {bg_card} !important;
+    border: 1px solid {border_col} !important;
+    border-radius: 16px !important;
+    padding: 24px !important;
+    box-shadow: {shadow_card} !important;
+    transition: all 0.2s ease-in-out;
 }}
+
 div[data-testid="stForm"]:hover,
 div[data-testid="stVerticalBlock"] > div[style*="border"]:hover {{
-    box-shadow: var(--shadow-hover);
-    border-color: var(--accent) !important;
+    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.08) !important;
     transform: translateY(-2px);
+    border-color: {accent} !important;
 }}
 
-/* ==================== BOTONES 3D ==================== */
-.stButton>button {{
-    background: linear-gradient(135deg, var(--accent), #3b82f6);
-    color: white !important;
-    border: none;
-    min-height: 50px;
-    border-radius: 12px;
-    font-weight: 600;
-    box-shadow: 0 4px 12px rgba(37,99,235,0.25);
-    transition: all 0.25s ease;
-}}
-.stButton>button:hover {{
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(37,99,235,0.4);
-    background: linear-gradient(135deg, var(--accent-hover), var(--accent));
+/* Fix para el componente GPS (Elimina la barra negra) */
+iframe {{
+    background-color: transparent !important;
+    border-radius: 8px;
+    color-scheme: {st.session_state.theme} !important;
 }}
 
-/* ==================== MÉTRICAS (Signos Vitales/Caja) ==================== */
-div[data-testid="stMetric"] {{
-    background-color: var(--bg-card);
-    border-radius: 14px;
-    padding: 18px;
-    border: 1px solid var(--border-color);
-    border-left: 5px solid var(--accent);
-    box-shadow: var(--shadow-base);
-}}
-
-/* ==================== EXPANSORES Y TABS ==================== */
-div[data-testid="stExpander"] {{
-    border-radius: 14px;
-    border: 1px solid var(--border-color);
-    background-color: var(--bg-card);
-}}
+/* ==================== TABS (PESTAÑAS) MODERNAS ==================== */
 .stTabs [data-testid="stTab"] {{
-    font-weight: 500;
-    color: var(--text-muted);
+    background-color: transparent;
+    border: none !important;
+    color: {text_muted} !important;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}}
+.stTabs [data-testid="stTab"]:hover {{
+    background-color: {border_col};
+    color: {text_main} !important;
 }}
 .stTabs [data-testid="stTab"][aria-selected="true"] {{
-    background: var(--accent);
+    background-color: {accent} !important;
     color: white !important;
-    border-radius: 8px;
-    padding: 8px 16px;
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+}}
+
+/* ==================== BOTONES ==================== */
+.stButton > button {{
+    background-color: {bg_card};
+    color: {text_main};
+    border: 1px solid {border_col};
+    border-radius: 10px;
+    min-height: 48px;
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
+}}
+.stButton > button:hover {{
+    border-color: {accent};
+    color: {accent};
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    transform: translateY(-1px);
+}}
+
+/* Botón Primario (Primary) */
+.stButton > button[kind="primary"] {{
+    background: linear-gradient(135deg, {accent}, {accent_hover}) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+}}
+.stButton > button[kind="primary"]:hover {{
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4) !important;
+    transform: translateY(-2px);
 }}
 
 /* ==================== INPUTS Y SELECTS ==================== */
 div[data-baseweb="select"] > div,
 div[data-baseweb="input"] > div,
 input[type="number"] {{
-    background-color: var(--bg-app);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    color: var(--text-color);
+    background-color: {bg_card} !important;
+    border: 1px solid {border_col} !important;
+    border-radius: 8px !important;
+    color: {text_main} !important;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+}}
+div[data-baseweb="select"] > div:hover,
+div[data-baseweb="input"] > div:hover {{
+    border-color: {accent} !important;
 }}
 
-/* ==================== DATAFRAMES Y SCROLLBAR ==================== */
+/* ==================== DATAFRAMES Y TABLAS ==================== */
 [data-testid="stDataFrame"] {{
-    border-radius: 14px;
-    border: 1px solid var(--border-color);
-    background-color: var(--bg-card);
+    border-radius: 12px !important;
+    border: 1px solid {border_col} !important;
+    background-color: {bg_card} !important;
+    overflow: hidden;
 }}
+
+/* Scrollbar elegante */
 ::-webkit-scrollbar {{
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
 }}
 ::-webkit-scrollbar-thumb {{
-    background: var(--accent);
+    background: {border_col};
     border-radius: 10px;
 }}
-::-webkit-scrollbar-track {{
-    background: transparent;
+::-webkit-scrollbar-thumb:hover {{
+    background: {text_muted};
 }}
 
-/* ==================== TÍTULOS Y DETALLES ==================== */
+/* ==================== TÍTULOS ==================== */
 h1, h2, h3, h4, h5, h6 {{
-    font-weight: 700;
-    color: var(--text-color) !important;
-    letter-spacing: -0.5px;
+    font-weight: 700 !important;
+    color: {text_main} !important;
+    letter-spacing: -0.02em;
 }}
 
-/* Ocultar flechas numéricas */
-input[type=number]::-webkit-inner-spin-button,
-input[type=number]::-webkit-outer-spin-button {{ 
-    -webkit-appearance: none; 
-    margin: 0; 
+/* Alertas más prolijas */
+[data-testid="stAlert"] {{
+    border-radius: 10px !important;
+    border: none !important;
+}}
+
+/* Métricas (Signos vitales) */
+div[data-testid="stMetric"] {{
+    background-color: {bg_card};
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid {border_col};
+    border-left: 4px solid {accent};
+    box-shadow: {shadow_card};
 }}
 </style>
 """
 st.markdown(page_bg_css, unsafe_allow_html=True)
+
+# ⚠️ MUY IMPORTANTE: Le decimos a Streamlit que oculte su propio CSS nativo que molesta
+st.markdown("""
+    <style>
+        .st-emotion-cache-1jicfl2 { padding-top: 2rem; }
+        .st-emotion-cache-1kyxreq { justify-content: center; }
+    </style>
+""", unsafe_allow_html=True)
 
 # --- 🎁 LOGO EXCLUSIVO PROFESIONAL ---
 def render_logo_eg(size=100):
