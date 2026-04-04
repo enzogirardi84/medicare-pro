@@ -18,77 +18,10 @@ import altair as alt
 import streamlit as st
 import streamlit.components.v1 as components
 
-# 1. CONFIGURACIÓN INICIAL (DEBE SER LA PRIMERA LÍNEA DE STREAMLIT)
-st.set_page_config(page_title="MediCare PRO V9.11", layout="wide", initial_sidebar_state="collapsed")
-
-def aplicar_estilos_streamlit():
-    """
-    Inyecta CSS global en Streamlit para ocultar menús, fusionar fondos
-    y crear un botón de ingreso con efecto Neón Premium sin superposición.
-    """
-    st.markdown("""
-        <style>
-            /* Ocultar menús y espacios vacíos de Streamlit */
-            #MainMenu {visibility: hidden;}
-            header {visibility: hidden;}
-            footer {visibility: hidden;}
-            .block-container {
-                padding-top: 0rem !important; 
-                padding-bottom: 0rem !important; 
-                max-width: 100% !important;
-            }
-            
-            /* Fondo Global igual al de la publicidad */
-            .stApp {
-                background-color: #020617 !important;
-                background-image: radial-gradient(circle at top right, #0F172A 0%, #020617 100%) !important;
-            }
-
-            /* Rediseño Extremo del Botón de Ingreso (Efecto Neón/Pulse) */
-            div.stButton {
-                display: flex;
-                justify-content: center;
-                margin-top: 20px; /* Separación de las tarjetas */
-                padding-bottom: 50px;
-                z-index: 50;
-                position: relative;
-            }
-            div.stButton > button {
-                background: linear-gradient(135deg, #0ea5e9 0%, #4f46e5 100%) !important;
-                color: white !important;
-                border: 1px solid rgba(255,255,255,0.1) !important;
-                padding: 1.2rem 3.5rem !important;
-                border-radius: 9999px !important;
-                font-family: 'Inter', sans-serif !important;
-                font-size: 1.15rem !important;
-                font-weight: 800 !important;
-                letter-spacing: 1.5px !important;
-                text-transform: uppercase;
-                box-shadow: 0 0 20px rgba(14, 165, 233, 0.4), inset 0 0 10px rgba(255,255,255,0.2) !important;
-                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
-                width: auto !important;
-                animation: pulseGlow 2.5s infinite;
-            }
-            div.stButton > button:hover {
-                transform: translateY(-5px) scale(1.02) !important;
-                box-shadow: 0 0 30px rgba(99, 102, 241, 0.6), inset 0 0 15px rgba(255,255,255,0.3) !important;
-                background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%) !important;
-            }
-            div.stButton > button:active {
-                transform: translateY(2px) scale(0.98) !important;
-            }
-
-            @keyframes pulseGlow {
-                0% { box-shadow: 0 0 20px rgba(14, 165, 233, 0.4); }
-                50% { box-shadow: 0 0 35px rgba(14, 165, 233, 0.7); }
-                100% { box-shadow: 0 0 20px rgba(14, 165, 233, 0.4); }
-            }
-        </style>
-    """, unsafe_allow_html=True)
-
 def mostrar_inicio_publicitario():
     """
-    Renderiza la cuadrícula de funciones en HTML con animaciones y Glassmorphism 2.0
+    Renderiza la cuadrícula de funciones en HTML con animaciones, Glassmorphism 2.0
+    y sección de Contacto/Contrataciones.
     """
     html_landing = """
     <!DOCTYPE html>
@@ -111,11 +44,17 @@ def mostrar_inicio_publicitario():
                 box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.2); transition: all 0.4s ease;
                 position: relative; overflow: hidden; min-height: 180px; 
             }
+            .glass-card-contact { 
+                background: linear-gradient(145deg, rgba(14, 165, 233, 0.1) 0%, rgba(15, 23, 42, 0.5) 100%);
+                backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+                border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 1.5rem;
+                box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.2); transition: all 0.4s ease;
+            }
             .glass-card::before {
                 content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
                 background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); opacity: 0; transition: opacity 0.4s ease;
             }
-            .glass-card:hover {
+            .glass-card:hover, .glass-card-contact:hover {
                 transform: translateY(-8px);
                 background: linear-gradient(145deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.6) 100%);
                 border-color: rgba(56, 189, 248, 0.4);
@@ -130,11 +69,24 @@ def mostrar_inicio_publicitario():
                 background: radial-gradient(circle, rgba(14, 165, 233, 0.15) 0%, transparent 70%);
                 top: -100px; left: 50%; transform: translateX(-50%); z-index: -1; pointer-events: none;
             }
+            
+            /* Estilos para botones de contacto */
+            .btn-contact {
+                display: inline-flex; align-items: center; gap: 0.5rem;
+                padding: 0.5rem 1.2rem; border-radius: 9999px;
+                font-size: 0.875rem; font-weight: 600; transition: all 0.3s ease;
+                text-decoration: none;
+            }
+            .btn-wpp { background-color: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+            .btn-wpp:hover { background-color: rgba(16, 185, 129, 0.3); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); }
+            
+            .btn-mail { background-color: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3); }
+            .btn-mail:hover { background-color: rgba(148, 163, 184, 0.3); transform: translateY(-2px); color: #fff; }
         </style>
     </head>
     <body>
         <div class="bg-glow"></div>
-        <main class="w-full flex flex-col items-center pt-12 pb-4 relative z-10">
+        <main class="w-full flex flex-col items-center pt-12 pb-8 relative z-10">
             <div class="text-center mb-14 px-4 animate-fade-up" style="animation-delay: 0s;">
                 <div class="inline-flex items-center justify-center gap-2 px-5 py-2 rounded-full bg-slate-800/60 border border-slate-700/80 text-sky-400 text-xs font-bold uppercase tracking-widest mb-6 backdrop-blur-sm">
                     <span class="w-2.5 h-2.5 rounded-full bg-sky-500 animate-pulse shadow-[0_0_8px_#0ea5e9]"></span>
@@ -148,8 +100,9 @@ def mostrar_inicio_publicitario():
                     Módulos integrados con <span class="text-sky-300">Inteligencia Artificial</span> para llevar la gestión de tu internación domiciliaria al máximo nivel.
                 </p>
             </div>
+            
             <div class="max-w-6xl w-full px-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
                     <div class="glass-card p-6 animate-fade-up" style="animation-delay: 0.1s;">
                         <div class="icon-box bg-sky-500/10 border border-sky-500/30"><i data-lucide="map-pin" class="text-sky-400 w-7 h-7"></i></div>
                         <h4 class="text-xl font-bold text-white mb-2">Fichaje GPS</h4>
@@ -191,42 +144,51 @@ def mostrar_inicio_publicitario():
                         <p class="text-slate-400 text-sm leading-relaxed">Registro de caja, cierres diarios y reportes de desempeño del equipo para facilitar la liquidación de sueldos.</p>
                     </div>
                 </div>
+
+                <div class="glass-card-contact p-8 animate-fade-up" style="animation-delay: 0.9s;">
+                    <div class="text-center mb-6">
+                        <h3 class="text-2xl font-bold text-white mb-2">¿Desea implementar el sistema o reportar un problema?</h3>
+                        <p class="text-slate-400 text-sm">Contáctenos directamente para contrataciones, demostraciones o soporte técnico.</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                        <div class="flex flex-col items-center p-4 rounded-xl bg-slate-800/30 border border-slate-700/50">
+                            <h4 class="text-lg font-bold text-sky-400">Enzo Nicolás Girardi</h4>
+                            <p class="text-slate-400 text-xs mb-4 uppercase tracking-wider">Desarrollo y Soporte Técnico</p>
+                            <div class="flex flex-wrap justify-center gap-3">
+                                <a href="https://wa.me/5493584302024" target="_blank" class="btn-contact btn-wpp">
+                                    <i data-lucide="message-circle" class="w-4 h-4"></i> WhatsApp
+                                </a>
+                                <a href="mailto:enzogirardi84@gmail.com" class="btn-contact btn-mail">
+                                    <i data-lucide="mail" class="w-4 h-4"></i> Email
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col items-center p-4 rounded-xl bg-slate-800/30 border border-slate-700/50">
+                            <h4 class="text-lg font-bold text-sky-400">Darío Lanfranco</h4>
+                            <p class="text-slate-400 text-xs mb-4 uppercase tracking-wider">Implementación y Contrataciones</p>
+                            <div class="flex flex-wrap justify-center gap-3">
+                                <a href="https://wa.me/5493584201263" target="_blank" class="btn-contact btn-wpp">
+                                    <i data-lucide="message-circle" class="w-4 h-4"></i> WhatsApp
+                                </a>
+                                <a href="mailto:dariolanfrancoruffener@gmail.com" class="btn-contact btn-mail">
+                                    <i data-lucide="mail" class="w-4 h-4"></i> Email
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </main>
         <script>lucide.createIcons();</script>
     </body>
     </html>
     """
-    components.html(html_landing, height=880, scrolling=False)
-
-
-# =====================================================================
-# --- CONTROL DE FLUJO: PUBLICIDAD VS SISTEMA ---
-# =====================================================================
-if 'ingresado' not in st.session_state:
-    st.session_state.ingresado = False
-
-# PANTALLA 1: PUBLICIDAD (LANDING PAGE)
-if not st.session_state.ingresado:
-    aplicar_estilos_streamlit()
-    mostrar_inicio_publicitario()
     
-    if st.button("🚀 INGRESAR AL SISTEMA PROFESIONAL"):
-        st.session_state.ingresado = True
-        st.rerun()
-        
-    # ESTO DETIENE LA EJECUCIÓN PARA QUE NO SE DIBUJE EL LOGIN DEBAJO DE LA PUBLICIDAD
-    st.stop() 
-
-# PANTALLA 2: EL SISTEMA REAL (Login y panel)
-# Se ejecuta solo si st.session_state.ingresado == True
-st.markdown("<style>#MainMenu {visibility: visible;} header {visibility: visible;} .block-container {padding-top: 3rem !important;}</style>", unsafe_allow_html=True)
-
-# Botón temporal para que puedas volver atrás mientras programas
-st.sidebar.markdown("---")
-if st.sidebar.button("⬅️ Volver a la Publicidad"):
-    st.session_state.ingresado = False
-    st.rerun()
+    # IMPORTANTE: Aumentamos la altura a 1150 para que entre la nueva tarjeta de contacto sin cortar el botón de Streamlit
+    components.html(html_landing, height=1150, scrolling=False)
 
 # =====================================================================
 # ACÁ EMPIEZA TU CÓDIGO NORMAL DEL SISTEMA (BASE DE DATOS, VADEMECUM, ETC.)
