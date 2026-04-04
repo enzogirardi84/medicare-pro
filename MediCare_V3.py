@@ -131,7 +131,7 @@ supabase = init_supabase()
 # --- 🎨 DISEÑO VISUAL ENTERPRISE PREMIUM v3.0 (MODO CLARO / OSCURO ADAPTATIVO) ---
 # ====================== TOGGLE DE TEMA (CLARO / OSCURO) ======================
 # =========================================================================================
-# 🎨 DISEÑO VISUAL ENTERPRISE PREMIUM v14.0 (ERGONOMIC DARK + TABS CLARAS)
+# 🎨 DISEÑO VISUAL ENTERPRISE PREMIUM v15.0 (TEXTOS CORREGIDOS)
 # =========================================================================================
 page_bg_css = """
 <style>
@@ -139,20 +139,20 @@ page_bg_css = """
 
 :root {
     /* Paleta Ergonomica (Slate / Azul Pizarra) - Descansa la vista */
-    --bg-app: #0F172A;          /* Azul pizarra oscuro para el fondo general */
-    --bg-sidebar: #0B1121;      /* Apenas más oscuro para separar el menú lateral */
-    --bg-card: #1E293B;         /* Tarjetas un poco más claras (elevación) */
+    --bg-app: #0F172A;          
+    --bg-sidebar: #0B1121;      
+    --bg-card: #1E293B;         
     --bg-input: #334155;        /* Inputs mucho más claros para que resalten fácil */
     
-    --border-col: #3F4F66;      /* Bordes visibles pero suaves */
-    --border-hover: #38BDF8;    /* Celeste claro al pasar el mouse */
+    --border-col: #3F4F66;      
+    --border-hover: #38BDF8;    
     
-    --text-main: #F8FAFC;       /* Blanco suave (no quema) */
-    --text-muted: #94A3B8;      /* Gris claro para subtítulos y placeholders */
+    --text-main: #F8FAFC;       
+    --text-muted: #94A3B8;      
     
-    --accent: #38BDF8;          /* Celeste luminoso y amigable */
+    --accent: #38BDF8;          
     --accent-glow: rgba(56, 189, 248, 0.25);
-    --metric-color: #34D399;    /* Verde esmeralda suave para vitales */
+    --metric-color: #34D399;    
 }
 
 /* ==================== 1. FONDOS Y ESTRUCTURA ==================== */
@@ -216,50 +216,57 @@ div[data-testid="stMetric"] {
     text-shadow: 0 0 10px rgba(52, 211, 153, 0.3) !important; 
 }
 
-/* ==================== 5. INPUTS Y SELECTS ==================== */
+/* ==================== 5. INPUTS Y SELECTS (CORREGIDOS) ==================== */
+/* Cajas de fondo sin alterar el padding para no cortar letras */
 div[data-baseweb="select"] > div,
 div[data-baseweb="input"] > div,
-input[type="number"], input[type="text"], textarea {
+textarea {
     background-color: var(--bg-input) !important;
     border: 1px solid var(--border-col) !important;
     border-radius: 8px !important;
-    color: #FFFFFF !important;
-    padding: 4px 10px !important;
-    font-size: 15px !important;
     transition: all 0.2s ease !important;
 }
+
+/* Color de las letras de adentro para que se vean bien blancas */
+div[data-baseweb="select"] div,
+input[type="number"], input[type="text"], textarea {
+    color: #FFFFFF !important;
+}
+
+/* Efecto cuando hacés clic para escribir */
 div[data-baseweb="select"] > div:focus-within,
-div[data-baseweb="input"] > div:focus-within { 
+div[data-baseweb="input"] > div:focus-within,
+textarea:focus { 
     border-color: var(--accent) !important; 
     background-color: #1E293B !important; 
-    box-shadow: 0 0 0 3px var(--accent-glow) !important;
+    box-shadow: 0 0 0 2px var(--accent-glow) !important;
 }
 input::placeholder, textarea::placeholder { color: #CBD5E1 !important; }
 
-/* ==================== 6. PESTAÑAS (TABS - CORREGIDAS) ==================== */
+/* ==================== 6. PESTAÑAS (TABS) ==================== */
 .stTabs [data-testid="stTab"] {
-    background-color: var(--bg-card) !important; /* Las hacemos bien visibles */
+    background-color: var(--bg-card) !important; 
     border: 1px solid var(--border-col) !important;
     border-radius: 8px !important;
     padding: 8px 16px !important;
     margin-right: 6px !important;
     margin-bottom: 8px !important;
     transition: all 0.2s ease !important;
-    opacity: 1 !important; /* Forzamos a que Streamlit no las haga transparentes */
+    opacity: 1 !important; 
 }
 .stTabs [data-testid="stTab"] p { 
-    color: #CBD5E1 !important; /* Texto claro para que se lea perfecto */
+    color: #CBD5E1 !important; 
     font-weight: 500 !important; 
 }
 .stTabs [data-testid="stTab"]:hover { 
-    background-color: #2F3E53 !important; /* Se aclara un poco al pasar el mouse */
+    background-color: #2F3E53 !important; 
     border-color: var(--accent) !important;
 }
 .stTabs [data-testid="stTab"]:hover p { 
     color: #FFFFFF !important; 
 }
 .stTabs [data-testid="stTab"][aria-selected="true"] {
-    background-color: var(--bg-input) !important; /* Pestaña activa destaca con otro fondo */
+    background-color: var(--bg-input) !important; 
     border: 1px solid var(--accent) !important;
     box-shadow: 0 4px 10px var(--accent-glow) !important;
 }
