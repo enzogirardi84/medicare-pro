@@ -74,13 +74,10 @@ VADEMECUM_BASE = sorted([
     "Zolpidem 10mg", "Zopiclona 7.5mg"
 ])
 
-import streamlit as st
-import streamlit.components.v1 as components
-
 def aplicar_estilos_streamlit():
     """
-    Inyecta CSS global en Streamlit para ocultar los menús por defecto,
-    fusionar el fondo oscuro con la publicidad y rediseñar el botón nativo.
+    Inyecta CSS global en Streamlit para ocultar menús, fusionar fondos
+    y crear un botón de ingreso con efecto Neón Premium.
     """
     st.markdown("""
         <style>
@@ -94,47 +91,58 @@ def aplicar_estilos_streamlit():
                 max-width: 100% !important;
             }
             
-            /* 2. Fondo Global igual al de la publicidad para evitar "cortes" */
+            /* 2. Fondo Global igual al de la publicidad */
             .stApp {
                 background-color: #020617 !important;
                 background-image: radial-gradient(circle at top right, #0F172A 0%, #020617 100%) !important;
             }
 
-            /* 3. Rediseño Extremo del Botón de Streamlit */
+            /* 3. Rediseño Extremo del Botón de Ingreso (Efecto Neón/Pulse) */
             div.stButton {
                 display: flex;
                 justify-content: center;
-                margin-top: -20px;
-                padding-bottom: 40px;
+                margin-top: -30px; /* Sube el botón para pegarlo a la grilla HTML */
+                padding-bottom: 50px;
+                z-index: 50;
+                position: relative;
             }
             div.stButton > button {
-                background: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%) !important;
+                background: linear-gradient(135deg, #0ea5e9 0%, #4f46e5 100%) !important;
                 color: white !important;
-                border: none !important;
-                padding: 1.2rem 3rem !important;
-                border-radius: 9999px !important; /* Forma de píldora */
+                border: 1px solid rgba(255,255,255,0.1) !important;
+                padding: 1.2rem 3.5rem !important;
+                border-radius: 9999px !important;
                 font-family: 'Inter', sans-serif !important;
-                font-size: 1.1rem !important;
+                font-size: 1.15rem !important;
                 font-weight: 800 !important;
-                letter-spacing: 1px !important;
-                box-shadow: 0 10px 25px -5px rgba(2, 132, 199, 0.5) !important;
-                transition: all 0.3s ease !important;
+                letter-spacing: 1.5px !important;
+                text-transform: uppercase;
+                box-shadow: 0 0 20px rgba(14, 165, 233, 0.4), inset 0 0 10px rgba(255,255,255,0.2) !important;
+                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
                 width: auto !important;
+                animation: pulseGlow 2.5s infinite;
             }
             div.stButton > button:hover {
-                transform: translateY(-4px) !important;
-                box-shadow: 0 20px 35px -5px rgba(2, 132, 199, 0.7) !important;
-                background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%) !important;
+                transform: translateY(-5px) scale(1.02) !important;
+                box-shadow: 0 0 30px rgba(99, 102, 241, 0.6), inset 0 0 15px rgba(255,255,255,0.3) !important;
+                background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%) !important;
             }
             div.stButton > button:active {
-                transform: translateY(0px) !important;
+                transform: translateY(2px) scale(0.98) !important;
+            }
+
+            /* Animación de latido para el botón */
+            @keyframes pulseGlow {
+                0% { box-shadow: 0 0 20px rgba(14, 165, 233, 0.4); }
+                50% { box-shadow: 0 0 35px rgba(14, 165, 233, 0.7); }
+                100% { box-shadow: 0 0 20px rgba(14, 165, 233, 0.4); }
             }
         </style>
     """, unsafe_allow_html=True)
 
 def mostrar_inicio_publicitario():
     """
-    Renderiza la cuadrícula de funciones en HTML transparente.
+    Renderiza la cuadrícula de funciones en HTML con animaciones y Glassmorphism 2.0.
     """
     html_landing = """
     <!DOCTYPE html>
@@ -143,129 +151,172 @@ def mostrar_inicio_publicitario():
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src="https://cdn.tailwindcss.com"></script>
-        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;800&display=swap" rel="stylesheet">
         <script src="https://unpkg.com/lucide@latest"></script>
         <style>
-            /* Fondo transparente para que se vea el CSS de Streamlit de atrás */
             body { 
                 font-family: 'Plus Jakarta Sans', sans-serif; 
                 background: transparent; 
                 color: #F8FAFC; 
                 margin: 0; 
-                overflow: hidden; /* Evita doble scroll */
+                overflow: hidden; 
             }
             
+            /* Animación de entrada en cascada */
+            @keyframes fadeUp {
+                from { opacity: 0; transform: translateY(30px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            
+            .animate-fade-up {
+                opacity: 0;
+                animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            }
+            
+            /* Glassmorphism Premium */
             .glass-card { 
-                background: rgba(15, 23, 42, 0.4); 
-                backdrop-filter: blur(12px); 
-                border: 1px solid rgba(255, 255, 255, 0.05); 
+                background: linear-gradient(145deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.4) 100%);
+                backdrop-filter: blur(16px); 
+                -webkit-backdrop-filter: blur(16px);
+                border: 1px solid rgba(255, 255, 255, 0.08); 
                 border-radius: 1.5rem;
-                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-                transition: all 0.3s ease;
+                box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.2);
+                transition: all 0.4s ease;
+                position: relative;
+                overflow: hidden;
+            }
+            
+            /* Brillo sutil superior en la tarjeta */
+            .glass-card::before {
+                content: '';
+                position: absolute;
+                top: 0; left: 0; right: 0; height: 1px;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+                opacity: 0;
+                transition: opacity 0.4s ease;
             }
             
             .glass-card:hover {
-                transform: translateY(-5px);
-                background: rgba(30, 41, 59, 0.7);
-                border-color: rgba(56, 189, 248, 0.3);
-                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+                transform: translateY(-8px);
+                background: linear-gradient(145deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.6) 100%);
+                border-color: rgba(56, 189, 248, 0.4);
+                box-shadow: 0 25px 30px -5px rgba(0, 0, 0, 0.5), 0 0 20px rgba(56, 189, 248, 0.15);
             }
+            
+            .glass-card:hover::before { opacity: 1; }
 
             .icon-box {
-                width: 48px;
-                height: 48px;
-                border-radius: 1rem;
+                width: 54px;
+                height: 54px;
+                border-radius: 1.2rem;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 margin-bottom: 1.5rem;
+                transition: transform 0.3s ease;
+            }
+            
+            .glass-card:hover .icon-box {
+                transform: scale(1.1) rotate(-5deg);
+            }
+            
+            /* Brillo de fondo central */
+            .bg-glow {
+                position: absolute;
+                width: 600px;
+                height: 600px;
+                background: radial-gradient(circle, rgba(14, 165, 233, 0.15) 0%, transparent 70%);
+                top: -100px;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: -1;
+                pointer-events: none;
             }
         </style>
     </head>
     <body>
-        <main class="w-full flex flex-col items-center pt-16 pb-8">
+        <div class="bg-glow"></div>
+        <main class="w-full flex flex-col items-center pt-12 pb-4 relative z-10">
             
-            <!-- Título Principal -->
-            <div class="text-center mb-16 px-4">
-                <div class="inline-flex items-center justify-center gap-2 px-4 py-1.5 rounded-full bg-slate-800/50 border border-slate-700 text-sky-400 text-xs font-bold uppercase tracking-widest mb-6">
-                    <span class="w-2 h-2 rounded-full bg-sky-500 animate-pulse"></span>
-                    Sistemas E.G. • 2026
+            <div class="text-center mb-14 px-4 animate-fade-up" style="animation-delay: 0s;">
+                <div class="inline-flex items-center justify-center gap-2 px-5 py-2 rounded-full bg-slate-800/60 border border-slate-700/80 text-sky-400 text-xs font-bold uppercase tracking-widest mb-6 backdrop-blur-sm">
+                    <span class="w-2.5 h-2.5 rounded-full bg-sky-500 animate-pulse shadow-[0_0_8px_#0ea5e9]"></span>
+                    Sistemas E.G. • Enterprise 2026
                 </div>
-                <h1 class="text-5xl md:text-7xl font-extrabold mb-6 tracking-tight text-white">
+                <h1 class="text-5xl md:text-7xl font-extrabold mb-4 tracking-tight text-white leading-tight">
                     Tu clínica, <br>
-                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-500">en una sola App.</span>
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-500">en una sola App.</span>
                 </h1>
-                <p class="text-slate-400 max-w-2xl mx-auto text-lg md:text-xl font-light">
-                    Módulos integrados con <span class="text-white font-semibold">Inteligencia Artificial</span> para llevar la gestión de tu internación domiciliaria al máximo nivel.
+                <p class="text-slate-400 max-w-2xl mx-auto text-lg md:text-xl font-medium">
+                    Módulos integrados con <span class="text-sky-300">Inteligencia Artificial</span> para llevar la gestión de tu internación domiciliaria al máximo nivel.
                 </p>
             </div>
 
-            <!-- Grilla de Módulos (Diseño Ultra Limpio) -->
             <div class="max-w-6xl w-full px-6">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     
-                    <div class="glass-card p-6">
-                        <div class="icon-box bg-sky-500/10 border border-sky-500/20">
-                            <i data-lucide="map-pin" class="text-sky-400 w-6 h-6"></i>
+                    <div class="glass-card p-6 animate-fade-up" style="animation-delay: 0.1s;">
+                        <div class="icon-box bg-sky-500/10 border border-sky-500/30">
+                            <i data-lucide="map-pin" class="text-sky-400 w-7 h-7"></i>
                         </div>
-                        <h4 class="text-lg font-bold text-white mb-2">Fichaje GPS</h4>
-                        <p class="text-slate-400 text-sm">Control de asistencia verificado por coordenadas exactas.</p>
+                        <h4 class="text-xl font-bold text-white mb-2">Fichaje GPS</h4>
+                        <p class="text-slate-400 text-sm leading-relaxed">Control de asistencia verificado por coordenadas exactas y geolocalización.</p>
                     </div>
 
-                    <div class="glass-card p-6">
-                        <div class="icon-box bg-emerald-500/10 border border-emerald-500/20">
-                            <i data-lucide="file-text" class="text-emerald-400 w-6 h-6"></i>
+                    <div class="glass-card p-6 animate-fade-up" style="animation-delay: 0.2s;">
+                        <div class="icon-box bg-emerald-500/10 border border-emerald-500/30">
+                            <i data-lucide="file-text" class="text-emerald-400 w-7 h-7"></i>
                         </div>
-                        <h4 class="text-lg font-bold text-white mb-2">Evolución Médica</h4>
-                        <p class="text-slate-400 text-sm">Carga digital de parámetros y diagnósticos en el domicilio.</p>
+                        <h4 class="text-xl font-bold text-white mb-2">Evolución Médica</h4>
+                        <p class="text-slate-400 text-sm leading-relaxed">Carga digital de parámetros y diagnósticos directamente en el domicilio.</p>
                     </div>
 
-                    <div class="glass-card p-6">
-                        <div class="icon-box bg-purple-500/10 border border-purple-500/20">
-                            <i data-lucide="pill" class="text-purple-400 w-6 h-6"></i>
+                    <div class="glass-card p-6 animate-fade-up" style="animation-delay: 0.3s;">
+                        <div class="icon-box bg-purple-500/10 border border-purple-500/30">
+                            <i data-lucide="pill" class="text-purple-400 w-7 h-7"></i>
                         </div>
-                        <h4 class="text-lg font-bold text-white mb-2">Stock Farmacia</h4>
-                        <p class="text-slate-400 text-sm">Descuento automático de insumos al realizar la práctica.</p>
+                        <h4 class="text-xl font-bold text-white mb-2">Stock Farmacia</h4>
+                        <p class="text-slate-400 text-sm leading-relaxed">Descuento automático de insumos en tiempo real al realizar la práctica.</p>
                     </div>
 
-                    <div class="glass-card p-6">
-                        <div class="icon-box bg-amber-500/10 border border-amber-500/20">
-                            <i data-lucide="pen-tool" class="text-amber-400 w-6 h-6"></i>
+                    <div class="glass-card p-6 animate-fade-up" style="animation-delay: 0.4s;">
+                        <div class="icon-box bg-amber-500/10 border border-amber-500/30">
+                            <i data-lucide="pen-tool" class="text-amber-400 w-7 h-7"></i>
                         </div>
-                        <h4 class="text-lg font-bold text-white mb-2">Firma Digital</h4>
-                        <p class="text-slate-400 text-sm">Recetas y consentimientos en pantalla con validez legal.</p>
+                        <h4 class="text-xl font-bold text-white mb-2">Firma Digital</h4>
+                        <p class="text-slate-400 text-sm leading-relaxed">Recetas y consentimientos generados en pantalla con validez legal.</p>
                     </div>
 
-                    <div class="glass-card p-6">
-                        <div class="icon-box bg-rose-500/10 border border-rose-500/20">
-                            <i data-lucide="video" class="text-rose-400 w-6 h-6"></i>
+                    <div class="glass-card p-6 animate-fade-up" style="animation-delay: 0.5s;">
+                        <div class="icon-box bg-rose-500/10 border border-rose-500/30">
+                            <i data-lucide="video" class="text-rose-400 w-7 h-7"></i>
                         </div>
-                        <h4 class="text-lg font-bold text-white mb-2">Telemedicina</h4>
-                        <p class="text-slate-400 text-sm">Videollamadas integradas al historial del paciente.</p>
+                        <h4 class="text-xl font-bold text-white mb-2">Telemedicina</h4>
+                        <p class="text-slate-400 text-sm leading-relaxed">Videollamadas P2P encriptadas e integradas al historial del paciente.</p>
                     </div>
 
-                    <div class="glass-card p-6">
-                        <div class="icon-box bg-sky-400/10 border border-sky-400/20">
-                            <i data-lucide="baby" class="text-sky-400 w-6 h-6"></i>
+                    <div class="glass-card p-6 animate-fade-up" style="animation-delay: 0.6s;">
+                        <div class="icon-box bg-cyan-400/10 border border-cyan-400/30">
+                            <i data-lucide="baby" class="text-cyan-400 w-7 h-7"></i>
                         </div>
-                        <h4 class="text-lg font-bold text-white mb-2">Pediatría</h4>
-                        <p class="text-slate-400 text-sm">Control de crecimiento y desarrollo infantil automático.</p>
+                        <h4 class="text-xl font-bold text-white mb-2">Pediatría</h4>
+                        <p class="text-slate-400 text-sm leading-relaxed">Control de crecimiento y desarrollo infantil con gráficas automáticas.</p>
                     </div>
 
-                    <div class="glass-card p-6">
-                        <div class="icon-box bg-indigo-500/10 border border-indigo-500/20">
-                            <i data-lucide="droplet" class="text-indigo-400 w-6 h-6"></i>
+                    <div class="glass-card p-6 animate-fade-up" style="animation-delay: 0.7s;">
+                        <div class="icon-box bg-indigo-500/10 border border-indigo-500/30">
+                            <i data-lucide="droplet" class="text-indigo-400 w-7 h-7"></i>
                         </div>
-                        <h4 class="text-lg font-bold text-white mb-2">Balance Hídrico</h4>
-                        <p class="text-slate-400 text-sm">Cálculo de ingresos y egresos con alertas de retención.</p>
+                        <h4 class="text-xl font-bold text-white mb-2">Balance Hídrico</h4>
+                        <p class="text-slate-400 text-sm leading-relaxed">Cálculo de ingresos y egresos con alertas clínicas de retención.</p>
                     </div>
 
-                    <div class="glass-card p-6">
-                        <div class="icon-box bg-orange-500/10 border border-orange-500/20">
-                            <i data-lucide="clipboard-list" class="text-orange-400 w-6 h-6"></i>
+                    <div class="glass-card p-6 animate-fade-up" style="animation-delay: 0.8s;">
+                        <div class="icon-box bg-orange-500/10 border border-orange-500/30">
+                            <i data-lucide="clipboard-list" class="text-orange-400 w-7 h-7"></i>
                         </div>
-                        <h4 class="text-lg font-bold text-white mb-2">Auditoría RRHH</h4>
-                        <p class="text-slate-400 text-sm">Generación de cierres diarios para liquidación.</p>
+                        <h4 class="text-xl font-bold text-white mb-2">Auditoría RRHH</h4>
+                        <p class="text-slate-400 text-sm leading-relaxed">Reportes diarios para liquidación de sueldos y control de guardias.</p>
                     </div>
 
                 </div>
@@ -276,9 +327,8 @@ def mostrar_inicio_publicitario():
     </html>
     """
     
-    # Renderizamos con un alto ajustado para que no sobre espacio y se conecte directo con el botón
-    components.html(html_landing, height=850, scrolling=False)
-
+    # Redujimos el alto a 800 para que el botón de Streamlit suba y quede perfectamente enlazado
+    components.html(html_landing, height=800, scrolling=False)
 
 # --- LÓGICA PRINCIPAL DE STREAMLIT ---
 if __name__ == "__main__":
