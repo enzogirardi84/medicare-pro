@@ -19,157 +19,134 @@ import altair as alt
 st.set_page_config(page_title="MediCare PRO V9.11", layout="wide", initial_sidebar_state="collapsed")
 
 
+
 def aplicar_estilos_streamlit():
     """Inyecta el CSS global y el diseño del botón neón de ingreso."""
     st.markdown("""
-        <style>
-            #MainMenu {visibility: hidden;}
-            header {visibility: hidden;}
-            footer {visibility: hidden;}
-            .block-container { padding-top: 0rem !important; padding-bottom: 0rem !important; max-width: 100% !important; }
-            .stApp { 
-                background-color: #020617 !important; 
-                background-image: radial-gradient(circle at top right, #0F172A 0%, #020617 100%) !important; 
-            }
-            div.stButton { display: flex; justify-content: center; margin-top: 30px; padding-bottom: 60px; }
-            div.stButton > button {
-                background: linear-gradient(135deg, #0ea5e9 0%, #4f46e5 100%) !important;
-                color: white !important; border: 1px solid rgba(255,255,255,0.2) !important;
-                padding: 1.2rem 3.5rem !important; border-radius: 50px !important;
-                font-size: 1.2rem !important; font-weight: 800 !important;
-                text-transform: uppercase; letter-spacing: 2px !important;
-                box-shadow: 0 0 20px rgba(14, 165, 233, 0.5) !important;
-                transition: all 0.4s ease !important;
-            }
-            div.stButton > button:hover { transform: translateY(-5px); box-shadow: 0 0 40px rgba(99, 102, 241, 0.7) !important; }
-        </style>
+<style>
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    .block-container { padding-top: 0rem !important; padding-bottom: 0rem !important; max-width: 100% !important; }
+    .stApp { 
+        background-color: #020617 !important; 
+        background-image: radial-gradient(circle at top right, #0F172A 0%, #020617 100%) !important; 
+    }
+    div.stButton { display: flex; justify-content: center; margin-top: 30px; padding-bottom: 60px; }
+    div.stButton > button {
+        background: linear-gradient(135deg, #0ea5e9 0%, #4f46e5 100%) !important;
+        color: white !important; border: 1px solid rgba(255,255,255,0.2) !important;
+        padding: 1.2rem 3.5rem !important; border-radius: 50px !important;
+        font-size: 1.2rem !important; font-weight: 800 !important;
+        text-transform: uppercase; letter-spacing: 2px !important;
+        box-shadow: 0 0 20px rgba(14, 165, 233, 0.5) !important;
+        transition: all 0.4s ease !important;
+    }
+    div.stButton > button:hover { transform: translateY(-5px); box-shadow: 0 0 40px rgba(99, 102, 241, 0.7) !important; }
+</style>
     """, unsafe_allow_html=True)
 
 def mostrar_inicio_publicitario():
     """Dibuja la landing page responsiva con las tarjetas y contactos."""
+    # OJO ACÁ: Todo el HTML está pegado al borde izquierdo a propósito para que Streamlit no lo haga cajita gris.
     html_content = """
-    <style>
-        .main-wrapper { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #F8FAFC; padding: 40px 20px; max-width: 1200px; margin: 0 auto; }
-        .hero { text-align: center; margin-bottom: 60px; }
-        .hero h1 { font-size: 3.5rem; font-weight: 800; margin-bottom: 10px; line-height: 1.2; }
-        .hero span { color: #38bdf8; }
-        
-        /* Grilla Responsiva: Se adapta sola a la pantalla */
-        .grid-cards { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
-            gap: 25px; 
-            margin-bottom: 50px; 
-        }
-        
-        .glass-card-pro {
-            background: rgba(30, 41, 59, 0.5); backdrop-filter: blur(10px); 
-            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; 
-            padding: 30px; transition: 0.3s;
-        }
-        .glass-card-pro:hover { transform: translateY(-10px); border-color: #38bdf8; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .icon-box-pro { font-size: 2.5rem; margin-bottom: 15px; }
-        .card-title-pro { font-size: 1.4rem; font-weight: 700; color: #fff; margin-bottom: 10px; }
-        .card-text-pro { font-size: 0.95rem; color: #94a3b8; line-height: 1.6; }
+<style>
+    .main-wrapper { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #F8FAFC; padding: 40px 20px; max-width: 1200px; margin: 0 auto; }
+    .hero { text-align: center; margin-bottom: 60px; }
+    .hero h1 { font-size: 3.5rem; font-weight: 800; margin-bottom: 10px; line-height: 1.2; }
+    .hero span { color: #38bdf8; }
+    
+    .grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px; margin-bottom: 50px; }
+    .glass-card-pro { background: rgba(30, 41, 59, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 30px; transition: 0.3s; }
+    .glass-card-pro:hover { transform: translateY(-10px); border-color: #38bdf8; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .icon-box-pro { font-size: 2.5rem; margin-bottom: 15px; }
+    .card-title-pro { font-size: 1.4rem; font-weight: 700; color: #fff; margin-bottom: 10px; }
+    .card-text-pro { font-size: 0.95rem; color: #94a3b8; line-height: 1.6; }
 
-        /* Sección de Contacto */
-        .contact-section-pro { 
-            background: rgba(15, 23, 42, 0.7); border: 1px solid #38bdf8; 
-            border-radius: 30px; padding: 40px; text-align: center; 
-        }
-        .contact-grid-pro { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); 
-            gap: 30px; margin-top: 30px; 
-        }
-        .contact-profile-pro { background: rgba(30, 41, 59, 0.6); padding: 25px; border-radius: 20px; }
-        .contact-name { font-size: 1.5rem; font-weight: 700; color: #38bdf8; margin-bottom: 5px; }
-        .contact-role { font-size: 0.85rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 20px; font-weight: 600; }
-        
-        .btn-flex-pro { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
-        .btn-link-pro { 
-            text-decoration: none; padding: 12px 25px; border-radius: 12px; 
-            font-weight: 700; color: white; background: rgba(56, 189, 248, 0.2); 
-            border: 1px solid #38bdf8; transition: 0.3s; 
-        }
-        .btn-link-pro:hover { background: #38bdf8; color: #000; }
+    .contact-section-pro { background: rgba(15, 23, 42, 0.7); border: 1px solid #38bdf8; border-radius: 30px; padding: 40px; text-align: center; }
+    .contact-grid-pro { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 30px; margin-top: 30px; }
+    .contact-profile-pro { background: rgba(30, 41, 59, 0.6); padding: 25px; border-radius: 20px; }
+    .contact-name { font-size: 1.5rem; font-weight: 700; color: #38bdf8; margin-bottom: 5px; }
+    .contact-role { font-size: 0.85rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 20px; font-weight: 600; }
+    
+    .btn-flex-pro { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
+    .btn-link-pro { text-decoration: none; padding: 12px 25px; border-radius: 12px; font-weight: 700; color: white; background: rgba(56, 189, 248, 0.2); border: 1px solid #38bdf8; transition: 0.3s; }
+    .btn-link-pro:hover { background: #38bdf8; color: #000; }
 
-        @media (max-width: 768px) { .hero h1 { font-size: 2.5rem; } }
-    </style>
+    @media (max-width: 768px) { .hero h1 { font-size: 2.5rem; } }
+</style>
 
-    <div class="main-wrapper">
-        <div class="hero">
-            <h1>Tu clínica, <br><span>en una sola App.</span></h1>
-            <p style="color: #94a3b8; font-size: 1.2rem;">Gestión profesional domiciliaria con Inteligencia Artificial.</p>
-        </div>
+<div class="main-wrapper">
+    <div class="hero">
+        <h1>Tu clínica, <br><span>en una sola App.</span></h1>
+        <p style="color: #94a3b8; font-size: 1.2rem;">Gestión profesional domiciliaria con Inteligencia Artificial.</p>
+    </div>
 
-        <div class="grid-cards">
-            <div class="glass-card-pro"><div class="icon-box-pro">📍</div><h4 class="card-title-pro">Fichaje GPS</h4><p class="card-text-pro">Control de asistencia verificado por coordenadas exactas en el domicilio.</p></div>
-            <div class="glass-card-pro"><div class="icon-box-pro">📄</div><h4 class="card-title-pro">Evolución Médica</h4><p class="card-text-pro">Carga digital de signos vitales y fotografías de heridas en tiempo real.</p></div>
-            <div class="glass-card-pro"><div class="icon-box-pro">💊</div><h4 class="card-title-pro">Stock Farmacia</h4><p class="card-text-pro">Gestión de inventario con descuento automático por práctica realizada.</p></div>
-            <div class="glass-card-pro"><div class="icon-box-pro">✍️</div><h4 class="card-title-pro">Firma Digital</h4><p class="card-text-pro">Recetas y consentimientos con validez legal generados en pantalla.</p></div>
-            <div class="glass-card-pro"><div class="icon-box-pro">📹</div><h4 class="card-title-pro">Telemedicina</h4><p class="card-text-pro">Videollamadas encriptadas integradas directamente a la historia clínica.</p></div>
-            <div class="glass-card-pro"><div class="icon-box-pro">👶</div><h4 class="card-title-pro">Pediatría</h4><p class="card-text-pro">Control de crecimiento y percentiles automatizados para seguimiento infantil.</p></div>
-            <div class="glass-card-pro"><div class="icon-box-pro">💧</div><h4 class="card-title-pro">Balance Hídrico</h4><p class="card-text-pro">Cálculo estricto de ingresos y egresos con alertas de retención.</p></div>
-            <div class="glass-card-pro"><div class="icon-box-pro">📋</div><h4 class="card-title-pro">Auditoría RRHH</h4><p class="card-text-pro">Cierres diarios, reportes de desempeño y liquidación de servicios.</p></div>
-        </div>
+    <div class="grid-cards">
+        <div class="glass-card-pro"><div class="icon-box-pro">📍</div><h4 class="card-title-pro">Fichaje GPS</h4><p class="card-text-pro">Control de asistencia verificado por coordenadas exactas en el domicilio.</p></div>
+        <div class="glass-card-pro"><div class="icon-box-pro">📄</div><h4 class="card-title-pro">Evolución Médica</h4><p class="card-text-pro">Carga digital de signos vitales y fotografías de heridas en tiempo real.</p></div>
+        <div class="glass-card-pro"><div class="icon-box-pro">💊</div><h4 class="card-title-pro">Stock Farmacia</h4><p class="card-text-pro">Gestión de inventario con descuento automático por práctica realizada.</p></div>
+        <div class="glass-card-pro"><div class="icon-box-pro">✍️</div><h4 class="card-title-pro">Firma Digital</h4><p class="card-text-pro">Recetas y consentimientos con validez legal generados en pantalla.</p></div>
+        <div class="glass-card-pro"><div class="icon-box-pro">📹</div><h4 class="card-title-pro">Telemedicina</h4><p class="card-text-pro">Videollamadas encriptadas integradas directamente a la historia clínica.</p></div>
+        <div class="glass-card-pro"><div class="icon-box-pro">👶</div><h4 class="card-title-pro">Pediatría</h4><p class="card-text-pro">Control de crecimiento y percentiles automatizados para seguimiento infantil.</p></div>
+        <div class="glass-card-pro"><div class="icon-box-pro">💧</div><h4 class="card-title-pro">Balance Hídrico</h4><p class="card-text-pro">Cálculo estricto de ingresos y egresos con alertas de retención.</p></div>
+        <div class="glass-card-pro"><div class="icon-box-pro">📋</div><h4 class="card-title-pro">Auditoría RRHH</h4><p class="card-text-pro">Cierres diarios, reportes de desempeño y liquidación de servicios.</p></div>
+    </div>
 
-        <div class="contact-section-pro">
-            <h3 style="color: white; margin-bottom: 10px;">¿Desea implementar el sistema o reportar un problema?</h3>
-            <p style="color: #94a3b8; margin-bottom: 30px;">Contáctenos directamente para contrataciones o soporte técnico.</p>
-            <div class="contact-grid-pro">
-                <div class="contact-profile-pro">
-                    <h4 class="contact-name">Enzo Nicolás Girardi</h4>
-                    <p class="contact-role">Desarrollo y Soporte Técnico</p>
-                    <div class="btn-flex-pro">
-                        <a href="https://wa.me/5493584302024" target="_blank" class="btn-link-pro">WhatsApp</a>
-                        <a href="mailto:enzogirardi84@gmail.com" class="btn-link-pro">Email</a>
-                    </div>
+    <div class="contact-section-pro">
+        <h3 style="color: white; margin-bottom: 10px;">¿Desea implementar el sistema o reportar un problema?</h3>
+        <p style="color: #94a3b8; margin-bottom: 30px;">Contáctenos directamente para contrataciones o soporte técnico.</p>
+        <div class="contact-grid-pro">
+            <div class="contact-profile-pro">
+                <h4 class="contact-name">Enzo Nicolás Girardi</h4>
+                <p class="contact-role">Desarrollo y Soporte Técnico</p>
+                <div class="btn-flex-pro">
+                    <a href="https://wa.me/5493584302024" target="_blank" class="btn-link-pro">WhatsApp</a>
+                    <a href="mailto:enzogirardi84@gmail.com" class="btn-link-pro">Email</a>
                 </div>
-                <div class="contact-profile-pro">
-                    <h4 class="contact-name">Darío Lanfranco</h4>
-                    <p class="contact-role">Implementación y Contratos</p>
-                    <div class="btn-flex-pro">
-                        <a href="https://wa.me/5493584201263" target="_blank" class="btn-link-pro">WhatsApp</a>
-                        <a href="mailto:dariolanfrancoruffener@gmail.com" class="btn-link-pro">Email</a>
-                    </div>
+            </div>
+            <div class="contact-profile-pro">
+                <h4 class="contact-name">Darío Lanfranco</h4>
+                <p class="contact-role">Implementación y Contratos</p>
+                <div class="btn-flex-pro">
+                    <a href="https://wa.me/5493584201263" target="_blank" class="btn-link-pro">WhatsApp</a>
+                    <a href="mailto:dariolanfrancoruffener@gmail.com" class="btn-link-pro">Email</a>
                 </div>
             </div>
         </div>
     </div>
-    """
+</div>
+"""
     st.markdown(html_content, unsafe_allow_html=True)
 
 
 # =====================================================================
-# --- CONTROL DE FLUJO: PUBLICIDAD VS SISTEMA (¡ESTRICTO!) ---
+# --- CONTROL DE FLUJO: PUBLICIDAD VS SISTEMA ---
 # =====================================================================
 query_params = st.query_params
 
-# Si la URL NO tiene el parámetro app=login, mostramos la publicidad
 if query_params.get("app") != "login":
     aplicar_estilos_streamlit()
     mostrar_inicio_publicitario()
     
-    # EL ÚNICO BOTÓN DE INGRESO
     if st.button("🚀 INGRESAR AL SISTEMA PROFESIONAL"):
         st.query_params["app"] = "login"
         st.rerun()
         
-    # FRENO DE MANO ABSOLUTO: Streamlit se detiene acá. El código de abajo no se ejecuta.
     st.stop()
 
 
 # =====================================================================
-# --- PANTALLA 2: EL SISTEMA REAL (MediCare Enterprise PRO) ---
+# --- PANTALLA 2: EL SISTEMA REAL ---
 # =====================================================================
-# Restauramos los estilos normales para que el sistema se vea bien
 st.markdown("<style>#MainMenu {visibility: visible;} header {visibility: visible;} .block-container {padding-top: 3rem !important;}</style>", unsafe_allow_html=True)
 
 st.sidebar.markdown("---")
 if st.sidebar.button("⬅️ Volver a la Publicidad"):
     st.query_params.clear()
     st.rerun()
+
+# --- VADEMÉCUM Y CÓDIGO NORMAL SIGUEN AQUÍ ABAJO ---
 
 # --- ACÁ ABAJO EMPIEZA TU VADEMÉCUM Y EL RESTO DE LA APP ---
 
