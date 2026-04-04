@@ -134,88 +134,173 @@ supabase = init_supabase()
 if "theme" not in st.session_state:
     st.session_state.theme = "light"
 
-# Botón en el sidebar (mantengo tu estructura original)
+# Botón elegante en el sidebar
 with st.sidebar:
     st.markdown("### 🎨 Apariencia")
     if st.button(
         "☀️ Modo Claro" if st.session_state.theme == "dark" else "🌙 Modo Oscuro",
         use_container_width=True,
         type="secondary",
-        help="Cambiar tema"
+        help="Alternar entre modo claro y oscuro"
     ):
         st.session_state.theme = "dark" if st.session_state.theme == "light" else "light"
         st.rerun()
 
-# ====================== DISEÑO VISUAL ENTERPRISE PREMIUM v5.3 ======================
+# ====================== DISEÑO VISUAL ENTERPRISE PREMIUM v6.0 ======================
 page_bg_css = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {{
-    --bg-app: {('#f8fafc' if st.session_state.theme == 'light' else '#0a0a12')};
-    --bg-card: {('rgba(255,255,255,0.98)' if st.session_state.theme == 'light' else 'rgba(17,20,35,0.96)')};
-    --bg-sidebar: {('#ffffff' if st.session_state.theme == 'light' else '#0f0f1a')};
-    --border-color: {('rgba(15,23,42,0.08)' if st.session_state.theme == 'light' else 'rgba(248,250,252,0.09)')};
-    --text-color: {('#0f172a' if st.session_state.theme == 'light' else '#f1f5f9')};
-    --accent: {('#2563eb' if st.session_state.theme == 'light' else '#60a5fa')};
-    --shadow-base: {('0 8px 25px -6px rgb(0 0 0 / 0.08)' if st.session_state.theme == 'light' else '0 12px 35px -8px rgb(0 0 0 / 0.55)')};
+    /* Paleta de colores refinada y profesional */
+    --bg-app: {('#f4f6f8' if st.session_state.theme == 'light' else '#0e1117')};
+    --bg-card: {('#ffffff' if st.session_state.theme == 'light' else '#1c1f2b')};
+    --bg-sidebar: {('#ffffff' if st.session_state.theme == 'light' else '#141720')};
+    --border-color: {('rgba(0, 0, 0, 0.08)' if st.session_state.theme == 'light' else 'rgba(255, 255, 255, 0.08)')};
+    --text-color: {('#1e293b' if st.session_state.theme == 'light' else '#f8fafc')};
+    --text-muted: {('#64748b' if st.session_state.theme == 'light' else '#94a3b8')};
+    --accent: #3b82f6;
+    --shadow-sm: {('0 1px 2px rgba(0,0,0,0.05)' if st.session_state.theme == 'light' else '0 2px 4px rgba(0,0,0,0.2)')};
+    --shadow-md: {('0 4px 6px -1px rgba(0,0,0,0.08), 0 2px 4px -1px rgba(0,0,0,0.04)' if st.session_state.theme == 'light' else '0 10px 15px -3px rgba(0,0,0,0.4)')};
 }}
 
-html, body, [class*="css"] {{ font-family: 'Inter', sans-serif !important; color: var(--text-color) !important; }}
-.stApp {{ background-color: var(--bg-app); transition: background-color 0.4s ease; }}
+/* ==================== BASE ==================== */
+html, body, [class*="css"] {{ 
+    font-family: 'Inter', sans-serif !important; 
+    color: var(--text-color) !important; 
+}}
+.stApp {{ 
+    background-color: var(--bg-app); 
+    transition: background-color 0.3s ease; 
+}}
+[data-testid="stSidebar"] {{ 
+    background-color: var(--bg-sidebar); 
+    border-right: 1px solid var(--border-color); 
+}}
 
-/* Sidebar limpio */
-[data-testid="stSidebar"] {{ background-color: var(--bg-sidebar); border-right: 1px solid var(--border-color); }}
-
-/* PROTECCIÓN DEL LOGO - No tocar tu logo */
+/* PROTECCIÓN DEL LOGO */
 img[alt*="logo"], img[src*="logo"], .stImage > img {{ 
     filter: none !important; 
     box-shadow: none !important; 
     border: none !important;
+    background: transparent !important;
 }}
 
-/* Tarjetas */
+/* ==================== EL FIX CRÍTICO: TARJETAS ==================== */
+/* SOLO aplicamos estilo de tarjeta a los Formularios y a las cajas st.container(border=True) */
 div[data-testid="stForm"],
-div[data-testid="stVerticalBlock"] > div[style*="border"],
-div[data-testid="stVerticalBlock"] > div {{
+div[data-testid="stVerticalBlock"] > div[style*="border"] {{
     background-color: var(--bg-card) !important;
     border: 1px solid var(--border-color) !important;
-    border-radius: 20px;
-    padding: 24px;
-    box-shadow: var(--shadow-base);
-    transition: all 0.3s ease;
+    border-radius: 16px !important;
+    padding: 24px !important;
+    box-shadow: var(--shadow-md) !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }}
 div[data-testid="stForm"]:hover,
-div[data-testid="stVerticalBlock"] > div:hover {{
-    box-shadow: 0 20px 40px -10px rgba(37,99,235,0.25);
+div[data-testid="stVerticalBlock"] > div[style*="border"]:hover {{
     transform: translateY(-2px);
+    box-shadow: 0 12px 25px -5px rgba(59, 130, 246, 0.15) !important;
+    border-color: rgba(59, 130, 246, 0.4) !important;
 }}
 
-/* Botones */
-.stButton>button {{
-    background: linear-gradient(135deg, var(--accent), #3b82f6);
-    color: white !important;
-    min-height: 54px;
-    border-radius: 14px;
+/* ==================== BOTONES INTELIGENTES ==================== */
+.stButton > button {{
+    border-radius: 10px;
     font-weight: 600;
+    transition: all 0.2s ease;
+    min-height: 46px;
 }}
-.stButton>button:hover {{ transform: translateY(-3px); }}
+/* Botón Primario (Destacado) */
+.stButton > button[kind="primary"] {{
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    color: white !important;
+    border: none;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}}
+.stButton > button[kind="primary"]:hover {{
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+}}
+/* Botón Secundario (Normal) */
+.stButton > button[kind="secondary"] {{
+    background-color: var(--bg-card);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}}
+.stButton > button[kind="secondary"]:hover {{
+    border-color: var(--accent);
+    color: var(--accent);
+}}
 
-/* Métricas, tabs, dataframes */
-div[data-testid="stMetric"] {{ background-color: var(--bg-card); border-left: 6px solid var(--accent); }}
-div[data-testid="stExpander"] {{ background-color: var(--bg-card); border-radius: 16px; }}
-.stTabs [data-testid="stTab"][aria-selected="true"] {{ background: var(--accent); color: white !important; }}
-[data-testid="stDataFrame"] {{ border-radius: 16px; background-color: var(--bg-card); }}
+/* ==================== PESTAÑAS (TABS) ELEGANTES ==================== */
+.stTabs [data-testid="stTab"] {{
+    border: none !important;
+    background: transparent;
+    color: var(--text-muted);
+    font-weight: 600;
+    padding: 8px 16px;
+    transition: all 0.2s;
+}}
+.stTabs [data-testid="stTab"]:hover {{ 
+    color: var(--text-color); 
+}}
+.stTabs [data-testid="stTab"][aria-selected="true"] {{
+    background-color: var(--bg-card);
+    color: var(--accent) !important;
+    border-bottom: 3px solid var(--accent) !important;
+    border-radius: 8px 8px 0 0;
+    box-shadow: var(--shadow-sm);
+}}
 
-/* Inputs */
-div[data-baseweb="select"] > div, input {{ 
-    background-color: var(--bg-card) !important; 
-    border: 1px solid var(--border-color) !important; 
+/* ==================== DATAFRAMES, INPUTS Y MÉTRICAS ==================== */
+[data-testid="stDataFrame"] {{
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-card);
+    box-shadow: var(--shadow-sm);
+}}
+
+div[data-baseweb="select"] > div,
+div[data-baseweb="input"] > div,
+input[type="number"], input[type="text"] {{
+    background-color: var(--bg-app) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 8px !important;
     color: var(--text-color) !important;
 }}
+div[data-baseweb="select"] > div:focus-within,
+div[data-baseweb="input"] > div:focus-within {{
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 1px var(--accent) !important;
+}}
 
-/* Scrollbar */
-::-webkit-scrollbar-thumb {{ background: var(--accent); border-radius: 20px; }}
+div[data-testid="stExpander"] {{
+    background-color: var(--bg-card);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}}
+
+div[data-testid="stMetric"] {{
+    background-color: var(--bg-card);
+    border-radius: 12px;
+    padding: 16px 20px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    border-left: 4px solid var(--accent);
+}}
+
+h1, h2, h3, h4, h5, h6 {{ 
+    color: var(--text-color) !important; 
+    font-weight: 700; 
+    letter-spacing: -0.5px; 
+}}
+
+::-webkit-scrollbar {{ width: 8px; height: 8px; }}
+::-webkit-scrollbar-thumb {{ background: var(--border-color); border-radius: 20px; }}
+::-webkit-scrollbar-thumb:hover {{ background: var(--text-muted); }}
 </style>
 """
 st.markdown(page_bg_css, unsafe_allow_html=True)
