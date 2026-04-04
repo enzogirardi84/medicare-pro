@@ -130,9 +130,8 @@ supabase = init_supabase()
 
 # --- 🎨 DISEÑO VISUAL ENTERPRISE PREMIUM v3.0 (MODO CLARO / OSCURO ADAPTATIVO) ---
 # ====================== TOGGLE DE TEMA (CLARO / OSCURO) ======================
-# ====================== TOGGLE DE TEMA (CLARO / OSCURO) ======================
 if "theme" not in st.session_state:
-    st.session_state.theme = "dark" # Lo pongo en oscuro por defecto porque la onda neon lo pide
+    st.session_state.theme = "dark" # Arrancamos en oscuro porque ahora sí explota
 
 # Botón elegante en el sidebar
 with st.sidebar:
@@ -146,79 +145,75 @@ with st.sidebar:
         st.session_state.theme = "dark" if st.session_state.theme == "light" else "light"
         st.rerun()
 
-# ====================== DISEÑO VISUAL ENTERPRISE PREMIUM v8.0 (NEON GLASS) ======================
+# ====================== DISEÑO VISUAL ENTERPRISE PREMIUM v9.0 (OLED MEDICAL) ======================
+# Variables de color extremas para máximo contraste
+bg_app = "#F0F4F8" if st.session_state.theme == "light" else "#000000" # Negro PURO OLED
+bg_sidebar = "#FFFFFF" if st.session_state.theme == "light" else "#050505"
+bg_card = "#FFFFFF" if st.session_state.theme == "light" else "#0A0B10" # Gris abismal
+border_col = "#E2E8F0" if st.session_state.theme == "light" else "#1A1D24"
+border_hover = "#3B82F6" if st.session_state.theme == "light" else "#00E5FF" # Cian Neón
+
+text_main = "#0F172A" if st.session_state.theme == "light" else "#FFFFFF"
+text_muted = "#64748B" if st.session_state.theme == "light" else "#8A9BB3"
+
+accent = "#2563EB" if st.session_state.theme == "light" else "#00E5FF"
+accent_glow = "rgba(37,99,235,0.3)" if st.session_state.theme == "light" else "rgba(0, 229, 255, 0.4)"
+metric_color = "#2563EB" if st.session_state.theme == "light" else "#00FF88" # Verde Monitor Médico
+
 page_bg_css = f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-:root {{
-    /* MODO CLARO: Limpio, Apple-style */
-    /* MODO OSCURO: Estilo Grok/Neon, Cyberpunk Clínico */
-    
-    --bg-app: {('#F0F4F8' if st.session_state.theme == 'light' else 'radial-gradient(circle at 50% 0%, #152238 0%, #090e17 100%)')};
-    --bg-sidebar: {('#FFFFFF' if st.session_state.theme == 'light' else '#0f172a')};
-    
-    /* Efecto Vidrio (Glassmorphism) para las tarjetas */
-    --bg-card: {('#FFFFFF' if st.session_state.theme == 'light' else 'rgba(15, 23, 42, 0.65)')};
-    --bg-input: {('#F8FAFC' if st.session_state.theme == 'light' else 'rgba(9, 14, 23, 0.8)')};
-    
-    /* Bordes brillantes en oscuro, suaves en claro */
-    --border-color: {('rgba(0,0,0,0.06)' if st.session_state.theme == 'light' else 'rgba(56, 189, 248, 0.15)')};
-    --border-hover: {('rgba(59,130,246,0.4)' if st.session_state.theme == 'light' else 'rgba(56, 189, 248, 0.6)')};
-    
-    --text-main: {('#0F172A' if st.session_state.theme == 'light' else '#E2E8F0')};
-    --text-muted: {('#64748B' if st.session_state.theme == 'light' else '#94A3B8')};
-    
-    /* Sombras/Resplandores (Glow) */
-    --shadow-card: {('0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01)' if st.session_state.theme == 'light' else '0 8px 32px 0 rgba(0, 0, 0, 0.4)')};
-    --glow-hover: {('0 10px 20px -5px rgba(59,130,246,0.15)' if st.session_state.theme == 'light' else '0 0 20px 0 rgba(56, 189, 248, 0.25)')};
-    
-    --accent: #3B82F6;
-    --accent-glow: #00f0ff;
-}}
-
-/* ==================== 1. FONDOS Y FUENTES ==================== */
+/* ==================== 1. FONDOS OBLIGATORIOS ==================== */
 html, body, .stApp {{
-    background: var(--bg-app) !important;
+    background-color: {bg_app} !important;
     font-family: 'Inter', sans-serif !important;
-    background-attachment: fixed !important;
 }}
 
-/* Sidebar Fondo con blureo */
+/* Sidebar Fondo */
 [data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {{
-    background-color: var(--bg-sidebar) !important;
-    border-right: 1px solid var(--border-color) !important;
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
+    background-color: {bg_sidebar} !important;
+    border-right: 1px solid {border_col} !important;
 }}
 
 header[data-testid="stHeader"] {{ background-color: transparent !important; }}
 
 /* ==================== 2. TEXTOS Y TIPOGRAFÍA ==================== */
-/* Arreglo el error de la versión anterior: No tocamos "div" ni "span" para no romper íconos */
-p, h1, h2, h3, h4, h5, h6, label, li {{
-    color: var(--text-main) !important;
+p, span, div, h1, h2, h3, h4, h5, h6, label, li {{
+    color: {text_main} !important;
 }}
 p, label {{ font-weight: 400 !important; }}
-h1, h2, h3, h4 {{ font-weight: 600 !important; letter-spacing: -0.5px; }}
+h1, h2, h3, h4 {{ font-weight: 700 !important; letter-spacing: -0.5px; }}
 
-[data-testid="stMetricLabel"] p {{ color: var(--text-muted) !important; font-weight: 500 !important; }}
-[data-testid="stMetricValue"] div {{ color: var(--text-main) !important; font-weight: 700 !important; text-shadow: {('none' if st.session_state.theme == 'light' else '0 0 10px rgba(255,255,255,0.1)')}; }}
+/* Excepciones de texto */
+.stButton button p, .stButton button span {{ color: inherit !important; }}
 
-/* ==================== 3. TARJETAS (NEON GLASS EFFECT) ==================== */
+/* 🔥 EFECTO MONITOR DE HOSPITAL PARA LAS MÉTRICAS 🔥 */
+[data-testid="stMetricLabel"] p {{ 
+    color: {text_muted} !important; 
+    font-weight: 600 !important; 
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+}}
+[data-testid="stMetricValue"] div {{ 
+    color: {metric_color} !important; 
+    font-weight: 700 !important; 
+    font-size: 2.2rem !important;
+    text-shadow: 0 0 15px {('transparent' if st.session_state.theme == 'light' else 'rgba(0, 255, 136, 0.5)')} !important; 
+}}
+
+/* ==================== 3. TARJETAS (OLED GLASS) ==================== */
 div[data-testid="stForm"],
 div[data-testid="stVerticalBlock"] > div[style*="border"],
 div[data-testid="stExpander"] {{
-    background-color: var(--bg-card) !important;
-    border: 1px solid var(--border-color) !important;
+    background-color: {bg_card} !important;
+    border: 1px solid {border_col} !important;
     border-radius: 16px !important;
-    box-shadow: var(--shadow-card) !important;
-    backdrop-filter: blur(12px) !important;
-    -webkit-backdrop-filter: blur(12px) !important;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
+    transition: all 0.3s ease !important;
 }}
 
-/* Si el contenedor es un form o caja, le damos padding interno */
 div[data-testid="stForm"], div[data-testid="stVerticalBlock"] > div[style*="border"] {{
     padding: 24px !important;
 }}
@@ -226,93 +221,90 @@ div[data-testid="stForm"], div[data-testid="stVerticalBlock"] > div[style*="bord
 div[data-testid="stForm"]:hover,
 div[data-testid="stVerticalBlock"] > div[style*="border"]:hover {{
     transform: translateY(-3px) !important;
-    border-color: var(--border-hover) !important;
-    box-shadow: var(--glow-hover) !important;
+    border-color: {border_hover} !important;
+    box-shadow: 0 0 20px {accent_glow} !important;
 }}
 
-/* ==================== 4. BOTONES (ESTILO ESPACIAL) ==================== */
+/* ==================== 4. BOTONES ==================== */
 .stButton > button {{
     border-radius: 12px !important;
     font-weight: 600 !important;
-    min-height: 48px !important;
+    min-height: 50px !important;
     transition: all 0.3s ease !important;
-    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }}
-/* Primario: Gradiente vibrante */
+/* Primario: Gradiente con resplandor */
 .stButton > button[kind="primary"] {{
-    background: linear-gradient(135deg, #1d4ed8, #3b82f6) !important;
-    color: #ffffff !important;
-    border: 1px solid rgba(255,255,255,0.1) !important;
-    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4) !important;
+    background: linear-gradient(135deg, #0055FF, #00A3FF) !important;
+    color: #FFFFFF !important;
+    border: none !important;
+    box-shadow: 0 0 15px rgba(0, 163, 255, 0.4) !important;
 }}
 .stButton > button[kind="primary"]:hover {{
     transform: translateY(-2px) !important;
-    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.6) !important;
-    filter: brightness(1.1);
+    box-shadow: 0 0 25px rgba(0, 163, 255, 0.7) !important;
+    filter: brightness(1.2);
 }}
-/* Secundario: Transparente con borde brillante */
+/* Secundario */
 .stButton > button[kind="secondary"] {{
-    background-color: var(--bg-input) !important;
-    border: 1px solid var(--border-color) !important;
-    color: var(--text-main) !important;
-    backdrop-filter: blur(5px);
+    background-color: transparent !important;
+    border: 1px solid {border_col} !important;
+    color: {text_main} !important;
 }}
 .stButton > button[kind="secondary"]:hover {{ 
-    transform: translateY(-2px) !important; 
-    border-color: var(--border-hover) !important;
-    box-shadow: var(--glow-hover) !important;
-    color: {('#2563EB' if st.session_state.theme == 'light' else '#00f0ff')} !important;
+    border-color: {accent} !important;
+    color: {accent} !important;
+    box-shadow: 0 0 15px {accent_glow} !important;
 }}
 
-/* ==================== 5. INPUTS Y SELECTS (REDONDEADOS TIPO GROK) ==================== */
+/* ==================== 5. INPUTS Y SELECTS ==================== */
 div[data-baseweb="select"] > div,
 div[data-baseweb="input"] > div,
 input[type="number"], input[type="text"], textarea {{
-    background-color: var(--bg-input) !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: 12px !important;
-    color: var(--text-main) !important;
+    background-color: {('#FFFFFF' if st.session_state.theme == 'light' else '#050608')} !important;
+    border: 1px solid {border_col} !important;
+    border-radius: 10px !important;
+    color: {text_main} !important;
     transition: all 0.3s ease !important;
 }}
 div[data-baseweb="select"] > div:focus-within,
 div[data-baseweb="input"] > div:focus-within {{ 
-    border-color: var(--border-hover) !important; 
-    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2) !important;
+    border-color: {accent} !important; 
+    box-shadow: 0 0 0 2px {accent_glow} !important;
 }}
-input::placeholder, textarea::placeholder {{ color: var(--text-muted) !important; }}
+input::placeholder, textarea::placeholder {{ color: {text_muted} !important; }}
 
-/* ==================== 6. TABS (LÍNEAS LUMINOSAS) ==================== */
+/* ==================== 6. TABS (PESTAÑAS LUMINOSAS) ==================== */
 .stTabs [data-testid="stTab"] {{
     background-color: transparent !important;
     border: none !important;
 }}
-.stTabs [data-testid="stTab"] p {{ color: var(--text-muted) !important; font-weight: 500 !important; transition: color 0.3s; }}
-.stTabs [data-testid="stTab"]:hover p {{ color: var(--text-main) !important; }}
+.stTabs [data-testid="stTab"] p {{ color: {text_muted} !important; font-weight: 600 !important; transition: 0.3s; }}
+.stTabs [data-testid="stTab"]:hover p {{ color: {text_main} !important; }}
 .stTabs [data-testid="stTab"][aria-selected="true"] {{
-    border-bottom: 3px solid {('#3B82F6' if st.session_state.theme == 'light' else '#00f0ff')} !important;
-    background-color: var(--bg-input) !important;
-    border-radius: 10px 10px 0 0 !important;
+    border-bottom: 3px solid {accent} !important;
+    background-color: {bg_card} !important;
+    border-radius: 8px 8px 0 0 !important;
 }}
 .stTabs [data-testid="stTab"][aria-selected="true"] p {{ 
-    color: {('#2563EB' if st.session_state.theme == 'light' else '#00f0ff')} !important; 
-    font-weight: 600 !important; 
-    text-shadow: {('none' if st.session_state.theme == 'light' else '0 0 10px rgba(0, 240, 255, 0.4)')};
+    color: {accent} !important; 
+    text-shadow: 0 0 10px {accent_glow} !important;
 }}
 
 /* ==================== 7. DATAFRAMES ==================== */
 [data-testid="stDataFrame"] {{
     border-radius: 16px !important;
-    border: 1px solid var(--border-color) !important;
-    background-color: var(--bg-card) !important;
-    backdrop-filter: blur(10px);
+    border: 1px solid {border_col} !important;
+    background-color: {bg_card} !important;
 }}
 
 /* ==================== 8. EXTRAS ==================== */
 img {{ filter: none !important; background: transparent !important; }}
 ::-webkit-scrollbar {{ width: 8px; height: 8px; }}
-::-webkit-scrollbar-track {{ background: transparent; }}
-::-webkit-scrollbar-thumb {{ background: var(--border-color); border-radius: 20px; }}
-::-webkit-scrollbar-thumb:hover {{ background: var(--border-hover); }}
+::-webkit-scrollbar-track {{ background: {bg_app}; }}
+::-webkit-scrollbar-thumb {{ background: {border_col}; border-radius: 20px; }}
+::-webkit-scrollbar-thumb:hover {{ background: {accent}; }}
 
 </style>
 """
