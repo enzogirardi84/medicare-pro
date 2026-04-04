@@ -77,7 +77,7 @@ VADEMECUM_BASE = sorted([
 def aplicar_estilos_streamlit():
     """
     Inyecta CSS global en Streamlit para ocultar menús, fusionar fondos
-    y crear un botón de ingreso con efecto Neón Premium.
+    y crear un botón de ingreso con efecto Neón Premium sin superposición.
     """
     st.markdown("""
         <style>
@@ -101,7 +101,8 @@ def aplicar_estilos_streamlit():
             div.stButton {
                 display: flex;
                 justify-content: center;
-                margin-top: -30px; /* Sube el botón para pegarlo a la grilla HTML */
+                /* CORRECCIÓN: Margen positivo para empujarlo hacia abajo, lejos de las tarjetas */
+                margin-top: 20px; 
                 padding-bottom: 50px;
                 z-index: 50;
                 position: relative;
@@ -142,7 +143,8 @@ def aplicar_estilos_streamlit():
 
 def mostrar_inicio_publicitario():
     """
-    Renderiza la cuadrícula de funciones en HTML con animaciones y Glassmorphism 2.0.
+    Renderiza la cuadrícula de funciones en HTML con animaciones, Glassmorphism 2.0
+    y descripciones precisas de las funciones del programa.
     """
     html_landing = """
     <!DOCTYPE html>
@@ -184,6 +186,8 @@ def mostrar_inicio_publicitario():
                 transition: all 0.4s ease;
                 position: relative;
                 overflow: hidden;
+                /* Altura mínima para que los textos nunca se corten */
+                min-height: 180px; 
             }
             
             /* Brillo sutil superior en la tarjeta */
@@ -212,7 +216,7 @@ def mostrar_inicio_publicitario():
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                margin-bottom: 1.5rem;
+                margin-bottom: 1.2rem;
                 transition: transform 0.3s ease;
             }
             
@@ -260,7 +264,7 @@ def mostrar_inicio_publicitario():
                             <i data-lucide="map-pin" class="text-sky-400 w-7 h-7"></i>
                         </div>
                         <h4 class="text-xl font-bold text-white mb-2">Fichaje GPS</h4>
-                        <p class="text-slate-400 text-sm leading-relaxed">Control de asistencia verificado por coordenadas exactas y geolocalización.</p>
+                        <p class="text-slate-400 text-sm leading-relaxed">Control de asistencia verificado por coordenadas exactas. Registra llegadas y salidas desde el domicilio del paciente.</p>
                     </div>
 
                     <div class="glass-card p-6 animate-fade-up" style="animation-delay: 0.2s;">
@@ -268,7 +272,7 @@ def mostrar_inicio_publicitario():
                             <i data-lucide="file-text" class="text-emerald-400 w-7 h-7"></i>
                         </div>
                         <h4 class="text-xl font-bold text-white mb-2">Evolución Médica</h4>
-                        <p class="text-slate-400 text-sm leading-relaxed">Carga digital de parámetros y diagnósticos directamente en el domicilio.</p>
+                        <p class="text-slate-400 text-sm leading-relaxed">Carga digital de signos vitales, parámetros clínicos y fotografías de heridas directamente en la historia del paciente.</p>
                     </div>
 
                     <div class="glass-card p-6 animate-fade-up" style="animation-delay: 0.3s;">
@@ -276,7 +280,7 @@ def mostrar_inicio_publicitario():
                             <i data-lucide="pill" class="text-purple-400 w-7 h-7"></i>
                         </div>
                         <h4 class="text-xl font-bold text-white mb-2">Stock Farmacia</h4>
-                        <p class="text-slate-400 text-sm leading-relaxed">Descuento automático de insumos en tiempo real al realizar la práctica.</p>
+                        <p class="text-slate-400 text-sm leading-relaxed">Gestión de inventario inteligente. Descuento automático de insumos en tiempo real al registrar prácticas de enfermería.</p>
                     </div>
 
                     <div class="glass-card p-6 animate-fade-up" style="animation-delay: 0.4s;">
@@ -284,7 +288,7 @@ def mostrar_inicio_publicitario():
                             <i data-lucide="pen-tool" class="text-amber-400 w-7 h-7"></i>
                         </div>
                         <h4 class="text-xl font-bold text-white mb-2">Firma Digital</h4>
-                        <p class="text-slate-400 text-sm leading-relaxed">Recetas y consentimientos generados en pantalla con validez legal.</p>
+                        <p class="text-slate-400 text-sm leading-relaxed">Recetas médicas y consentimientos informados generados en pantalla y en PDF con validez legal garantizada.</p>
                     </div>
 
                     <div class="glass-card p-6 animate-fade-up" style="animation-delay: 0.5s;">
@@ -292,7 +296,7 @@ def mostrar_inicio_publicitario():
                             <i data-lucide="video" class="text-rose-400 w-7 h-7"></i>
                         </div>
                         <h4 class="text-xl font-bold text-white mb-2">Telemedicina</h4>
-                        <p class="text-slate-400 text-sm leading-relaxed">Videollamadas P2P encriptadas e integradas al historial del paciente.</p>
+                        <p class="text-slate-400 text-sm leading-relaxed">Módulo de videollamadas P2P encriptadas para interconsultas remotas, integradas al historial del paciente.</p>
                     </div>
 
                     <div class="glass-card p-6 animate-fade-up" style="animation-delay: 0.6s;">
@@ -300,7 +304,7 @@ def mostrar_inicio_publicitario():
                             <i data-lucide="baby" class="text-cyan-400 w-7 h-7"></i>
                         </div>
                         <h4 class="text-xl font-bold text-white mb-2">Pediatría</h4>
-                        <p class="text-slate-400 text-sm leading-relaxed">Control de crecimiento y desarrollo infantil con gráficas automáticas.</p>
+                        <p class="text-slate-400 text-sm leading-relaxed">Control de crecimiento, curvas de percentiles y seguimiento del desarrollo infantil de forma gráfica y automatizada.</p>
                     </div>
 
                     <div class="glass-card p-6 animate-fade-up" style="animation-delay: 0.7s;">
@@ -308,7 +312,7 @@ def mostrar_inicio_publicitario():
                             <i data-lucide="droplet" class="text-indigo-400 w-7 h-7"></i>
                         </div>
                         <h4 class="text-xl font-bold text-white mb-2">Balance Hídrico</h4>
-                        <p class="text-slate-400 text-sm leading-relaxed">Cálculo de ingresos y egresos con alertas clínicas de retención.</p>
+                        <p class="text-slate-400 text-sm leading-relaxed">Cálculo estricto de ingresos y egresos por turno, con sistema de alertas clínicas por retención o pérdida de líquidos.</p>
                     </div>
 
                     <div class="glass-card p-6 animate-fade-up" style="animation-delay: 0.8s;">
@@ -316,7 +320,7 @@ def mostrar_inicio_publicitario():
                             <i data-lucide="clipboard-list" class="text-orange-400 w-7 h-7"></i>
                         </div>
                         <h4 class="text-xl font-bold text-white mb-2">Auditoría RRHH</h4>
-                        <p class="text-slate-400 text-sm leading-relaxed">Reportes diarios para liquidación de sueldos y control de guardias.</p>
+                        <p class="text-slate-400 text-sm leading-relaxed">Registro de caja, cierres diarios y reportes de desempeño del equipo para facilitar la liquidación de sueldos.</p>
                     </div>
 
                 </div>
@@ -327,57 +331,8 @@ def mostrar_inicio_publicitario():
     </html>
     """
     
-    # Redujimos el alto a 800 para que el botón de Streamlit suba y quede perfectamente enlazado
-    components.html(html_landing, height=800, scrolling=False)
-
-# --- LÓGICA PRINCIPAL DE STREAMLIT ---
-if __name__ == "__main__":
-    st.set_page_config(page_title="MediCare PRO", layout="wide", initial_sidebar_state="collapsed")
-    
-    # 1. APLICAMOS EL ESTILO GLOBAL PARA FUSIONAR TODO
-    aplicar_estilos_streamlit()
-    
-    # Control de sesión
-    if 'ingresado' not in st.session_state:
-        st.session_state.ingresado = False
-
-    # PANTALLA 1: PUBLICIDAD Y ACCESO
-    if not st.session_state.ingresado:
-        mostrar_inicio_publicitario()
-        
-        # El botón de Streamlit que ahora está tuneado con CSS
-        if st.button("🚀 INGRESAR AL SISTEMA PROFESIONAL"):
-            st.session_state.ingresado = True
-            st.rerun()
-
-    # PANTALLA 2: EL SISTEMA REAL (EL LOGIN O EL PANEL)
-    else:
-        # Acá restauramos la vista para que el sistema funcione normal
-        st.markdown("<style>#MainMenu {visibility: visible;} header {visibility: visible;} .block-container {padding-top: 3rem !important;}</style>", unsafe_allow_html=True)
-        
-        # Estilo de tu 3ra captura de pantalla (Login del sistema)
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            st.markdown("<br><br>", unsafe_allow_html=True)
-            st.markdown("<h1 style='text-align: center; color: white;'>MediCare Enterprise PRO V9.11</h1>", unsafe_allow_html=True)
-            
-            # Pestañas de Streamlit para "Iniciar Sesión" y "Olvidé mi Contraseña"
-            tab1, tab2 = st.tabs(["🔑 Iniciar Sesión", "🆘 Olvidé mi Contraseña"])
-            
-            with tab1:
-                with st.container(border=True):
-                    usuario = st.text_input("Usuario")
-                    password = st.text_input("Contraseña", type="password")
-                    if st.button("Ingresar al Sistema", use_container_width=True):
-                        st.success("¡Bienvenido Enzo!")
-                        # Lógica de ingreso real...
-
-        # Botón para volver atrás (solo para que vos pruebes)
-        st.sidebar.markdown("---")
-        if st.sidebar.button("Volver a la Publicidad"):
-            st.session_state.ingresado = False
-            st.rerun()
-
+    # CORRECCIÓN: Aumentamos la altura de 800 a 880 para que entren las descripciones completas
+    components.html(html_landing, height=880, scrolling=False)
 
 # --- 1. CONFIGURACIÓN DE LIBRERÍAS ---
 FPDF_DISPONIBLE = False
