@@ -132,7 +132,7 @@ supabase = init_supabase()
 # ====================== TOGGLE DE TEMA (CLARO / OSCURO) ======================
 # ====================== TOGGLE DE TEMA (CLARO / OSCURO) ======================
 if "theme" not in st.session_state:
-    st.session_state.theme = "light"
+    st.session_state.theme = "dark" # Lo pongo en oscuro por defecto porque la onda neon lo pide
 
 # Botón elegante en el sidebar
 with st.sidebar:
@@ -146,122 +146,173 @@ with st.sidebar:
         st.session_state.theme = "dark" if st.session_state.theme == "light" else "light"
         st.rerun()
 
-# ====================== DISEÑO VISUAL ENTERPRISE PREMIUM v7.0 (BLINDADO) ======================
+# ====================== DISEÑO VISUAL ENTERPRISE PREMIUM v8.0 (NEON GLASS) ======================
 page_bg_css = f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {{
-    /* Paleta de colores Enterprise (Estilo Vercel/Stripe) */
-    --bg-app: {('#F8FAFC' if st.session_state.theme == 'light' else '#0B0F19')};
-    --bg-sidebar: {('#FFFFFF' if st.session_state.theme == 'light' else '#111827')};
-    --bg-card: {('#FFFFFF' if st.session_state.theme == 'light' else '#1F2937')};
-    --border-color: {('#E2E8F0' if st.session_state.theme == 'light' else '#374151')};
-    --text-main: {('#0F172A' if st.session_state.theme == 'light' else '#F9FAFB')};
-    --text-muted: {('#64748B' if st.session_state.theme == 'light' else '#9CA3AF')};
+    /* MODO CLARO: Limpio, Apple-style */
+    /* MODO OSCURO: Estilo Grok/Neon, Cyberpunk Clínico */
+    
+    --bg-app: {('#F0F4F8' if st.session_state.theme == 'light' else 'radial-gradient(circle at 50% 0%, #152238 0%, #090e17 100%)')};
+    --bg-sidebar: {('#FFFFFF' if st.session_state.theme == 'light' else '#0f172a')};
+    
+    /* Efecto Vidrio (Glassmorphism) para las tarjetas */
+    --bg-card: {('#FFFFFF' if st.session_state.theme == 'light' else 'rgba(15, 23, 42, 0.65)')};
+    --bg-input: {('#F8FAFC' if st.session_state.theme == 'light' else 'rgba(9, 14, 23, 0.8)')};
+    
+    /* Bordes brillantes en oscuro, suaves en claro */
+    --border-color: {('rgba(0,0,0,0.06)' if st.session_state.theme == 'light' else 'rgba(56, 189, 248, 0.15)')};
+    --border-hover: {('rgba(59,130,246,0.4)' if st.session_state.theme == 'light' else 'rgba(56, 189, 248, 0.6)')};
+    
+    --text-main: {('#0F172A' if st.session_state.theme == 'light' else '#E2E8F0')};
+    --text-muted: {('#64748B' if st.session_state.theme == 'light' else '#94A3B8')};
+    
+    /* Sombras/Resplandores (Glow) */
+    --shadow-card: {('0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01)' if st.session_state.theme == 'light' else '0 8px 32px 0 rgba(0, 0, 0, 0.4)')};
+    --glow-hover: {('0 10px 20px -5px rgba(59,130,246,0.15)' if st.session_state.theme == 'light' else '0 0 20px 0 rgba(56, 189, 248, 0.25)')};
+    
     --accent: #3B82F6;
-    --shadow-card: {('0 4px 6px -1px rgba(0,0,0,0.05)' if st.session_state.theme == 'light' else '0 10px 15px -3px rgba(0,0,0,0.3)')};
+    --accent-glow: #00f0ff;
 }}
 
-/* ==================== 1. FORZAR FONDOS (MATAR STREAMLIT NATIVO) ==================== */
+/* ==================== 1. FONDOS Y FUENTES ==================== */
 html, body, .stApp {{
-    background-color: var(--bg-app) !important;
+    background: var(--bg-app) !important;
     font-family: 'Inter', sans-serif !important;
+    background-attachment: fixed !important;
 }}
 
-/* Sidebar Fondo */
+/* Sidebar Fondo con blureo */
 [data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {{
     background-color: var(--bg-sidebar) !important;
     border-right: 1px solid var(--border-color) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
 }}
 
-/* Ocultar barra superior */
-header[data-testid="stHeader"] {{
-    background-color: transparent !important;
-}}
+header[data-testid="stHeader"] {{ background-color: transparent !important; }}
 
-/* ==================== 2. FORZAR COLORES DE TEXTO ==================== */
-/* Sometemos a todos los textos para que respeten nuestro tema y no desaparezcan */
-p, span, div, h1, h2, h3, h4, h5, h6, label, li {{
+/* ==================== 2. TEXTOS Y TIPOGRAFÍA ==================== */
+/* Arreglo el error de la versión anterior: No tocamos "div" ni "span" para no romper íconos */
+p, h1, h2, h3, h4, h5, h6, label, li {{
     color: var(--text-main) !important;
 }}
+p, label {{ font-weight: 400 !important; }}
+h1, h2, h3, h4 {{ font-weight: 600 !important; letter-spacing: -0.5px; }}
 
-/* Excepciones donde el texto NO debe ser el principal */
-.stButton button p, .stButton button span {{ color: inherit !important; }}
 [data-testid="stMetricLabel"] p {{ color: var(--text-muted) !important; font-weight: 500 !important; }}
-[data-testid="stMetricValue"] div {{ color: var(--text-main) !important; font-weight: 700 !important; }}
+[data-testid="stMetricValue"] div {{ color: var(--text-main) !important; font-weight: 700 !important; text-shadow: {('none' if st.session_state.theme == 'light' else '0 0 10px rgba(255,255,255,0.1)')}; }}
 
-/* ==================== 3. TARJETAS Y CONTENEDORES ==================== */
+/* ==================== 3. TARJETAS (NEON GLASS EFFECT) ==================== */
 div[data-testid="stForm"],
-div[data-testid="stVerticalBlock"] > div[style*="border"] {{
+div[data-testid="stVerticalBlock"] > div[style*="border"],
+div[data-testid="stExpander"] {{
     background-color: var(--bg-card) !important;
     border: 1px solid var(--border-color) !important;
     border-radius: 16px !important;
-    padding: 24px !important;
     box-shadow: var(--shadow-card) !important;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
 }}
+
+/* Si el contenedor es un form o caja, le damos padding interno */
+div[data-testid="stForm"], div[data-testid="stVerticalBlock"] > div[style*="border"] {{
+    padding: 24px !important;
+}}
+
 div[data-testid="stForm"]:hover,
 div[data-testid="stVerticalBlock"] > div[style*="border"]:hover {{
-    transform: translateY(-2px) !important;
-    border-color: var(--accent) !important;
+    transform: translateY(-3px) !important;
+    border-color: var(--border-hover) !important;
+    box-shadow: var(--glow-hover) !important;
 }}
 
-/* ==================== 4. BOTONES ==================== */
+/* ==================== 4. BOTONES (ESTILO ESPACIAL) ==================== */
 .stButton > button {{
-    border-radius: 10px !important;
+    border-radius: 12px !important;
     font-weight: 600 !important;
-    min-height: 46px !important;
+    min-height: 48px !important;
+    transition: all 0.3s ease !important;
+    letter-spacing: 0.5px;
 }}
+/* Primario: Gradiente vibrante */
 .stButton > button[kind="primary"] {{
-    background: linear-gradient(135deg, #2563eb, #3b82f6) !important;
+    background: linear-gradient(135deg, #1d4ed8, #3b82f6) !important;
     color: #ffffff !important;
-    border: none !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4) !important;
 }}
-.stButton > button[kind="primary"] p {{ color: #ffffff !important; }}
+.stButton > button[kind="primary"]:hover {{
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.6) !important;
+    filter: brightness(1.1);
+}}
+/* Secundario: Transparente con borde brillante */
 .stButton > button[kind="secondary"] {{
-    background-color: var(--bg-card) !important;
+    background-color: var(--bg-input) !important;
     border: 1px solid var(--border-color) !important;
     color: var(--text-main) !important;
+    backdrop-filter: blur(5px);
 }}
-.stButton > button:hover {{ transform: translateY(-2px) !important; }}
+.stButton > button[kind="secondary"]:hover {{ 
+    transform: translateY(-2px) !important; 
+    border-color: var(--border-hover) !important;
+    box-shadow: var(--glow-hover) !important;
+    color: {('#2563EB' if st.session_state.theme == 'light' else '#00f0ff')} !important;
+}}
 
-/* ==================== 5. INPUTS Y SELECTS ==================== */
+/* ==================== 5. INPUTS Y SELECTS (REDONDEADOS TIPO GROK) ==================== */
 div[data-baseweb="select"] > div,
 div[data-baseweb="input"] > div,
-input[type="number"], input[type="text"] {{
-    background-color: var(--bg-app) !important;
+input[type="number"], input[type="text"], textarea {{
+    background-color: var(--bg-input) !important;
     border: 1px solid var(--border-color) !important;
-    border-radius: 8px !important;
+    border-radius: 12px !important;
+    color: var(--text-main) !important;
+    transition: all 0.3s ease !important;
 }}
-div[data-baseweb="select"] > div:hover,
-div[data-baseweb="input"] > div:hover {{ border-color: var(--accent) !important; }}
+div[data-baseweb="select"] > div:focus-within,
+div[data-baseweb="input"] > div:focus-within {{ 
+    border-color: var(--border-hover) !important; 
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2) !important;
+}}
 input::placeholder, textarea::placeholder {{ color: var(--text-muted) !important; }}
 
-/* ==================== 6. TABS (PESTAÑAS) ==================== */
-.stTabs [data-testid="stTab"] p {{ color: var(--text-muted) !important; font-weight: 600 !important; }}
+/* ==================== 6. TABS (LÍNEAS LUMINOSAS) ==================== */
+.stTabs [data-testid="stTab"] {{
+    background-color: transparent !important;
+    border: none !important;
+}}
+.stTabs [data-testid="stTab"] p {{ color: var(--text-muted) !important; font-weight: 500 !important; transition: color 0.3s; }}
 .stTabs [data-testid="stTab"]:hover p {{ color: var(--text-main) !important; }}
 .stTabs [data-testid="stTab"][aria-selected="true"] {{
-    background-color: var(--bg-card) !important;
-    border-bottom: 3px solid var(--accent) !important;
-    border-radius: 8px 8px 0 0 !important;
+    border-bottom: 3px solid {('#3B82F6' if st.session_state.theme == 'light' else '#00f0ff')} !important;
+    background-color: var(--bg-input) !important;
+    border-radius: 10px 10px 0 0 !important;
 }}
-.stTabs [data-testid="stTab"][aria-selected="true"] p {{ color: var(--accent) !important; }}
+.stTabs [data-testid="stTab"][aria-selected="true"] p {{ 
+    color: {('#2563EB' if st.session_state.theme == 'light' else '#00f0ff')} !important; 
+    font-weight: 600 !important; 
+    text-shadow: {('none' if st.session_state.theme == 'light' else '0 0 10px rgba(0, 240, 255, 0.4)')};
+}}
 
 /* ==================== 7. DATAFRAMES ==================== */
 [data-testid="stDataFrame"] {{
-    border-radius: 12px !important;
+    border-radius: 16px !important;
     border: 1px solid var(--border-color) !important;
     background-color: var(--bg-card) !important;
+    backdrop-filter: blur(10px);
 }}
 
-/* ==================== 8. PROTECCIÓN DEL LOGO ==================== */
+/* ==================== 8. EXTRAS ==================== */
 img {{ filter: none !important; background: transparent !important; }}
-
-/* Scrollbar elegante */
 ::-webkit-scrollbar {{ width: 8px; height: 8px; }}
+::-webkit-scrollbar-track {{ background: transparent; }}
 ::-webkit-scrollbar-thumb {{ background: var(--border-color); border-radius: 20px; }}
-::-webkit-scrollbar-thumb:hover {{ background: var(--text-muted); }}
+::-webkit-scrollbar-thumb:hover {{ background: var(--border-hover); }}
 
 </style>
 """
