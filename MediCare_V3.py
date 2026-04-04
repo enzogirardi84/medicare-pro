@@ -18,6 +18,85 @@ import altair as alt
 import streamlit as st
 import streamlit.components.v1 as components
 
+import streamlit as st
+import pandas as pd
+import streamlit.components.v1 as components
+from datetime import datetime, date, timedelta
+import json
+import pytz
+import urllib.request
+import urllib.parse
+from supabase import create_client, Client
+import io
+import base64
+import time
+import os
+import tempfile
+from PIL import Image
+import altair as alt
+
+# 1. CONFIGURACIÓN INICIAL (DEBE SER LA PRIMERA LÍNEA DE STREAMLIT)
+st.set_page_config(page_title="MediCare PRO V9.11", layout="wide", initial_sidebar_state="collapsed")
+
+def aplicar_estilos_streamlit():
+    """
+    Inyecta CSS global en Streamlit para ocultar menús, fusionar fondos
+    y crear un botón de ingreso con efecto Neón Premium sin superposición.
+    """
+    st.markdown("""
+        <style>
+            #MainMenu {visibility: hidden;}
+            header {visibility: hidden;}
+            footer {visibility: hidden;}
+            .block-container {
+                padding-top: 0rem !important; 
+                padding-bottom: 0rem !important; 
+                max-width: 100% !important;
+            }
+            .stApp {
+                background-color: #020617 !important;
+                background-image: radial-gradient(circle at top right, #0F172A 0%, #020617 100%) !important;
+            }
+            div.stButton {
+                display: flex;
+                justify-content: center;
+                margin-top: 20px; 
+                padding-bottom: 50px;
+                z-index: 50;
+                position: relative;
+            }
+            div.stButton > button {
+                background: linear-gradient(135deg, #0ea5e9 0%, #4f46e5 100%) !important;
+                color: white !important;
+                border: 1px solid rgba(255,255,255,0.1) !important;
+                padding: 1.2rem 3.5rem !important;
+                border-radius: 9999px !important;
+                font-family: 'Inter', sans-serif !important;
+                font-size: 1.15rem !important;
+                font-weight: 800 !important;
+                letter-spacing: 1.5px !important;
+                text-transform: uppercase;
+                box-shadow: 0 0 20px rgba(14, 165, 233, 0.4), inset 0 0 10px rgba(255,255,255,0.2) !important;
+                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                width: auto !important;
+                animation: pulseGlow 2.5s infinite;
+            }
+            div.stButton > button:hover {
+                transform: translateY(-5px) scale(1.02) !important;
+                box-shadow: 0 0 30px rgba(99, 102, 241, 0.6), inset 0 0 15px rgba(255,255,255,0.3) !important;
+                background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%) !important;
+            }
+            div.stButton > button:active {
+                transform: translateY(2px) scale(0.98) !important;
+            }
+            @keyframes pulseGlow {
+                0% { box-shadow: 0 0 20px rgba(14, 165, 233, 0.4); }
+                50% { box-shadow: 0 0 35px rgba(14, 165, 233, 0.7); }
+                100% { box-shadow: 0 0 20px rgba(14, 165, 233, 0.4); }
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
 def mostrar_inicio_publicitario():
     """
     Renderiza la cuadrícula de funciones en HTML con animaciones, Glassmorphism 2.0
@@ -70,7 +149,6 @@ def mostrar_inicio_publicitario():
                 top: -100px; left: 50%; transform: translateX(-50%); z-index: -1; pointer-events: none;
             }
             
-            /* Estilos para botones de contacto */
             .btn-contact {
                 display: inline-flex; align-items: center; gap: 0.5rem;
                 padding: 0.5rem 1.2rem; border-radius: 9999px;
@@ -186,10 +264,37 @@ def mostrar_inicio_publicitario():
     </body>
     </html>
     """
-    
-    # IMPORTANTE: Aumentamos la altura a 1150 para que entre la nueva tarjeta de contacto sin cortar el botón de Streamlit
     components.html(html_landing, height=1150, scrolling=False)
 
+
+# =====================================================================
+# --- CONTROL DE FLUJO: PUBLICIDAD VS SISTEMA ---
+# =====================================================================
+if 'ingresado' not in st.session_state:
+    st.session_state.ingresado = False
+
+# PANTALLA 1: PUBLICIDAD
+if not st.session_state.ingresado:
+    aplicar_estilos_streamlit()
+    mostrar_inicio_publicitario()
+    
+    if st.button("🚀 INGRESAR AL SISTEMA PROFESIONAL"):
+        st.session_state.ingresado = True
+        st.rerun()
+        
+    # FRENO OBLIGATORIO - NADA DE LO DE ABAJO SE EJECUTA SI ESTAMOS EN LA PUBLICIDAD
+    st.stop() 
+
+
+# PANTALLA 2: EL SISTEMA REAL
+st.markdown("<style>#MainMenu {visibility: visible;} header {visibility: visible;} .block-container {padding-top: 3rem !important;}</style>", unsafe_allow_html=True)
+
+st.sidebar.markdown("---")
+if st.sidebar.button("⬅️ Volver a la Publicidad"):
+    st.session_state.ingresado = False
+    st.rerun()
+
+# --- VADEMÉCUM GLOBAL MASIVO ---
 # =====================================================================
 # ACÁ EMPIEZA TU CÓDIGO NORMAL DEL SISTEMA (BASE DE DATOS, VADEMECUM, ETC.)
 # =====================================================================
