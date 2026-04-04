@@ -130,193 +130,191 @@ supabase = init_supabase()
 
 # --- 🎨 DISEÑO VISUAL ENTERPRISE PREMIUM v3.0 (MODO CLARO / OSCURO ADAPTATIVO) ---
 # ====================== TOGGLE DE TEMA (CLARO / OSCURO) ======================
-# ====================== TOGGLE DE TEMA (CLARO / OSCURO) ======================
-if "theme" not in st.session_state:
-    st.session_state.theme = "dark"
-
-# Botón elegante en el sidebar
-with st.sidebar:
-    st.markdown("### 🎨 Apariencia")
-    if st.button(
-        "☀️ Modo Claro" if st.session_state.theme == "dark" else "🌙 Modo Oscuro",
-        use_container_width=True,
-        type="secondary",
-        help="Alternar entre modo claro y oscuro"
-    ):
-        st.session_state.theme = "dark" if st.session_state.theme == "light" else "light"
-        st.rerun()
-
-# ====================== DISEÑO VISUAL ENTERPRISE PREMIUM v10.0 (PROFUNDIDAD Y ESPACIOS) ======================
-# Paleta de colores estructurada por "capas" (Elevación)
-bg_app = "#F4F7F9" if st.session_state.theme == "light" else "#080C16"       # Fondo más profundo (Capa 0)
-bg_sidebar = "#FFFFFF" if st.session_state.theme == "light" else "#0B101A"   # Sidebar (Capa 1)
-bg_card = "#FFFFFF" if st.session_state.theme == "light" else "#131C2D"      # Tarjetas (Capa 2)
-bg_input = "#F8FAFC" if st.session_state.theme == "light" else "#0D1421"     # Inputs (Hundido)
-
-border_col = "#E2E8F0" if st.session_state.theme == "light" else "#1F2D44"
-border_hover = "#3B82F6" if st.session_state.theme == "light" else "#00D4FF"
-
-text_main = "#0F172A" if st.session_state.theme == "light" else "#F1F5F9"
-text_muted = "#64748B" if st.session_state.theme == "light" else "#8B9BB4"
-
-accent = "#2563EB" if st.session_state.theme == "light" else "#00D4FF"       # Cian Médico
-accent_glow = "rgba(37,99,235,0.2)" if st.session_state.theme == "light" else "rgba(0, 212, 255, 0.25)"
-metric_color = "#2563EB" if st.session_state.theme == "light" else "#10B981" # Verde Esmeralda (VITALES)
-
-page_bg_css = f"""
+# =========================================================================================
+# 🎨 DISEÑO VISUAL ENTERPRISE PREMIUM v11.0 (ONLY DARK MODE - DEEP SPACE MEDICAL)
+# =========================================================================================
+page_bg_css = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
+:root {
+    /* Paleta de colores Dark Premium OLED */
+    --bg-app: #06090F;          /* Fondo base ultra oscuro */
+    --bg-sidebar: #090D14;      /* Sidebar sutilmente distinto */
+    --bg-card: #111827;         /* Tarjetas (Gris azulado oscuro) */
+    --bg-input: #0B101A;        /* Inputs hundidos */
+    
+    --border-col: #1E293B;      /* Bordes sutiles */
+    --border-hover: #00E5FF;    /* Borde Cian al pasar el mouse */
+    
+    --text-main: #F8FAFC;       /* Texto blanco brillante */
+    --text-muted: #94A3B8;      /* Texto grisáceo para subtítulos */
+    
+    --accent: #00E5FF;          /* Cian Médico Neón */
+    --accent-glow: rgba(0, 229, 255, 0.2);
+    --metric-color: #10B981;    /* Verde Monitor Vital */
+}
+
 /* ==================== 1. FONDOS Y ESTRUCTURA ==================== */
-html, body, .stApp {{
-    background-color: {bg_app} !important;
+html, body, .stApp {
+    background-color: var(--bg-app) !important;
     font-family: 'Inter', sans-serif !important;
-}}
+}
 
 /* Sidebar */
-[data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {{
-    background-color: {bg_sidebar} !important;
-    border-right: 1px solid {border_col} !important;
-}}
+[data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {
+    background-color: var(--bg-sidebar) !important;
+    border-right: 1px solid var(--border-col) !important;
+}
 
-header[data-testid="stHeader"] {{ background-color: transparent !important; }}
+header[data-testid="stHeader"] { background-color: transparent !important; }
 
 /* ==================== 2. TEXTOS ==================== */
-p, span, div, h1, h2, h3, h4, h5, h6, label, li {{
-    color: {text_main} !important;
-}}
-p, label {{ font-weight: 400 !important; }}
-h1, h2, h3, h4 {{ font-weight: 600 !important; letter-spacing: -0.3px; }}
+p, span, div, h1, h2, h3, h4, h5, h6, label, li {
+    color: var(--text-main) !important;
+}
+p, label { font-weight: 400 !important; }
+h1, h2, h3, h4 { font-weight: 600 !important; letter-spacing: -0.5px; }
 
-.stButton button p, .stButton button span {{ color: inherit !important; }}
+/* Excepciones */
+.stButton button p, .stButton button span { color: inherit !important; }
 
-/* ==================== 3. MÉTRICAS (MONITORES DE SIGNOS VITALES) ==================== */
-/* Ahora tienen caja propia, padding y un borde superior de color para enmarcarlas */
-div[data-testid="stMetric"] {{
-    background-color: {bg_card} !important;
-    border: 1px solid {border_col} !important;
-    border-top: 3px solid {accent} !important;
+/* ==================== 3. TARJETAS Y CONTENEDORES ==================== */
+div[data-testid="stForm"],
+div[data-testid="stVerticalBlock"] > div[style*="border"],
+div[data-testid="stExpander"] {
+    background: linear-gradient(145deg, var(--bg-card) 0%, #0D131F 100%) !important;
+    border: 1px solid var(--border-col) !important;
+    border-radius: 16px !important;
+    padding: 24px !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5) !important;
+    transition: all 0.3s ease !important;
+}
+div[data-testid="stForm"]:hover,
+div[data-testid="stVerticalBlock"] > div[style*="border"]:hover {
+    border-color: rgba(0, 229, 255, 0.3) !important;
+    box-shadow: 0 10px 30px var(--accent-glow) !important;
+}
+
+/* ==================== 4. MÉTRICAS (SIGNOS VITALES) ==================== */
+div[data-testid="stMetric"] {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-col) !important;
+    border-top: 3px solid var(--accent) !important;
     border-radius: 12px !important;
     padding: 16px 20px !important;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.15) !important;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.4) !important;
     transition: transform 0.2s ease !important;
-}}
-div[data-testid="stMetric"]:hover {{
+}
+div[data-testid="stMetric"]:hover {
     transform: translateY(-2px) !important;
-    border-color: {border_hover} !important;
-    box-shadow: 0 6px 15px {accent_glow} !important;
-}}
-[data-testid="stMetricLabel"] p {{ 
-    color: {text_muted} !important; 
+    border-color: var(--accent) !important;
+    box-shadow: 0 8px 20px var(--accent-glow) !important;
+}
+[data-testid="stMetricLabel"] p { 
+    color: var(--text-muted) !important; 
     font-weight: 600 !important; 
     font-size: 0.85rem;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-}}
-[data-testid="stMetricValue"] div {{ 
-    color: {metric_color} !important; 
+    letter-spacing: 1px;
+}
+[data-testid="stMetricValue"] div { 
+    color: var(--metric-color) !important; 
     font-weight: 700 !important; 
     font-size: 2.2rem !important;
-    text-shadow: 0 0 12px {('transparent' if st.session_state.theme == 'light' else 'rgba(16, 185, 129, 0.4)')} !important; 
-}}
+    text-shadow: 0 0 15px rgba(16, 185, 129, 0.4) !important; 
+}
 
-/* ==================== 4. TARJETAS Y ESPACIOS (PADDING) ==================== */
-div[data-testid="stForm"],
-div[data-testid="stVerticalBlock"] > div[style*="border"],
-div[data-testid="stExpander"] {{
-    background-color: {bg_card} !important;
-    border: 1px solid {border_col} !important;
-    border-radius: 16px !important;
-    padding: 28px !important; /* Más espacio interno (aire) */
-    margin-bottom: 12px !important; /* Separación entre bloques */
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
-    transition: all 0.3s ease !important;
-}}
-div[data-testid="stForm"]:hover,
-div[data-testid="stVerticalBlock"] > div[style*="border"]:hover {{
-    border-color: {border_hover} !important;
-    box-shadow: 0 8px 25px {accent_glow} !important;
-}}
+/* ==================== 5. PESTAÑAS (TABS) ULTRA PREMIUM ==================== */
+.stTabs [data-testid="stTab"] {
+    background-color: transparent !important;
+    border: none !important;
+    border-bottom: 2px solid transparent !important;
+    padding: 10px 16px !important;
+    margin-right: 4px !important;
+    border-radius: 0 !important;
+    transition: all 0.2s ease !important;
+}
+.stTabs [data-testid="stTab"] p { color: var(--text-muted) !important; font-weight: 500 !important; }
+.stTabs [data-testid="stTab"]:hover p { color: var(--text-main) !important; }
 
-/* ==================== 5. BOTONES ==================== */
-.stButton > button {{
+/* Pestaña Activa */
+.stTabs [data-testid="stTab"][aria-selected="true"] {
+    background: linear-gradient(0deg, rgba(0, 229, 255, 0.08) 0%, transparent 100%) !important;
+    border-bottom: 2px solid var(--accent) !important;
+}
+.stTabs [data-testid="stTab"][aria-selected="true"] p { 
+    color: var(--accent) !important; 
+    font-weight: 600 !important;
+    text-shadow: 0 0 12px var(--accent-glow) !important;
+}
+
+/* ==================== 6. BOTONES ==================== */
+.stButton > button {
     border-radius: 10px !important;
     font-weight: 600 !important;
     min-height: 48px !important;
     transition: all 0.2s ease !important;
-}}
-.stButton > button[kind="primary"] {{
-    background: linear-gradient(135deg, #1E40AF, {accent}) !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.9rem !important;
+}
+.stButton > button[kind="primary"] {
+    background: linear-gradient(135deg, #0052D4, #4364F7, #6FB1FC) !important;
     color: #FFFFFF !important;
     border: none !important;
-    box-shadow: 0 4px 15px rgba(0, 212, 255, 0.2) !important;
-}}
-.stButton > button[kind="primary"]:hover {{
+    box-shadow: 0 4px 15px rgba(67, 100, 247, 0.3) !important;
+}
+.stButton > button[kind="primary"]:hover {
     transform: translateY(-2px) !important;
     filter: brightness(1.15);
-    box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4) !important;
-}}
-.stButton > button[kind="secondary"] {{
-    background-color: {bg_input} !important;
-    border: 1px solid {border_col} !important;
-    color: {text_main} !important;
-}}
-.stButton > button[kind="secondary"]:hover {{ 
-    border-color: {accent} !important;
-    color: {accent} !important;
-}}
+    box-shadow: 0 6px 20px rgba(67, 100, 247, 0.5) !important;
+}
+.stButton > button[kind="secondary"] {
+    background-color: var(--bg-input) !important;
+    border: 1px solid var(--border-col) !important;
+    color: var(--text-main) !important;
+}
+.stButton > button[kind="secondary"]:hover { 
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+    box-shadow: 0 0 15px var(--accent-glow) !important;
+}
 
-/* ==================== 6. INPUTS Y SELECTS ==================== */
+/* ==================== 7. INPUTS Y SELECTS ==================== */
 div[data-baseweb="select"] > div,
 div[data-baseweb="input"] > div,
-input[type="number"], input[type="text"], textarea {{
-    background-color: {bg_input} !important;
-    border: 1px solid {border_col} !important;
+input[type="number"], input[type="text"], textarea {
+    background-color: var(--bg-input) !important;
+    border: 1px solid var(--border-col) !important;
     border-radius: 8px !important;
-    color: {text_main} !important;
+    color: var(--text-main) !important;
     padding: 2px 8px !important;
     transition: all 0.2s ease !important;
-}}
+}
 div[data-baseweb="select"] > div:focus-within,
-div[data-baseweb="input"] > div:focus-within {{ 
-    border-color: {accent} !important; 
-    box-shadow: 0 0 0 2px {accent_glow} !important;
-}}
-input::placeholder, textarea::placeholder {{ color: {text_muted} !important; }}
+div[data-baseweb="input"] > div:focus-within { 
+    border-color: var(--accent) !important; 
+    box-shadow: 0 0 0 2px var(--accent-glow) !important;
+}
+input::placeholder, textarea::placeholder { color: var(--text-muted) !important; }
 
-/* ==================== 7. TABS (PESTAÑAS ESTILO BOTÓN) ==================== */
-.stTabs [data-testid="stTab"] {{
-    background-color: {bg_card} !important;
-    border: 1px solid {border_col} !important;
-    border-radius: 8px !important;
-    margin-right: 8px !important;
-    padding: 6px 16px !important;
-}}
-.stTabs [data-testid="stTab"] p {{ color: {text_muted} !important; font-weight: 500 !important; transition: 0.2s; }}
-.stTabs [data-testid="stTab"]:hover p {{ color: {text_main} !important; }}
-.stTabs [data-testid="stTab"][aria-selected="true"] {{
-    background-color: {bg_input} !important;
-    border-color: {accent} !important;
-    box-shadow: 0 0 10px {accent_glow} !important;
-}}
-.stTabs [data-testid="stTab"][aria-selected="true"] p {{ 
-    color: {accent} !important; 
-    font-weight: 600 !important;
-}}
-
-/* ==================== 8. DATAFRAMES ==================== */
-[data-testid="stDataFrame"] {{
+/* ==================== 8. DATAFRAMES Y TABLAS ==================== */
+[data-testid="stDataFrame"] {
     border-radius: 12px !important;
-    border: 1px solid {border_col} !important;
-    background-color: {bg_card} !important;
-}}
+    border: 1px solid var(--border-col) !important;
+    background-color: var(--bg-card) !important;
+}
+[data-testid="stTable"] {
+    background-color: transparent !important;
+}
 
-/* ==================== 9. EXTRAS ==================== */
-img {{ filter: none !important; background: transparent !important; }}
-::-webkit-scrollbar {{ width: 8px; height: 8px; }}
-::-webkit-scrollbar-track {{ background: {bg_app}; }}
-::-webkit-scrollbar-thumb {{ background: {border_col}; border-radius: 20px; }}
-::-webkit-scrollbar-thumb:hover {{ background: {accent}; }}
+/* ==================== 9. SCROLLBAR Y EXTRAS ==================== */
+img { filter: none !important; background: transparent !important; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-app); }
+::-webkit-scrollbar-thumb { background: var(--border-col); border-radius: 20px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
 </style>
 """
