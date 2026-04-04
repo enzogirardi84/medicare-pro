@@ -18,25 +18,6 @@ import altair as alt
 # 1. CONFIGURACIÓN INICIAL (DEBE SER LA PRIMERA LÍNEA DE STREAMLIT)
 st.set_page_config(page_title="MediCare PRO V9.11", layout="wide", initial_sidebar_state="collapsed")
 
-import streamlit as st
-import pandas as pd
-import streamlit.components.v1 as components
-from datetime import datetime, date, timedelta
-import json
-import pytz
-import urllib.request
-import urllib.parse
-from supabase import create_client, Client
-import io
-import base64
-import time
-import os
-import tempfile
-from PIL import Image
-import altair as alt
-
-# 1. CONFIGURACIÓN INICIAL (DEBE SER LA LÍNEA 1 DE CÓDIGO EJECUTABLE)
-st.set_page_config(page_title="MediCare PRO V9.11", layout="wide", initial_sidebar_state="collapsed")
 
 def aplicar_estilos_streamlit():
     """Inyecta el CSS global y el diseño del botón neón de ingreso."""
