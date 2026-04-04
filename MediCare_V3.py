@@ -15,25 +15,10 @@ import tempfile
 from PIL import Image
 import altair as alt
 
-import streamlit as st
-import streamlit.components.v1 as components
+# 1. CONFIGURACIÓN INICIAL (DEBE SER LA PRIMERA LÍNEA DE STREAMLIT DESPUÉS DE LOS IMPORTS)
+st.set_page_config(page_title="MediCare PRO V9.11", layout="wide", initial_sidebar_state="collapsed")
 
-import streamlit as st
-import pandas as pd
-import streamlit.components.v1 as components
-from datetime import datetime, date, timedelta
-import json
-import pytz
-import urllib.request
-import urllib.parse
-from supabase import create_client, Client
-import io
-import base64
-import time
-import os
-import tempfile
-from PIL import Image
-import altair as alt
+# --- VADEMÉCUM GLOBAL MASIVO ---
 
 def mostrar_inicio_publicitario():
     """
