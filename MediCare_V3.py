@@ -130,8 +130,9 @@ supabase = init_supabase()
 
 # --- 🎨 DISEÑO VISUAL ENTERPRISE PREMIUM v3.0 (MODO CLARO / OSCURO ADAPTATIVO) ---
 # ====================== TOGGLE DE TEMA (CLARO / OSCURO) ======================
+# ====================== TOGGLE DE TEMA (CLARO / OSCURO) ======================
 if "theme" not in st.session_state:
-    st.session_state.theme = "dark" # Arrancamos en oscuro porque ahora sí explota
+    st.session_state.theme = "dark"
 
 # Botón elegante en el sidebar
 with st.sidebar:
@@ -145,32 +146,34 @@ with st.sidebar:
         st.session_state.theme = "dark" if st.session_state.theme == "light" else "light"
         st.rerun()
 
-# ====================== DISEÑO VISUAL ENTERPRISE PREMIUM v9.0 (OLED MEDICAL) ======================
-# Variables de color extremas para máximo contraste
-bg_app = "#F0F4F8" if st.session_state.theme == "light" else "#000000" # Negro PURO OLED
-bg_sidebar = "#FFFFFF" if st.session_state.theme == "light" else "#050505"
-bg_card = "#FFFFFF" if st.session_state.theme == "light" else "#0A0B10" # Gris abismal
-border_col = "#E2E8F0" if st.session_state.theme == "light" else "#1A1D24"
-border_hover = "#3B82F6" if st.session_state.theme == "light" else "#00E5FF" # Cian Neón
+# ====================== DISEÑO VISUAL ENTERPRISE PREMIUM v10.0 (PROFUNDIDAD Y ESPACIOS) ======================
+# Paleta de colores estructurada por "capas" (Elevación)
+bg_app = "#F4F7F9" if st.session_state.theme == "light" else "#080C16"       # Fondo más profundo (Capa 0)
+bg_sidebar = "#FFFFFF" if st.session_state.theme == "light" else "#0B101A"   # Sidebar (Capa 1)
+bg_card = "#FFFFFF" if st.session_state.theme == "light" else "#131C2D"      # Tarjetas (Capa 2)
+bg_input = "#F8FAFC" if st.session_state.theme == "light" else "#0D1421"     # Inputs (Hundido)
 
-text_main = "#0F172A" if st.session_state.theme == "light" else "#FFFFFF"
-text_muted = "#64748B" if st.session_state.theme == "light" else "#8A9BB3"
+border_col = "#E2E8F0" if st.session_state.theme == "light" else "#1F2D44"
+border_hover = "#3B82F6" if st.session_state.theme == "light" else "#00D4FF"
 
-accent = "#2563EB" if st.session_state.theme == "light" else "#00E5FF"
-accent_glow = "rgba(37,99,235,0.3)" if st.session_state.theme == "light" else "rgba(0, 229, 255, 0.4)"
-metric_color = "#2563EB" if st.session_state.theme == "light" else "#00FF88" # Verde Monitor Médico
+text_main = "#0F172A" if st.session_state.theme == "light" else "#F1F5F9"
+text_muted = "#64748B" if st.session_state.theme == "light" else "#8B9BB4"
+
+accent = "#2563EB" if st.session_state.theme == "light" else "#00D4FF"       # Cian Médico
+accent_glow = "rgba(37,99,235,0.2)" if st.session_state.theme == "light" else "rgba(0, 212, 255, 0.25)"
+metric_color = "#2563EB" if st.session_state.theme == "light" else "#10B981" # Verde Esmeralda (VITALES)
 
 page_bg_css = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* ==================== 1. FONDOS OBLIGATORIOS ==================== */
+/* ==================== 1. FONDOS Y ESTRUCTURA ==================== */
 html, body, .stApp {{
     background-color: {bg_app} !important;
     font-family: 'Inter', sans-serif !important;
 }}
 
-/* Sidebar Fondo */
+/* Sidebar */
 [data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {{
     background-color: {bg_sidebar} !important;
     border-right: 1px solid {border_col} !important;
@@ -178,95 +181,101 @@ html, body, .stApp {{
 
 header[data-testid="stHeader"] {{ background-color: transparent !important; }}
 
-/* ==================== 2. TEXTOS Y TIPOGRAFÍA ==================== */
+/* ==================== 2. TEXTOS ==================== */
 p, span, div, h1, h2, h3, h4, h5, h6, label, li {{
     color: {text_main} !important;
 }}
 p, label {{ font-weight: 400 !important; }}
-h1, h2, h3, h4 {{ font-weight: 700 !important; letter-spacing: -0.5px; }}
+h1, h2, h3, h4 {{ font-weight: 600 !important; letter-spacing: -0.3px; }}
 
-/* Excepciones de texto */
 .stButton button p, .stButton button span {{ color: inherit !important; }}
 
-/* 🔥 EFECTO MONITOR DE HOSPITAL PARA LAS MÉTRICAS 🔥 */
+/* ==================== 3. MÉTRICAS (MONITORES DE SIGNOS VITALES) ==================== */
+/* Ahora tienen caja propia, padding y un borde superior de color para enmarcarlas */
+div[data-testid="stMetric"] {{
+    background-color: {bg_card} !important;
+    border: 1px solid {border_col} !important;
+    border-top: 3px solid {accent} !important;
+    border-radius: 12px !important;
+    padding: 16px 20px !important;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15) !important;
+    transition: transform 0.2s ease !important;
+}}
+div[data-testid="stMetric"]:hover {{
+    transform: translateY(-2px) !important;
+    border-color: {border_hover} !important;
+    box-shadow: 0 6px 15px {accent_glow} !important;
+}}
 [data-testid="stMetricLabel"] p {{ 
     color: {text_muted} !important; 
     font-weight: 600 !important; 
-    text-transform: uppercase;
     font-size: 0.85rem;
-    letter-spacing: 1px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }}
 [data-testid="stMetricValue"] div {{ 
     color: {metric_color} !important; 
     font-weight: 700 !important; 
     font-size: 2.2rem !important;
-    text-shadow: 0 0 15px {('transparent' if st.session_state.theme == 'light' else 'rgba(0, 255, 136, 0.5)')} !important; 
+    text-shadow: 0 0 12px {('transparent' if st.session_state.theme == 'light' else 'rgba(16, 185, 129, 0.4)')} !important; 
 }}
 
-/* ==================== 3. TARJETAS (OLED GLASS) ==================== */
+/* ==================== 4. TARJETAS Y ESPACIOS (PADDING) ==================== */
 div[data-testid="stForm"],
 div[data-testid="stVerticalBlock"] > div[style*="border"],
 div[data-testid="stExpander"] {{
     background-color: {bg_card} !important;
     border: 1px solid {border_col} !important;
     border-radius: 16px !important;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
+    padding: 28px !important; /* Más espacio interno (aire) */
+    margin-bottom: 12px !important; /* Separación entre bloques */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
     transition: all 0.3s ease !important;
 }}
-
-div[data-testid="stForm"], div[data-testid="stVerticalBlock"] > div[style*="border"] {{
-    padding: 24px !important;
-}}
-
 div[data-testid="stForm"]:hover,
 div[data-testid="stVerticalBlock"] > div[style*="border"]:hover {{
-    transform: translateY(-3px) !important;
     border-color: {border_hover} !important;
-    box-shadow: 0 0 20px {accent_glow} !important;
+    box-shadow: 0 8px 25px {accent_glow} !important;
 }}
 
-/* ==================== 4. BOTONES ==================== */
+/* ==================== 5. BOTONES ==================== */
 .stButton > button {{
-    border-radius: 12px !important;
+    border-radius: 10px !important;
     font-weight: 600 !important;
-    min-height: 50px !important;
-    transition: all 0.3s ease !important;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    min-height: 48px !important;
+    transition: all 0.2s ease !important;
 }}
-/* Primario: Gradiente con resplandor */
 .stButton > button[kind="primary"] {{
-    background: linear-gradient(135deg, #0055FF, #00A3FF) !important;
+    background: linear-gradient(135deg, #1E40AF, {accent}) !important;
     color: #FFFFFF !important;
     border: none !important;
-    box-shadow: 0 0 15px rgba(0, 163, 255, 0.4) !important;
+    box-shadow: 0 4px 15px rgba(0, 212, 255, 0.2) !important;
 }}
 .stButton > button[kind="primary"]:hover {{
     transform: translateY(-2px) !important;
-    box-shadow: 0 0 25px rgba(0, 163, 255, 0.7) !important;
-    filter: brightness(1.2);
+    filter: brightness(1.15);
+    box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4) !important;
 }}
-/* Secundario */
 .stButton > button[kind="secondary"] {{
-    background-color: transparent !important;
+    background-color: {bg_input} !important;
     border: 1px solid {border_col} !important;
     color: {text_main} !important;
 }}
 .stButton > button[kind="secondary"]:hover {{ 
     border-color: {accent} !important;
     color: {accent} !important;
-    box-shadow: 0 0 15px {accent_glow} !important;
 }}
 
-/* ==================== 5. INPUTS Y SELECTS ==================== */
+/* ==================== 6. INPUTS Y SELECTS ==================== */
 div[data-baseweb="select"] > div,
 div[data-baseweb="input"] > div,
 input[type="number"], input[type="text"], textarea {{
-    background-color: {('#FFFFFF' if st.session_state.theme == 'light' else '#050608')} !important;
+    background-color: {bg_input} !important;
     border: 1px solid {border_col} !important;
-    border-radius: 10px !important;
+    border-radius: 8px !important;
     color: {text_main} !important;
-    transition: all 0.3s ease !important;
+    padding: 2px 8px !important;
+    transition: all 0.2s ease !important;
 }}
 div[data-baseweb="select"] > div:focus-within,
 div[data-baseweb="input"] > div:focus-within {{ 
@@ -275,31 +284,34 @@ div[data-baseweb="input"] > div:focus-within {{
 }}
 input::placeholder, textarea::placeholder {{ color: {text_muted} !important; }}
 
-/* ==================== 6. TABS (PESTAÑAS LUMINOSAS) ==================== */
+/* ==================== 7. TABS (PESTAÑAS ESTILO BOTÓN) ==================== */
 .stTabs [data-testid="stTab"] {{
-    background-color: transparent !important;
-    border: none !important;
+    background-color: {bg_card} !important;
+    border: 1px solid {border_col} !important;
+    border-radius: 8px !important;
+    margin-right: 8px !important;
+    padding: 6px 16px !important;
 }}
-.stTabs [data-testid="stTab"] p {{ color: {text_muted} !important; font-weight: 600 !important; transition: 0.3s; }}
+.stTabs [data-testid="stTab"] p {{ color: {text_muted} !important; font-weight: 500 !important; transition: 0.2s; }}
 .stTabs [data-testid="stTab"]:hover p {{ color: {text_main} !important; }}
 .stTabs [data-testid="stTab"][aria-selected="true"] {{
-    border-bottom: 3px solid {accent} !important;
-    background-color: {bg_card} !important;
-    border-radius: 8px 8px 0 0 !important;
+    background-color: {bg_input} !important;
+    border-color: {accent} !important;
+    box-shadow: 0 0 10px {accent_glow} !important;
 }}
 .stTabs [data-testid="stTab"][aria-selected="true"] p {{ 
     color: {accent} !important; 
-    text-shadow: 0 0 10px {accent_glow} !important;
+    font-weight: 600 !important;
 }}
 
-/* ==================== 7. DATAFRAMES ==================== */
+/* ==================== 8. DATAFRAMES ==================== */
 [data-testid="stDataFrame"] {{
-    border-radius: 16px !important;
+    border-radius: 12px !important;
     border: 1px solid {border_col} !important;
     background-color: {bg_card} !important;
 }}
 
-/* ==================== 8. EXTRAS ==================== */
+/* ==================== 9. EXTRAS ==================== */
 img {{ filter: none !important; background: transparent !important; }}
 ::-webkit-scrollbar {{ width: 8px; height: 8px; }}
 ::-webkit-scrollbar-track {{ background: {bg_app}; }}
