@@ -261,7 +261,9 @@ st.sidebar.markdown("---")
 if st.sidebar.button("⬅️ Volver a la Publicidad"):
     st.query_params.clear()
     st.rerun()
-
+if st.button("🚀 INGRESAR AL SISTEMA PROFESIONAL"):
+        st.query_params["app"] = "login"
+        st.rerun()
 # --- VADEMÉCUM GLOBAL MASIVO ---
 
 # =====================================================================
