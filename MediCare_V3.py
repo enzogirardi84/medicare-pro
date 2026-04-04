@@ -74,55 +74,6 @@ VADEMECUM_BASE = sorted([
     "Zolpidem 10mg", "Zopiclona 7.5mg"
 ])
 
-# ====================== PANTALLA DE PUBLICIDAD / LANDING PAGE ======================
-if "entered_app" not in st.session_state:
-    st.session_state.entered_app = False
-
-if not st.session_state.entered_app:
-    # Fondo oscuro elegante
-    st.markdown("""
-    <style>
-        .landing-page {
-            background: linear-gradient(135deg, #0f172a 0%, #020617 100%);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 40px 20px;
-            color: white;
-        }
-    </style>
-    """, unsafe_allow_html=True)
-
-    # Contenedor central
-    st.markdown('<div class="landing-page">', unsafe_allow_html=True)
-
-    # Logo
-    try:
-        st.image("logo_medicare_pro.jpeg", width=280)
-    except:
-        st.markdown("<h1 style='font-size: 4.5rem; font-weight: 900; color:#38bdf8;'>MediCare PRO</h1>", unsafe_allow_html=True)
-
-    st.markdown("""
-    <h1 style="font-size: 3.8rem; font-weight: 900; line-height: 1.1; margin: 30px 0 20px 0;">
-        Todo lo que tu práctica<br>domiciliaria necesita.
-    </h1>
-    <p style="font-size: 1.6rem; color: #94a3b8; max-width: 700px; margin-bottom: 50px;">
-        GPS en tiempo real • Firma digital legal • Stock inteligente •<br>
-        Historia clínica • Facturación • Telemedicina
-    </p>
-    """, unsafe_allow_html=True)
-
-    # Botón grande
-    if st.button("🚀 INGRESAR AL SISTEMA", type="primary", use_container_width=True, key="enter_system"):
-        st.session_state.entered_app = True
-        st.rerun()
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    st.stop()   # ← Detiene el resto del programa hasta que el usuario ingrese
 # --- 1. CONFIGURACIÓN DE LIBRERÍAS ---
 FPDF_DISPONIBLE = False
 try:
