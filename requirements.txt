@@ -8,5 +8,6 @@ openpyxl
 Pillow
 altair
 python-dotenv
-
+streamlit-drawable-canvas
+streamlit-geolocation
 
