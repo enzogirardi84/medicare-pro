@@ -1473,7 +1473,221 @@ with tabs[menu.index("💉 Materiales")]:
         else:
             st.info("Aún no se han registrado consumos de materiales para este paciente.")
             
+# =========================================================================================
+# 🎨 DISEÑO VISUAL ENTERPRISE PREMIUM v15.1 (TEXTOS Y SELECTORES CORREGIDOS)
+# =========================================================================================
+page_bg_css = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    /* Paleta Ergonomica (Slate / Azul Pizarra) - Descansa la vista */
+    --bg-app: #0F172A;          
+    --bg-sidebar: #0B1121;      
+    --bg-card: #1E293B;         
+    --bg-input: #334155;        
+    
+    --border-col: #3F4F66;      
+    --border-hover: #38BDF8;    
+    
+    --text-main: #F8FAFC;       
+    --text-muted: #94A3B8;      
+    
+    --accent: #38BDF8;          
+    --accent-glow: rgba(56, 189, 248, 0.25);
+    --metric-color: #34D399;    
+}
+
+/* ==================== 1. FONDOS Y ESTRUCTURA ==================== */
+html, body, .stApp {
+    background-color: var(--bg-app) !important;
+    font-family: 'Inter', sans-serif !important;
+}
+
+[data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {
+    background-color: var(--bg-sidebar) !important;
+    border-right: 1px solid var(--border-col) !important;
+}
+header[data-testid="stHeader"] { background-color: transparent !important; }
+
+/* ==================== 2. TEXTOS ==================== */
+p, span, div, h1, h2, h3, h4, h5, h6, label, li {
+    color: var(--text-main) !important;
+}
+p, label { font-weight: 400 !important; font-size: 0.95rem !important; }
+h1, h2, h3, h4 { font-weight: 600 !important; letter-spacing: -0.5px; }
+
+.stButton button p, .stButton button span { color: inherit !important; }
+
+/* ==================== 3. TARJETAS Y CONTENEDORES ==================== */
+div[data-testid="stForm"],
+div[data-testid="stVerticalBlock"] > div[style*="border"],
+div[data-testid="stExpander"] {
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--border-col) !important;
+    border-radius: 16px !important;
+    padding: 24px !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+    transition: all 0.3s ease !important;
+}
+div[data-testid="stForm"]:hover,
+div[data-testid="stVerticalBlock"] > div[style*="border"]:hover {
+    border-color: #475569 !important;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3) !important;
+}
+
+/* ==================== 4. MÉTRICAS (SIGNOS VITALES) ==================== */
+div[data-testid="stMetric"] {
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--border-col) !important;
+    border-top: 3px solid var(--accent) !important;
+    border-radius: 12px !important;
+    padding: 16px 14px !important;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15) !important;
+}
+[data-testid="stMetricLabel"] p { 
+    color: var(--text-muted) !important; 
+    font-weight: 600 !important; 
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+[data-testid="stMetricValue"] div { 
+    color: var(--metric-color) !important; 
+    font-weight: 700 !important; 
+    font-size: 1.85rem !important; 
+    text-shadow: 0 0 10px rgba(52, 211, 153, 0.3) !important; 
+}
+
+/* ==================== 5. INPUTS Y SELECTS (CORREGIDOS) ==================== */
+/* Ajuste específico para que los selects no corten el texto */
+div[data-baseweb="select"] > div,
+div[data-baseweb="input"] > div,
+textarea {
+    background-color: var(--bg-input) !important;
+    border: 1px solid var(--border-col) !important;
+    border-radius: 8px !important;
+    transition: all 0.2s ease !important;
+    /* Eliminamos el padding forzado aquí para que el select respire */
+}
+
+/* Color de las letras de adentro para que se vean bien blancas */
+div[data-baseweb="select"] div,
+input[type="number"], input[type="text"], textarea {
+    color: #FFFFFF !important;
+}
+
+/* Solo aplicamos padding a los inputs de texto/número directos, NO a los contenedores baseWeb */
+input[type="number"], input[type="text"], textarea {
+    padding: 8px 12px !important; 
+}
+
+/* Estilo para la lista desplegable del select (el menú que se abre) */
+ul[data-baseweb="menu"] {
+    background-color: var(--bg-input) !important;
+    border: 1px solid var(--border-col) !important;
+    border-radius: 8px !important;
+}
+ul[data-baseweb="menu"] li {
+    padding: 10px 12px !important; /* Más espacio en las opciones */
+}
+ul[data-baseweb="menu"] li:hover {
+    background-color: var(--border-col) !important;
+}
+
+/* Efecto cuando hacés clic para escribir */
+div[data-baseweb="select"] > div:focus-within,
+div[data-baseweb="input"] > div:focus-within,
+textarea:focus { 
+    border-color: var(--accent) !important; 
+    background-color: #1E293B !important; 
+    box-shadow: 0 0 0 2px var(--accent-glow) !important;
+}
+input::placeholder, textarea::placeholder { color: #CBD5E1 !important; }
+
+/* ==================== 6. PESTAÑAS (TABS) ==================== */
+.stTabs [data-testid="stTab"] {
+    background-color: var(--bg-card) !important; 
+    border: 1px solid var(--border-col) !important;
+    border-radius: 8px !important;
+    padding: 8px 16px !important;
+    margin-right: 6px !important;
+    margin-bottom: 8px !important;
+    transition: all 0.2s ease !important;
+    opacity: 1 !important; 
+}
+.stTabs [data-testid="stTab"] p { 
+    color: #CBD5E1 !important; 
+    font-weight: 500 !important; 
+}
+.stTabs [data-testid="stTab"]:hover { 
+    background-color: #2F3E53 !important; 
+    border-color: var(--accent) !important;
+}
+.stTabs [data-testid="stTab"]:hover p { 
+    color: #FFFFFF !important; 
+}
+.stTabs [data-testid="stTab"][aria-selected="true"] {
+    background-color: var(--bg-input) !important; 
+    border: 1px solid var(--accent) !important;
+    box-shadow: 0 4px 10px var(--accent-glow) !important;
+}
+.stTabs [data-testid="stTab"][aria-selected="true"] p { 
+    color: var(--accent) !important; 
+    font-weight: 600 !important;
+}
+
+/* ==================== 7. BOTONES ==================== */
+.stButton > button {
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    min-height: 48px !important;
+    transition: all 0.2s ease !important;
+    letter-spacing: 0.5px;
+}
+.stButton > button[kind="primary"] {
+    background: linear-gradient(135deg, #0284C7, #38BDF8) !important;
+    color: #FFFFFF !important;
+    border: none !important;
+}
+.stButton > button[kind="primary"]:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 15px rgba(56, 189, 248, 0.4) !important;
+}
+.stButton > button[kind="secondary"] {
+    background-color: var(--bg-input) !important;
+    border: 1px solid var(--border-col) !important;
+    color: var(--text-main) !important;
+}
+.stButton > button[kind="secondary"]:hover { 
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+}
+
+/* ==================== 8. DATAFRAMES ==================== */
+[data-testid="stDataFrame"] {
+    border-radius: 12px !important;
+    border: 1px solid var(--border-col) !important;
+    background-color: var(--bg-card) !important;
+}
+[data-testid="stTable"] { background-color: transparent !important; }
+
+/* ==================== 9. EXTRAS ==================== */
+img { filter: none !important; background: transparent !important; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-app); }
+::-webkit-scrollbar-thumb { background: var(--border-col); border-radius: 20px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+</style>
+"""
+st.markdown(page_bg_css, unsafe_allow_html=True)
+
+
+# ... (resto de tu código general, imports, funciones, etc.) ...
+
+# =========================================================================================
 # 8. RECETAS - VERSIÓN LEGAL COMPLETA (Nombre + Matrícula + Firma + Caja Fuerte)
+# =========================================================================================
 with tabs[menu.index("💊 Recetas")]:
     if not paciente_sel:
         st.info("👈 Seleccioná un paciente en el menú lateral.")
@@ -1620,7 +1834,7 @@ with tabs[menu.index("💊 Recetas")]:
                 estado_sel = st.radio("3. Estado de la aplicación:", ["✅ Realizada", "❌ No realizada / Suspendida"], horizontal=True)
                 justificacion = st.text_input("4. Justificación Clínica (OBLIGATORIA si marca ❌ No realizada):", placeholder="Ej: Paciente hipotenso, falta de stock, etc.")
                 
-                if st.form_submit_button("💾 Guardar Registro", width="stretch"):
+                if st.form_submit_button("💾 Guardar Registro", use_container_width=True):
                     if "❌" in estado_sel and not justificacion.strip():
                         st.error("🚨 LEGAL: Es obligatorio justificar clínicamente por qué no se administró la dosis.")
                     else:
@@ -1634,7 +1848,9 @@ with tabs[menu.index("💊 Recetas")]:
                             "paciente": paciente_sel, "med": med_sel, "fecha": fecha_hoy, "hora": hora_sel,
                             "estado": estado_sel, "motivo": justificacion.strip() if "❌" in estado_sel else "", "firma": user["nombre"]
                         })
-                        guardar_datos(); st.success(f"✅ Registro guardado exitosamente para las {hora_sel}."); st.rerun()
+                        guardar_datos()
+                        st.success(f"✅ Registro guardado exitosamente para las {hora_sel}.")
+                        st.rerun()
 
             st.divider()
 
@@ -1675,7 +1891,8 @@ with tabs[menu.index("💊 Recetas")]:
                             })
                             st.success("✅ Indicación editada. La versión anterior quedó en el historial.")
                         break
-                guardar_datos(); st.rerun()
+                guardar_datos()
+                st.rerun()
 
         else:
             st.info("Aún no hay medicación activa para este paciente.")
