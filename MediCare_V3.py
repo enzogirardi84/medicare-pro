@@ -131,7 +131,7 @@ supabase = init_supabase()
 # --- 🎨 DISEÑO VISUAL ENTERPRISE PREMIUM v3.0 (MODO CLARO / OSCURO ADAPTATIVO) ---
 # ====================== TOGGLE DE TEMA (CLARO / OSCURO) ======================
 # =========================================================================================
-# 🎨 DISEÑO VISUAL ENTERPRISE PREMIUM v13.0 (ERGONOMIC DARK - ANTI FATIGA VISUAL)
+# 🎨 DISEÑO VISUAL ENTERPRISE PREMIUM v14.0 (ERGONOMIC DARK + TABS CLARAS)
 # =========================================================================================
 page_bg_css = """
 <style>
@@ -142,9 +142,7 @@ page_bg_css = """
     --bg-app: #0F172A;          /* Azul pizarra oscuro para el fondo general */
     --bg-sidebar: #0B1121;      /* Apenas más oscuro para separar el menú lateral */
     --bg-card: #1E293B;         /* Tarjetas un poco más claras (elevación) */
-    
-    /* 🔥 LA CLAVE: Inputs mucho más claros para que resalten fácil 🔥 */
-    --bg-input: #334155;        
+    --bg-input: #334155;        /* Inputs mucho más claros para que resalten fácil */
     
     --border-col: #3F4F66;      /* Bordes visibles pero suaves */
     --border-hover: #38BDF8;    /* Celeste claro al pasar el mouse */
@@ -218,11 +216,11 @@ div[data-testid="stMetric"] {
     text-shadow: 0 0 10px rgba(52, 211, 153, 0.3) !important; 
 }
 
-/* ==================== 5. INPUTS Y SELECTS (AHORA MUCHO MÁS CLAROS) ==================== */
+/* ==================== 5. INPUTS Y SELECTS ==================== */
 div[data-baseweb="select"] > div,
 div[data-baseweb="input"] > div,
 input[type="number"], input[type="text"], textarea {
-    background-color: var(--bg-input) !important; /* Más clarito, se ve perfecto */
+    background-color: var(--bg-input) !important;
     border: 1px solid var(--border-col) !important;
     border-radius: 8px !important;
     color: #FFFFFF !important;
@@ -230,33 +228,38 @@ input[type="number"], input[type="text"], textarea {
     font-size: 15px !important;
     transition: all 0.2s ease !important;
 }
-
-/* Efecto cuando hacés clic para escribir */
 div[data-baseweb="select"] > div:focus-within,
 div[data-baseweb="input"] > div:focus-within { 
     border-color: var(--accent) !important; 
-    background-color: #1E293B !important; /* Se oscurece un toque al escribir */
+    background-color: #1E293B !important; 
     box-shadow: 0 0 0 3px var(--accent-glow) !important;
 }
 input::placeholder, textarea::placeholder { color: #CBD5E1 !important; }
 
-/* ==================== 6. PESTAÑAS (TABS) ==================== */
+/* ==================== 6. PESTAÑAS (TABS - CORREGIDAS) ==================== */
 .stTabs [data-testid="stTab"] {
-    background-color: var(--bg-input) !important;
+    background-color: var(--bg-card) !important; /* Las hacemos bien visibles */
     border: 1px solid var(--border-col) !important;
     border-radius: 8px !important;
     padding: 8px 16px !important;
     margin-right: 6px !important;
     margin-bottom: 8px !important;
     transition: all 0.2s ease !important;
+    opacity: 1 !important; /* Forzamos a que Streamlit no las haga transparentes */
 }
-.stTabs [data-testid="stTab"] p { color: var(--text-muted) !important; font-weight: 500 !important; }
+.stTabs [data-testid="stTab"] p { 
+    color: #CBD5E1 !important; /* Texto claro para que se lea perfecto */
+    font-weight: 500 !important; 
+}
 .stTabs [data-testid="stTab"]:hover { 
-    background-color: var(--border-col) !important;
+    background-color: #2F3E53 !important; /* Se aclara un poco al pasar el mouse */
+    border-color: var(--accent) !important;
 }
-.stTabs [data-testid="stTab"]:hover p { color: var(--text-main) !important; }
+.stTabs [data-testid="stTab"]:hover p { 
+    color: #FFFFFF !important; 
+}
 .stTabs [data-testid="stTab"][aria-selected="true"] {
-    background-color: var(--bg-card) !important;
+    background-color: var(--bg-input) !important; /* Pestaña activa destaca con otro fondo */
     border: 1px solid var(--accent) !important;
     box-shadow: 0 4px 10px var(--accent-glow) !important;
 }
