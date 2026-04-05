@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import streamlit.components.v1 as components
 from datetime import datetime, date, timedelta
 import json
 import pytz
@@ -15,9 +14,12 @@ import tempfile
 from PIL import Image
 import altair as alt
 
-# 1. CONFIGURACIÓN INICIAL (DEBE SER LA PRIMERA LÍNEA DE STREAMLIT)
+# 1. CONFIGURACIÓN INICIAL
 st.set_page_config(page_title="MediCare PRO V9.11", layout="wide", initial_sidebar_state="collapsed")
 
+# =====================================================================
+# --- CONTROL DE ESTILOS Y PUBLICIDAD ---
+# =====================================================================
 if "entered_app" not in st.session_state:
     st.session_state.entered_app = False
 
@@ -167,6 +169,8 @@ if st.sidebar.button("⬅️ Volver a la Publicidad"):
     st.rerun()
 
 st.sidebar.markdown("---")
+
+# --- AQUÍ EMPIEZA TU CÓDIGO NORMAL DEL SISTEMA (VADEMÉCUM, BD, ETC) ---
 # =====================================================================
 # ACÁ EMPIEZA TU CÓDIGO NORMAL DEL SISTEMA (BASE DE DATOS, VADEMECUM, ETC.)
 # =====================================================================
