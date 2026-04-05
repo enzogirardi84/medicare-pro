@@ -18,278 +18,130 @@ import altair as alt
 # 1. CONFIGURACIÓN INICIAL (DEBE SER LA PRIMERA LÍNEA DE STREAMLIT)
 st.set_page_config(page_title="MediCare PRO V9.11", layout="wide", initial_sidebar_state="collapsed")
 
-# ====================== LANDING PAGE PROFESIONAL - VERSIÓN FINAL (RESPONSIVE Y PULIDA) ======================
-if "entered_app" not in st.session_state:
-    st.session_state.entered_app = False
+def mostrar_inicio_publicitario():
+    import base64
+    
+    # 1. Convertimos tu logo a código para meterlo DENTRO del HTML sin que Streamlit rompa la caja
+    try:
+        with open("logo_medicare_pro.jpeg", "rb") as image_file:
+            encoded_string = base64.b64encode(image_file.read()).decode()
+        logo_html = f'<img src="data:image/jpeg;base64,{encoded_string}" style="max-width: 220px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); margin-bottom: 30px;">'
+    except Exception as e:
+        # Si no encuentra la imagen, muestra el texto con estilo
+        logo_html = '<div style="margin-bottom: 30px;"><h1 style="font-size:3.5rem; font-weight:900; color:#38bdf8; margin:0;">MediCare PRO</h1></div>'
 
-if not st.session_state.entered_app:
-    # Ocultar menú y barra lateral en la publicidad
-    st.markdown("""
-        <style>
-            #MainMenu {visibility: hidden;}
-            header {visibility: hidden;}
-            .block-container {
-                padding-top: 0rem !important; 
-                padding-bottom: 0rem !important; 
-                max-width: 100% !important;
-            }
-        </style>
-    """, unsafe_allow_html=True)
-
-    st.markdown("""
+    # 2. CSS (Separado para evitar problemas con las llaves de Python)
+    html_css = """
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+        
+        /* Ajuste agresivo para matar espacios vacíos de Streamlit */
+        div[data-testid="stBlock"] { padding-top: 0 !important; }
+        .block-container { padding-top: 1rem !important; margin-top: 0 !important; }
         
         .landing-page {
             background: radial-gradient(circle at top, #1e293b 0%, #020617 80%);
-            min-height: 100vh;
-            padding: 40px 20px 80px;
+            border-radius: 30px;
+            padding: 40px 20px 60px;
             display: flex;
             flex-direction: column;
             align-items: center;
             color: #f8fafc;
             font-family: 'Inter', sans-serif;
-            width: 100%;
-            box-sizing: border-box;
+            margin-top: -20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
 
-        /* --- SECCIÓN HERO --- */
-        .hero-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            max-width: 800px;
-            margin-bottom: 50px;
-            animation: fadeIn 0.8s ease-out;
-        }
-        
-        .logo-box {
-            background: rgba(255, 255, 255, 0.03);
-            padding: 20px;
-            border-radius: 24px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        }
-        
-        .title {
-            font-size: clamp(2.5rem, 5vw, 3.5rem);
-            font-weight: 900;
-            line-height: 1.15;
-            margin: 0 0 20px;
-            background: linear-gradient(to right, #ffffff, #94a3b8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        
-        .subtitle {
-            font-size: 1.2rem;
-            color: #94a3b8;
-            font-weight: 400;
-            margin: 0;
-            max-width: 600px;
-        }
+        .title { font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 900; line-height: 1.15; margin: 0 0 15px; text-align: center; background: linear-gradient(to right, #ffffff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .subtitle { font-size: 1.15rem; color: #94a3b8; font-weight: 400; margin: 0 0 50px; max-width: 650px; text-align: center; line-height: 1.6; }
 
-        /* --- GRILLA DE TARJETAS --- */
-        .grid-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 24px;
-            max-width: 1200px;
-            width: 100%;
-            margin-bottom: 60px;
-            animation: fadeIn 1s ease-out 0.2s both;
-        }
-        
-        .glass-card-pro {
-            background: linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.4));
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 30px 24px;
-            transition: all 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-        }
-        
-        .glass-card-pro:hover {
-            transform: translateY(-5px);
-            border-color: rgba(56, 189, 248, 0.4);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 20px rgba(56, 189, 248, 0.1);
-        }
-        
-        .icon-box-pro { 
-            font-size: 2.5rem; 
-            margin-bottom: 15px; 
-            background: rgba(56, 189, 248, 0.1);
-            width: 60px;
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 16px;
-        }
-        
-        .card-title-pro { font-size: 1.25rem; font-weight: 700; color: #f8fafc; margin: 0 0 10px; }
-        .card-text-pro { color: #94a3b8; font-size: 0.95rem; line-height: 1.5; margin: 0; }
+        .grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; max-width: 1100px; width: 100%; margin-bottom: 50px; }
+        .glass-card-pro { background: linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.4)); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); border-top: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 25px 20px; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .glass-card-pro:hover { transform: translateY(-5px); border-color: rgba(56, 189, 248, 0.4); box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3); }
+        .icon-box-pro { font-size: 2.2rem; margin-bottom: 12px; background: rgba(56, 189, 248, 0.1); width: 55px; height: 55px; display: flex; align-items: center; justify-content: center; border-radius: 14px; }
+        .card-title-pro { font-size: 1.2rem; font-weight: 700; color: #f8fafc; margin: 0 0 8px; }
+        .card-text-pro { color: #94a3b8; font-size: 0.9rem; line-height: 1.5; margin: 0; }
 
-        /* --- SECCIÓN CONTACTO --- */
-        .contact-section-pro {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(56, 189, 248, 0.2);
-            border-radius: 24px;
-            padding: 40px;
-            max-width: 900px;
-            width: 100%;
-            text-align: center;
-            margin-bottom: 50px;
-            animation: fadeIn 1.2s ease-out 0.4s both;
-        }
-        
-        .contact-grid {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 40px;
-            margin-top: 30px;
-        }
-        
-        .contact-profile {
-            flex: 1;
-            min-width: 250px;
-            max-width: 350px;
-            background: rgba(30, 41, 59, 0.4);
-            padding: 25px;
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.03);
-        }
-        
-        .btn-link-pro {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 10px 20px;
-            border-radius: 12px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.95rem;
-            transition: all 0.2s;
-            width: 100%;
-            max-width: 140px;
-        }
-        
+        .contact-section-pro { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 24px; padding: 40px; max-width: 900px; width: 100%; text-align: center; }
+        .contact-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; margin-top: 25px; }
+        .contact-profile { flex: 1; min-width: 250px; max-width: 320px; background: rgba(30, 41, 59, 0.4); padding: 25px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.03); }
+        .btn-link-pro { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 20px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: all 0.2s; width: 100%; max-width: 140px; }
         .btn-wpp { background: rgba(37, 211, 102, 0.15); color: #25D366; border: 1px solid rgba(37, 211, 102, 0.3); }
         .btn-wpp:hover { background: #25D366; color: white; }
         .btn-mail { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3); }
         .btn-mail:hover { background: #cbd5e1; color: #0f172a; }
-
-        /* --- BOTÓN DE INGRESO (STREAMLIT NATIVO MODIFICADO) --- */
-        .stButton {
-            display: flex !important;
-            justify-content: center !important;
-            width: 100% !important;
-            animation: fadeIn 1.4s ease-out 0.6s both;
-        }
-        .stButton > button {
-            background: linear-gradient(135deg, #0ea5e9 0%, #4f46e5 100%) !important;
-            color: white !important;
-            border: 1px solid rgba(255,255,255,0.2) !important;
-            padding: 1.2rem 4rem !important;
-            border-radius: 50px !important;
-            font-size: 1.1rem !important;
-            font-weight: 800 !important;
-            letter-spacing: 1.5px !important;
-            text-transform: uppercase;
-            box-shadow: 0 10px 25px rgba(14, 165, 233, 0.4) !important;
-            transition: all 0.3s ease !important;
-            width: auto !important; /* Evita que ocupe toda la pantalla */
-        }
-        .stButton > button:hover {
-            transform: translateY(-3px) scale(1.02) !important;
-            box-shadow: 0 15px 35px rgba(99, 102, 241, 0.6) !important;
-            background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%) !important;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        
+        /* Botón Nativo Neón */
+        .stButton { display: flex !important; justify-content: center !important; width: 100% !important; margin-top: 30px; }
+        .stButton > button { background: linear-gradient(135deg, #0ea5e9 0%, #4f46e5 100%) !important; color: white !important; border: 1px solid rgba(255,255,255,0.2) !important; padding: 1.2rem 4rem !important; border-radius: 50px !important; font-size: 1.1rem !important; font-weight: 800 !important; letter-spacing: 1.5px !important; text-transform: uppercase; box-shadow: 0 10px 25px rgba(14, 165, 233, 0.4) !important; transition: all 0.3s ease !important; width: auto !important; }
+        .stButton > button:hover { transform: translateY(-3px) scale(1.02) !important; box-shadow: 0 15px 35px rgba(99, 102, 241, 0.6) !important; background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%) !important; }
     </style>
-    """, unsafe_allow_html=True)
+    """
 
-    st.markdown('<div class="landing-page">', unsafe_allow_html=True)
-
-    # --- HERO SECTION ---
-    st.markdown('<div class="hero-container">', unsafe_allow_html=True)
-    try:
-        st.markdown('<div class="logo-box">', unsafe_allow_html=True)
-        st.image("logo_medicare_pro.jpeg", width=220)
-        st.markdown('</div>', unsafe_allow_html=True)
-    except:
-        pass
-    
-    st.markdown("""
+    # 3. HTML Estructural inyectando el logo procesado arriba
+    html_body = f"""
+    <div class="landing-page">
+        {logo_html}
         <h1 class="title">Gestión Domiciliaria<br>Inteligente</h1>
         <p class="subtitle">Módulos avanzados y diseño intuitivo para llevar el control de tu clínica al máximo nivel.</p>
-    </div>
-    """, unsafe_allow_html=True)
 
-    # --- TARJETAS ---
-    st.markdown("""
-    <div class="grid-cards">
-        <div class="glass-card-pro"><div class="icon-box-pro">📍</div><h4 class="card-title-pro">Fichaje GPS</h4><p class="card-text-pro">Control de asistencia verificado por coordenadas exactas.</p></div>
-        <div class="glass-card-pro"><div class="icon-box-pro">📄</div><h4 class="card-title-pro">Evolución Médica</h4><p class="card-text-pro">Carga digital de signos vitales y fotografías clínicas.</p></div>
-        <div class="glass-card-pro"><div class="icon-box-pro">💊</div><h4 class="card-title-pro">Stock Inteligente</h4><p class="card-text-pro">Gestión de inventario con descuento automático por práctica.</p></div>
-        <div class="glass-card-pro"><div class="icon-box-pro">✍️</div><h4 class="card-title-pro">Firma Digital</h4><p class="card-text-pro">Recetas y consentimientos validados directamente en pantalla.</p></div>
-        <div class="glass-card-pro"><div class="icon-box-pro">📹</div><h4 class="card-title-pro">Telemedicina</h4><p class="card-text-pro">Videollamadas integradas al historial del paciente.</p></div>
-        <div class="glass-card-pro"><div class="icon-box-pro">👶</div><h4 class="card-title-pro">Pediatría</h4><p class="card-text-pro">Control de crecimiento y gráficas de percentiles automatizadas.</p></div>
-        <div class="glass-card-pro"><div class="icon-box-pro">💧</div><h4 class="card-title-pro">Balance Hídrico</h4><p class="card-text-pro">Cálculo estricto con alertas por retención de líquidos.</p></div>
-        <div class="glass-card-pro"><div class="icon-box-pro">📋</div><h4 class="card-title-pro">Auditoría RRHH</h4><p class="card-text-pro">Cierres diarios, reportes y liquidación de servicios.</p></div>
-    </div>
-    """, unsafe_allow_html=True)
+        <div class="grid-cards">
+            <div class="glass-card-pro"><div class="icon-box-pro">📍</div><h4 class="card-title-pro">Fichaje GPS</h4><p class="card-text-pro">Control de asistencia verificado por coordenadas exactas.</p></div>
+            <div class="glass-card-pro"><div class="icon-box-pro">📄</div><h4 class="card-title-pro">Evolución Médica</h4><p class="card-text-pro">Carga digital de signos vitales y fotografías clínicas.</p></div>
+            <div class="glass-card-pro"><div class="icon-box-pro">💊</div><h4 class="card-title-pro">Stock Inteligente</h4><p class="card-text-pro">Gestión de inventario con descuento automático por práctica.</p></div>
+            <div class="glass-card-pro"><div class="icon-box-pro">✍️</div><h4 class="card-title-pro">Firma Digital</h4><p class="card-text-pro">Recetas y consentimientos validados directamente en pantalla.</p></div>
+            <div class="glass-card-pro"><div class="icon-box-pro">📹</div><h4 class="card-title-pro">Telemedicina</h4><p class="card-text-pro">Videollamadas integradas al historial del paciente.</p></div>
+            <div class="glass-card-pro"><div class="icon-box-pro">👶</div><h4 class="card-title-pro">Pediatría</h4><p class="card-text-pro">Control de crecimiento y gráficas de percentiles automatizadas.</p></div>
+            <div class="glass-card-pro"><div class="icon-box-pro">💧</div><h4 class="card-title-pro">Balance Hídrico</h4><p class="card-text-pro">Cálculo estricto con alertas por retención de líquidos.</p></div>
+            <div class="glass-card-pro"><div class="icon-box-pro">📋</div><h4 class="card-title-pro">Auditoría RRHH</h4><p class="card-text-pro">Cierres diarios, reportes y liquidación de servicios.</p></div>
+        </div>
 
-    # --- CONTACTO ---
-    st.markdown("""
-    <div class="contact-section-pro">
-        <h3 style="color: white; margin: 0 0 10px; font-size: 1.8rem; font-weight: 700;">¿Necesitas soporte o implementación?</h3>
-        <p style="color: #94a3b8; margin: 0 0 10px; font-size: 1.05rem;">Comunícate directamente con nuestro equipo de especialistas.</p>
-        
-        <div class="contact-grid">
-            <div class="contact-profile">
-                <h4 style="color:white; margin: 0 0 5px; font-size: 1.3rem;">Enzo N. Girardi</h4>
-                <p style="color:#38bdf8; font-size:0.85rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin: 0 0 20px;">Desarrollo y Soporte Técnico</p>
-                <div style="display:flex; gap:15px; justify-content:center;">
-                    <a href="https://wa.me/5493584302024" target="_blank" class="btn-link-pro btn-wpp">💬 WhatsApp</a>
-                    <a href="mailto:enzogirardi84@gmail.com" class="btn-link-pro btn-mail">✉️ Email</a>
-                </div>
-            </div>
+        <div class="contact-section-pro">
+            <h3 style="color: white; margin: 0 0 10px; font-size: 1.7rem; font-weight: 700;">¿Necesitas soporte o implementación?</h3>
+            <p style="color: #94a3b8; margin: 0 0 10px; font-size: 1rem;">Comunícate directamente con nuestro equipo de especialistas.</p>
             
-            <div class="contact-profile">
-                <h4 style="color:white; margin: 0 0 5px; font-size: 1.3rem;">Darío Lanfranco</h4>
-                <p style="color:#10b981; font-size:0.85rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin: 0 0 20px;">Implementación y Contratos</p>
-                <div style="display:flex; gap:15px; justify-content:center;">
-                    <a href="https://wa.me/5493584201263" target="_blank" class="btn-link-pro btn-wpp">💬 WhatsApp</a>
-                    <a href="mailto:dariolanfrancoruffener@gmail.com" class="btn-link-pro btn-mail">✉️ Email</a>
+            <div class="contact-grid">
+                <div class="contact-profile">
+                    <h4 style="color:white; margin: 0 0 5px; font-size: 1.3rem;">Enzo N. Girardi</h4>
+                    <p style="color:#38bdf8; font-size:0.85rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin: 0 0 20px;">Desarrollo y Soporte Técnico</p>
+                    <div style="display:flex; gap:15px; justify-content:center;">
+                        <a href="https://wa.me/5493584302024" target="_blank" class="btn-link-pro btn-wpp">💬 WhatsApp</a>
+                        <a href="mailto:enzogirardi84@gmail.com" class="btn-link-pro btn-mail">✉️ Email</a>
+                    </div>
+                </div>
+                
+                <div class="contact-profile">
+                    <h4 style="color:white; margin: 0 0 5px; font-size: 1.3rem;">Darío Lanfranco</h4>
+                    <p style="color:#10b981; font-size:0.85rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin: 0 0 20px;">Implementación y Contratos</p>
+                    <div style="display:flex; gap:15px; justify-content:center;">
+                        <a href="https://wa.me/5493584201263" target="_blank" class="btn-link-pro btn-wpp">💬 WhatsApp</a>
+                        <a href="mailto:dariolanfrancoruffener@gmail.com" class="btn-link-pro btn-mail">✉️ Email</a>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """
+    
+    # 4. Inyectamos todo el bloque de una sola vez
+    st.markdown(html_css + html_body, unsafe_allow_html=True)
 
-    # --- BOTÓN DE INGRESO ---
-    # Nota: No uso use_container_width=True para que el botón no sea inmenso y se centre gracias al CSS
+
+# ====================== LÓGICA DE RUTEO (Botón de Ingreso) ======================
+if "entered_app" not in st.session_state:
+    st.session_state.entered_app = False
+
+if not st.session_state.entered_app:
+    mostrar_inicio_publicitario()
+    
     if st.button("🚀 INGRESAR AL SISTEMA", key="btn_enter_final"):
         st.session_state.entered_app = True
         st.rerun()
+        
+    st.stop() # Freno absoluto acá
 
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.stop()
+# =================================================================================
+# A partir de acá, Streamlit dibuja tu sistema original con VADEMECUM, inputs, etc.
     
 # =====================================================================
 # ACÁ EMPIEZA TU CÓDIGO NORMAL DEL SISTEMA (BASE DE DATOS, VADEMECUM, ETC.)
