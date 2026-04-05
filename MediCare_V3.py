@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
+import streamlit.components.v1 as components
 import base64
-import textwrap 
 from datetime import datetime, date, timedelta
 import json
 import pytz
@@ -16,7 +16,7 @@ from PIL import Image
 import altair as alt
 
 # 1. CONFIGURACIÓN INICIAL
-st.set_page_config(page_title="MediCare Enterprise PRO V9.11", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="MediCare PRO V9.11", layout="wide", initial_sidebar_state="collapsed")
 
 # =====================================================================
 # --- LANDING PAGE Y CONTROL DE FLUJO ---
@@ -25,136 +25,103 @@ if "entered_app" not in st.session_state:
     st.session_state.entered_app = False
 
 if not st.session_state.entered_app:
-    # 1. ESTILOS GLOBALES DE LA PUBLICIDAD (Más iluminado)
+    # 1. ESTILOS GLOBALES
     st.markdown("""
         <style>
             #MainMenu {visibility: hidden;}
             header {visibility: hidden;}
             footer {visibility: hidden;}
-            
-            /* Matamos el padding superior y global de Streamlit */
-            .block-container {
-                padding-top: 0rem !important; 
-                padding-bottom: 0rem !important; 
-                max-width: 100% !important;
-                margin-top: 0 !important;
-            }
-            
-            /* Fondo de pantalla global con degradado radial 'iluminado' */
-            .stApp {
-                background-color: #020617 !important;
-                background-image: radial-gradient(circle at top right, #0F172A 0%, #020617 100%) !important;
-            }
-            
-            /* CSS Específico de tu Landing Page Mejorado */
-            .landing-page {
-                font-family: 'Inter', sans-serif;
-                color: #f8fafc;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                padding: 40px 15px 80px; /* Más padding abajo para el botón central */
-            }
-            .title { font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 900; line-height: 1.15; margin: 0 0 15px; text-align: center; }
-            .subtitle { font-size: 1.15rem; color: #cbd5e1; font-weight: 400; margin: 0 0 40px; max-width: 650px; text-align: center; line-height: 1.6; }
-            
-            .grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; max-width: 1100px; width: 100%; margin-bottom: 50px; }
-            .glass-card-pro {
-                background: linear-gradient(145deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.5));
-                backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-                border: 1px solid rgba(56, 189, 248, 0.1); border-radius: 18px;
-                padding: 22px 18px; transition: all 0.3s ease; text-align: center;
-                display: flex; flex-direction: column; align-items: center; justify-content: space-between;
-                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            }
-            .glass-card-pro:hover {
-                transform: translateY(-4px);
-                border-color: rgba(56, 189, 248, 0.4);
-                box-shadow: 0 10px 20px rgba(0,0,0,0.3), 0 0 20px rgba(56,189,248,0.1);
-            }
-            .icon-box-pro {
-                font-size: 2.6rem; margin-bottom: 12px;
-                background: rgba(56, 189, 248, 0.1); width: 60px; height: 60px;
-                display: flex; align-items: center; justify-content: center; border-radius: 16px;
-                box-shadow: 0 0 10px rgba(56,189,248,0.2) inset;
-            }
-            .card-title-pro { font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; color: #ffffff; }
-            .card-text-pro { color: #cbd5e1; font-size: 0.92rem; line-height: 1.45; margin: 0; }
-            
-            .contact-section-pro { max-width: 900px; width: 100%; margin-top: 20px; text-align: center; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 24px; padding: 40px; }
-            .contact-grid-pro { display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; margin-top: 25px; }
-            .contact-profile-pro { flex: 1; min-width: 250px; max-width: 320px; background: rgba(30, 41, 59, 0.4); padding: 25px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.03); }
-            .btn-flex-pro { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;}
-            .btn-link-pro { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 20px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: all 0.2s; width: 100%; max-width: 140px; }
-            .wpp-pro { background: rgba(37, 211, 102, 0.15); color: #25D366; border: 1px solid rgba(37, 211, 102, 0.3); }
-            .wpp-pro:hover { background: #25D366; color: white; }
-            .mail-pro { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3); }
-            .mail-pro:hover { background: #cbd5e1; color: #0f172a; }
-
-            /* Estilo del botón central de ingreso (MÁS NEÓN Y FUSIÓN DE DEGRADADO) */
-            div.stButton { display: flex; justify-content: center; margin-top: 20px; padding-bottom: 40px; }
-            div.stButton > button {
-                background: linear-gradient(135deg, #0ea5e9 0%, #4f46e5 100%) !important;
-                color: white !important;
-                font-size: 1.2rem !important;
-                font-weight: 800 !important;
-                padding: 15px 50px !important;
-                border-radius: 9999px !important;
-                border: 1px solid rgba(255,255,255,0.2) !important;
-                box-shadow: 0 0 20px rgba(14, 165, 233, 0.5) !important;
-                transition: all 0.3s ease !important;
-                text-transform: uppercase; letter-spacing: 2px;
-            }
-            div.stButton > button:hover {
-                transform: translateY(-3px) !important;
-                box-shadow: 0 0 40px rgba(99, 102, 241, 0.7) !important;
-                background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%) !important;
-            }
+            .block-container { padding-top: 0rem !important; padding-bottom: 0rem !important; max-width: 100% !important; margin-top: 0 !important; }
+            .stApp { background-color: #020617 !important; background-image: radial-gradient(circle at top right, #0F172A 0%, #020617 100%) !important; }
+            /* Botón de ingreso nativo Streamlit */
+            div.stButton { display: flex; justify-content: center; margin-top: 20px; padding-bottom: 60px; }
+            div.stButton > button { background: linear-gradient(90deg, #38bdf8, #0ea5e9) !important; color: white !important; font-size: 1.1rem !important; font-weight: 800 !important; padding: 15px 60px !important; border-radius: 9999px !important; border: none !important; box-shadow: 0 10px 25px rgba(56, 189, 248, 0.4) !important; transition: all 0.3s ease !important; text-transform: uppercase; letter-spacing: 1px !important; }
+            div.stButton > button:hover { transform: translateY(-4px) !important; box-shadow: 0 15px 35px rgba(56, 189, 248, 0.6) !important; }
         </style>
     """, unsafe_allow_html=True)
 
-    # 2. PREPARAR EL LOGO EN BASE64 (Esto evita que Streamlit corte el HTML)
+    # 2. LOGO EN BASE64
     try:
         with open("logo_medicare_pro.jpeg", "rb") as image_file:
             encoded_string = base64.b64encode(image_file.read()).decode()
-        logo_html = f'<img src="data:image/jpeg;base64,{encoded_string}" style="height: 100px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.4), 0 0 20px rgba(56,189,248,0.2); margin-bottom: 20px;">'
+        logo_html = f'<img src="data:image/jpeg;base64,{encoded_string}" style="height: 100px; border-radius: 18px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); margin-bottom: 20px;">'
     except Exception:
-        logo_html = '<h1 style="font-size:3.5rem; font-weight:900; color:#38bdf8; margin-bottom: 20px;">MediCare Enterprise PRO</h1>'
+        logo_html = '<div style="margin-bottom: 20px;"><h1 style="font-size:2rem; font-weight:900; color:#38bdf8; margin:0;">MediCare PRO</h1></div>'
 
-    # 3. HTML BLINDADO CON TEXTWRAP.DEDENT Y DETALLES DE COLORES "NEÓN"
-    html_landing = textwrap.dedent(f"""
+    # 3. HTML AISLADO EN COMPONENTS (Es imposible que salga como texto)
+    html_landing = f"""
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
+            body {{ margin: 0; padding: 0; font-family: 'Inter', sans-serif; background: transparent; color: #F8FAFC; }}
+            .landing-page {{
+                display: flex; flex-direction: column; align-items: center;
+                padding: 40px 15px 20px; text-align: center;
+            }}
+            .title {{ font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 900; line-height: 1.15; margin: 0 0 15px; background: linear-gradient(to right, #ffffff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }}
+            .subtitle {{ font-size: 1.15rem; color: #94a3b8; font-weight: 400; margin: 0 0 40px; max-width: 650px; line-height: 1.6; }}
+            
+            .grid-cards {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; max-width: 1100px; width: 100%; margin-bottom: 50px; }}
+            .glass-card-pro {{ background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 18px; padding: 22px 18px; transition: all 0.3s ease; text-align: left; }}
+            .glass-card-pro:hover {{ transform: translateY(-4px); border-color: #38bdf8; }}
+            
+            .icon-badge {{ background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.2); width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 16px; }}
+            
+            .card-title-pro {{ font-size: 1.15rem; font-weight: 700; color: #f8fafc; margin: 0 0 8px; }}
+            .card-text-pro {{ color: #94a3b8; font-size: 0.92rem; line-height: 1.45; margin: 0; }}
+            
+            .contact-section-pro {{ max-width: 900px; width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 24px; padding: 40px; margin-bottom: 20px; }}
+            .contact-grid-pro {{ display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; margin-top: 30px; }}
+            .contact-profile-pro {{ flex: 1; min-width: 240px; max-width: 320px; background: rgba(30, 41, 59, 0.3); border: 1px solid rgba(255, 255, 255, 0.02); padding: 24px; border-radius: 16px; transition: 0.3s; }}
+            .contact-profile-pro:hover {{ background: rgba(30, 41, 59, 0.5); border-color: rgba(56, 189, 248, 0.2); }}
+            
+            .contact-name {{ font-size: 1.25rem; font-weight: 700; color: #38bdf8; margin: 0 0 4px; }}
+            .contact-role {{ font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin: 0 0 20px; }}
+            
+            .btn-flex-pro {{ display: flex; gap: 12px; justify-content: center; }}
+            .btn-link-pro {{ display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 16px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 0.85rem; width: 100%; transition: 0.2s; }}
+            .wpp-pro {{ background: rgba(37, 211, 102, 0.1); color: #25D366; border: 1px solid rgba(37, 211, 102, 0.2); }}
+            .wpp-pro:hover {{ background: #25D366; color: white; }}
+            .mail-pro {{ background: rgba(148, 163, 184, 0.1); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.2); }}
+            .mail-pro:hover {{ background: #cbd5e1; color: #0f172a; }}
+        </style>
+    </head>
+    <body>
         <div class="landing-page">
             {logo_html}
-            <h1 class="title">Gestión Domiciliaria <span style="background: linear-gradient(90deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Inteligente</span></h1>
+            <h1 class="title">Gestión Domiciliaria<br>Inteligente</h1>
             <p class="subtitle">Módulos avanzados y diseño intuitivo para llevar el control de tu clínica al máximo nivel.</p>
 
             <div class="grid-cards">
-                <div class="glass-card-pro"><div class="icon-box-pro">📍</div><h4 class="card-title-pro">Fichaje GPS</h4><p class="card-text-pro">Control de asistencia verificado por coordenadas exactas del domicilio.</p></div>
-                <div class="glass-card-pro"><div class="icon-box-pro">📄</div><h4 class="card-title-pro">Evolución Médica</h4><p class="card-text-pro">Carga digital de signos vitales, parámetros y fotografías clínicas.</p></div>
-                <div class="glass-card-pro"><div class="icon-box-pro">💊</div><h4 class="card-title-pro">Stock Inteligente</h4><p class="card-text-pro">Gestión de inventario con descuento automático por práctica.</p></div>
-                <div class="glass-card-pro"><div class="icon-box-pro">✍️</div><h4 class="card-title-pro">Firma Digital</h4><p class="card-text-pro">Recetas y consentimientos validados con firma directamente en pantalla.</p></div>
-                <div class="glass-card-pro"><div class="icon-box-pro">📹</div><h4 class="card-title-pro">Telemedicina</h4><p class="card-text-pro">Videollamadas P2P integradas nativamente al historial del paciente.</p></div>
-                <div class="glass-card-pro"><div class="icon-box-pro">👶</div><h4 class="card-title-pro">Pediatría</h4><p class="card-text-pro">Control de crecimiento y gráficas de percentiles automatizadas.</p></div>
-                <div class="glass-card-pro"><div class="icon-box-pro">💧</div><h4 class="card-title-pro">Balance Hídrico</h4><p class="card-text-pro">Cálculo estricto de ingresos/egresos con alertas por retención de líquidos.</p></div>
-                <div class="glass-card-pro"><div class="icon-box-pro">📋</div><h4 class="card-title-pro">Auditoría RRHH</h4><p class="card-text-pro">Cierres diarios, reportes de desempeño y liquidación de servicios.</p></div>
+                <div class="glass-card-pro"><div class="icon-badge">📍</div><h4 class="card-title-pro">Fichaje GPS</h4><p class="card-text-pro">Control de asistencia verificado por coordenadas exactas del domicilio.</p></div>
+                <div class="glass-card-pro"><div class="icon-badge">📄</div><h4 class="card-title-pro">Evolución Médica</h4><p class="card-text-pro">Carga digital de signos vitales, parámetros y fotografías clínicas.</p></div>
+                <div class="glass-card-pro"><div class="icon-badge">💊</div><h4 class="card-title-pro">Stock Inteligente</h4><p class="card-text-pro">Gestión de inventario con descuento automático por práctica.</p></div>
+                <div class="glass-card-pro"><div class="icon-badge">✍️</div><h4 class="card-title-pro">Firma Digital</h4><p class="card-text-pro">Recetas y consentimientos validados con firma directamente en pantalla.</p></div>
+                <div class="glass-card-pro"><div class="icon-badge">📹</div><h4 class="card-title-pro">Telemedicina</h4><p class="card-text-pro">Videollamadas P2P integradas nativamente al historial del paciente.</p></div>
+                <div class="glass-card-pro"><div class="icon-badge">👶</div><h4 class="card-title-pro">Pediatría</h4><p class="card-text-pro">Control de crecimiento y gráficas de percentiles automatizadas.</p></div>
+                <div class="glass-card-pro"><div class="icon-badge">💧</div><h4 class="card-title-pro">Balance Hídrico</h4><p class="card-text-pro">Cálculo estricto de ingresos/egresos con alertas por retención de líquidos.</p></div>
+                <div class="glass-card-pro"><div class="icon-badge">📋</div><h4 class="card-title-pro">Auditoría RRHH</h4><p class="card-text-pro">Cierres diarios, reportes de desempeño y liquidación de servicios.</p></div>
             </div>
 
             <div class="contact-section-pro">
-                <h3 style="color: white; margin: 0 0 10px; font-size: 1.7rem; font-weight: 700;">¿Necesitas soporte o implementación?</h3>
-                <p style="color: #cbd5e1; margin: 0 0 10px; font-size: 1rem;">Comunícate directamente con nuestro equipo de especialistas.</p>
+                <h3 style="color: white; margin: 0 0 8px; font-size: 1.5rem; font-weight: 700;">¿Necesitas soporte o implementación?</h3>
+                <p style="color: #94a3b8; margin: 0; font-size: 0.95rem;">Comunícate directamente con nuestro equipo de especialistas.</p>
                 
                 <div class="contact-grid-pro">
                     <div class="contact-profile-pro">
-                        <h4 style="color:white; margin: 0 0 5px; font-size: 1.3rem;">Enzo N. Girardi</h4>
-                        <p style="color:#38bdf8; font-size:0.85rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin: 0 0 20px;">Desarrollo y Soporte Técnico</p>
+                        <h4 class="contact-name">Enzo N. Girardi</h4>
+                        <p class="contact-role">Desarrollo y Soporte Técnico</p>
                         <div class="btn-flex-pro">
                             <a href="https://wa.me/5493584302024" target="_blank" class="btn-link-pro wpp-pro">💬 WhatsApp</a>
                             <a href="mailto:enzogirardi84@gmail.com" class="btn-link-pro mail-pro">✉️ Email</a>
                         </div>
                     </div>
                     <div class="contact-profile-pro">
-                        <h4 style="color:white; margin: 0 0 5px; font-size: 1.3rem;">Darío Lanfranco</h4>
-                        <p style="color:#10b981; font-size:0.85rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin: 0 0 20px;">Implementación y Contratos</p>
+                        <h4 class="contact-name">Darío Lanfranco</h4>
+                        <p class="contact-role">Implementación y Contratos</p>
                         <div class="btn-flex-pro">
                             <a href="https://wa.me/5493584201263" target="_blank" class="btn-link-pro wpp-pro">💬 WhatsApp</a>
                             <a href="mailto:dariolanfrancoruffener@gmail.com" class="btn-link-pro mail-pro">✉️ Email</a>
@@ -163,33 +130,31 @@ if not st.session_state.entered_app:
                 </div>
             </div>
         </div>
-    """)
+    </body>
+    </html>
+    """
     
-    # 4. INYECTAR EL CÓDIGO FINAL NATIVO (SIN CAJITA GRIS GRACIAS AL TEXTWRAP)
-    st.markdown(html_landing, unsafe_allow_html=True)
+    # Inyectamos usando components.html para aislarlo de Markdown, con scroll activo por las dudas
+    components.html(html_landing, height=1350, scrolling=True)
     
-    # 5. BOTÓN DE INGRESO
-    if st.button("🚀 INGRESAR AL SISTEMA", key="btn_ingresar_main"):
+    # Botón de ingreso nativo
+    if st.button("🚀 INGRESAR AL SISTEMA", key="btn_ingreso_app"):
         st.session_state.entered_app = True
         st.rerun()
 
-    # 6. FRENO OBLIGATORIO: Todo se detiene aquí hasta que hagan clic en Ingresar
-    st.stop()
+    st.stop() # Freno absoluto
 
 # =====================================================================
-# --- PANTALLA 2: EL SISTEMA REAL (MEDICARE PRO) ---
+# --- PANTALLA 2: EL SISTEMA REAL ---
 # =====================================================================
-# Restauramos la visibilidad de Streamlit normal (Menú y barra lateral)
 st.markdown("<style>#MainMenu {visibility: visible;} header {visibility: visible;} .block-container {padding-top: 3rem !important;}</style>", unsafe_allow_html=True)
 
-# Botón para salir a la publicidad de nuevo (en la barra lateral)
 if st.sidebar.button("⬅️ Volver a la Publicidad"):
     st.session_state.entered_app = False
     st.rerun()
 
 st.sidebar.markdown("---")
-
-# --- ACÁ ABAJO EMPIEZA TU CÓDIGO NORMAL DEL VADEMÉCUM Y EL SISTEMA ---
+# --- ACÁ ABAJO EMPIEZA TU CÓDIGO DEL SISTEMA ---
 # ACÁ EMPIEZA TU CÓDIGO NORMAL DEL SISTEMA (BASE DE DATOS, VADEMECUM, ETC.)
 # =====================================================================
 # --- VADEMÉCUM GLOBAL MASIVO ---
