@@ -18,68 +18,96 @@ import altair as alt
 # 1. CONFIGURACIÓN INICIAL (DEBE SER LA PRIMERA LÍNEA DE STREAMLIT)
 st.set_page_config(page_title="MediCare PRO V9.11", layout="wide", initial_sidebar_state="collapsed")
 
-def aplicar_estilos_streamlit():
-    """Inyecta el CSS global y el diseño del botón neón de ingreso."""
+# ====================== PANTALLA PUBLICITARIA / LANDING PAGE ======================
+if "entered_app" not in st.session_state:
+    st.session_state.entered_app = False
+
+if not st.session_state.entered_app:
     st.markdown("""
-<style>
-    #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
-    .block-container { padding-top: 0rem !important; padding-bottom: 0rem !important; max-width: 100% !important; }
-    .stApp { 
-        background-color: #020617 !important; 
-        background-image: radial-gradient(circle at top right, #0F172A 0%, #020617 100%) !important; 
-    }
-    div.stButton { display: flex; justify-content: center; margin-top: 30px; padding-bottom: 60px; }
-    div.stButton > button {
-        background: linear-gradient(135deg, #0ea5e9 0%, #4f46e5 100%) !important;
-        color: white !important; border: 1px solid rgba(255,255,255,0.2) !important;
-        padding: 1.2rem 3.5rem !important; border-radius: 50px !important;
-        font-size: 1.2rem !important; font-weight: 800 !important;
-        text-transform: uppercase; letter-spacing: 2px !important;
-        box-shadow: 0 0 20px rgba(14, 165, 233, 0.5) !important;
-        transition: all 0.4s ease !important;
-    }
-    div.stButton > button:hover { transform: translateY(-5px); box-shadow: 0 0 40px rgba(99, 102, 241, 0.7) !important; }
-</style>
+    <style>
+        .landing-page {
+            background: linear-gradient(135deg, #0f172a 0%, #020617 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px 20px;
+            color: white;
+        }
+        .grid-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 40px auto;
+        }
+        .glass-card-pro {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: 20px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+        .glass-card-pro:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px -10px rgba(56, 189, 248, 0.3);
+        }
+        .icon-box-pro {
+            font-size: 2.8rem;
+            margin-bottom: 16px;
+        }
+        .card-title-pro {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        .card-text-pro {
+            color: #94a3b8;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+        .contact-section-pro {
+            max-width: 900px;
+            margin: 60px auto 0;
+        }
+        .btn-link-pro {
+            background: #25D366;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 9999px;
+            text-decoration: none;
+            font-weight: 600;
+            margin: 0 8px;
+            display: inline-block;
+        }
+        .btn-flex-pro {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+    </style>
     """, unsafe_allow_html=True)
 
-def mostrar_inicio_publicitario():
-    """Dibuja la landing page responsiva con las tarjetas y contactos."""
-    # OJO ACÁ: Todo el HTML está pegado al borde izquierdo a propósito para que Streamlit no lo haga cajita gris.
-    html_content = """
-<style>
-    .main-wrapper { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #F8FAFC; padding: 40px 20px; max-width: 1200px; margin: 0 auto; }
-    .hero { text-align: center; margin-bottom: 60px; }
-    .hero h1 { font-size: 3.5rem; font-weight: 800; margin-bottom: 10px; line-height: 1.2; }
-    .hero span { color: #38bdf8; }
-    
-    .grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px; margin-bottom: 50px; }
-    .glass-card-pro { background: rgba(30, 41, 59, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 30px; transition: 0.3s; }
-    .glass-card-pro:hover { transform: translateY(-10px); border-color: #38bdf8; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-    .icon-box-pro { font-size: 2.5rem; margin-bottom: 15px; }
-    .card-title-pro { font-size: 1.4rem; font-weight: 700; color: #fff; margin-bottom: 10px; }
-    .card-text-pro { font-size: 0.95rem; color: #94a3b8; line-height: 1.6; }
+    st.markdown('<div class="landing-page">', unsafe_allow_html=True)
 
-    .contact-section-pro { background: rgba(15, 23, 42, 0.7); border: 1px solid #38bdf8; border-radius: 30px; padding: 40px; text-align: center; }
-    .contact-grid-pro { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 30px; margin-top: 30px; }
-    .contact-profile-pro { background: rgba(30, 41, 59, 0.6); padding: 25px; border-radius: 20px; }
-    .contact-name { font-size: 1.5rem; font-weight: 700; color: #38bdf8; margin-bottom: 5px; }
-    .contact-role { font-size: 0.85rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 20px; font-weight: 600; }
-    
-    .btn-flex-pro { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
-    .btn-link-pro { text-decoration: none; padding: 12px 25px; border-radius: 12px; font-weight: 700; color: white; background: rgba(56, 189, 248, 0.2); border: 1px solid #38bdf8; transition: 0.3s; }
-    .btn-link-pro:hover { background: #38bdf8; color: #000; }
+    # Logo
+    try:
+        st.image("logo_medicare_pro.jpeg", width=260)
+    except:
+        st.markdown("<h1 style='font-size:4.5rem;font-weight:900;color:#38bdf8;'>MediCare PRO</h1>", unsafe_allow_html=True)
 
-    @media (max-width: 768px) { .hero h1 { font-size: 2.5rem; } }
-</style>
+    st.markdown("""
+    <h1 style="font-size: 3.6rem; font-weight: 900; line-height: 1.1; margin: 30px 0 25px 0;">
+        Todo lo que tu práctica<br>domiciliaria necesita.
+    </h1>
+    """, unsafe_allow_html=True)
 
-<div class="main-wrapper">
-    <div class="hero">
-        <h1>Tu clínica, <br><span>en una sola App.</span></h1>
-        <p style="color: #94a3b8; font-size: 1.2rem;">Gestión profesional domiciliaria con Inteligencia Artificial.</p>
-    </div>
-
+    # === TU GRID DE CARDS ===
+    st.markdown("""
     <div class="grid-cards">
         <div class="glass-card-pro"><div class="icon-box-pro">📍</div><h4 class="card-title-pro">Fichaje GPS</h4><p class="card-text-pro">Control de asistencia verificado por coordenadas exactas en el domicilio.</p></div>
         <div class="glass-card-pro"><div class="icon-box-pro">📄</div><h4 class="card-title-pro">Evolución Médica</h4><p class="card-text-pro">Carga digital de signos vitales y fotografías de heridas en tiempo real.</p></div>
@@ -90,22 +118,25 @@ def mostrar_inicio_publicitario():
         <div class="glass-card-pro"><div class="icon-box-pro">💧</div><h4 class="card-title-pro">Balance Hídrico</h4><p class="card-text-pro">Cálculo estricto de ingresos y egresos con alertas de retención.</p></div>
         <div class="glass-card-pro"><div class="icon-box-pro">📋</div><h4 class="card-title-pro">Auditoría RRHH</h4><p class="card-text-pro">Cierres diarios, reportes de desempeño y liquidación de servicios.</p></div>
     </div>
+    """, unsafe_allow_html=True)
 
+    # === SECCIÓN DE CONTACTO ===
+    st.markdown("""
     <div class="contact-section-pro">
         <h3 style="color: white; margin-bottom: 10px;">¿Desea implementar el sistema o reportar un problema?</h3>
         <p style="color: #94a3b8; margin-bottom: 30px;">Contáctenos directamente para contrataciones o soporte técnico.</p>
-        <div class="contact-grid-pro">
-            <div class="contact-profile-pro">
-                <h4 class="contact-name">Enzo Nicolás Girardi</h4>
-                <p class="contact-role">Desarrollo y Soporte Técnico</p>
+        <div class="contact-grid-pro" style="display:flex; gap:40px; justify-content:center; flex-wrap:wrap;">
+            <div class="contact-profile-pro" style="text-align:center;">
+                <h4 class="contact-name" style="color:white;">Enzo Nicolás Girardi</h4>
+                <p class="contact-role" style="color:#38bdf8;">Desarrollo y Soporte Técnico</p>
                 <div class="btn-flex-pro">
                     <a href="https://wa.me/5493584302024" target="_blank" class="btn-link-pro">WhatsApp</a>
                     <a href="mailto:enzogirardi84@gmail.com" class="btn-link-pro">Email</a>
                 </div>
             </div>
-            <div class="contact-profile-pro">
-                <h4 class="contact-name">Darío Lanfranco</h4>
-                <p class="contact-role">Implementación y Contratos</p>
+            <div class="contact-profile-pro" style="text-align:center;">
+                <h4 class="contact-name" style="color:white;">Darío Lanfranco</h4>
+                <p class="contact-role" style="color:#10b981;">Implementación y Contratos</p>
                 <div class="btn-flex-pro">
                     <a href="https://wa.me/5493584201263" target="_blank" class="btn-link-pro">WhatsApp</a>
                     <a href="mailto:dariolanfrancoruffener@gmail.com" class="btn-link-pro">Email</a>
@@ -113,37 +144,15 @@ def mostrar_inicio_publicitario():
             </div>
         </div>
     </div>
-</div>
-"""
-    st.markdown(html_content, unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
-
-# =====================================================================
-# --- CONTROL DE FLUJO: PUBLICIDAD VS SISTEMA ---
-# =====================================================================
-query_params = st.query_params
-
-if query_params.get("app") != "login":
-    aplicar_estilos_streamlit()
-    mostrar_inicio_publicitario()
-    
-    if st.button("🚀 INGRESAR AL SISTEMA PROFESIONAL"):
-        st.query_params["app"] = "login"
+    # Botón grande para entrar
+    if st.button("🚀 INGRESAR AL SISTEMA", type="primary", use_container_width=True, key="btn_enter"):
+        st.session_state.entered_app = True
         st.rerun()
-        
-    st.stop()
 
-
-# =====================================================================
-# --- PANTALLA 2: EL SISTEMA REAL ---
-# =====================================================================
-st.markdown("<style>#MainMenu {visibility: visible;} header {visibility: visible;} .block-container {padding-top: 3rem !important;}</style>", unsafe_allow_html=True)
-
-st.sidebar.markdown("---")
-if st.sidebar.button("⬅️ Volver a la Publicidad"):
-    st.query_params.clear()
-    st.rerun()
-
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.stop()   # ← Detiene el resto del programa
 # =====================================================================
 # ACÁ EMPIEZA TU CÓDIGO NORMAL DEL SISTEMA (BASE DE DATOS, VADEMECUM, ETC.)
 # =====================================================================
