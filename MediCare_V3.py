@@ -18,68 +18,85 @@ import altair as alt
 # 1. CONFIGURACIÓN INICIAL (DEBE SER LA PRIMERA LÍNEA DE STREAMLIT)
 st.set_page_config(page_title="MediCare PRO V9.11", layout="wide", initial_sidebar_state="collapsed")
 
-def mostrar_inicio_publicitario():
-    import base64
-    
-    # 1. Convertimos tu logo a código para meterlo DENTRO del HTML sin que Streamlit rompa la caja
+import streamlit as st
+import pandas as pd
+import base64
+# (Aquí van el resto de tus imports originales: datetime, supabase, io, PIL, etc.)
+
+# 1. CONFIGURACIÓN INICIAL
+st.set_page_config(page_title="MediCare PRO V9.11", layout="wide", initial_sidebar_state="collapsed")
+
+# --- CONTROL DE FLUJO Y PUBLICIDAD ---
+if "entered_app" not in st.session_state:
+    st.session_state.entered_app = False
+
+if not st.session_state.entered_app:
+    # 1. ESTILOS GLOBALES: Esto elimina el espacio azul vacío arriba de todo
+    st.markdown("""
+        <style>
+            #MainMenu {visibility: hidden;}
+            header {visibility: hidden;}
+            footer {visibility: hidden;}
+            
+            /* Matamos el padding superior por defecto de Streamlit */
+            .block-container {
+                padding-top: 0rem !important; 
+                padding-bottom: 0rem !important; 
+                max-width: 100% !important;
+                margin-top: 0 !important;
+            }
+            
+            /* Fondo de pantalla global oscuro */
+            .stApp {
+                background-color: #020617 !important;
+                background-image: radial-gradient(circle at top right, #0F172A 0%, #020617 100%) !important;
+            }
+            
+            /* CSS Específico de tu Landing Page */
+            .landing-page {
+                font-family: 'Inter', sans-serif;
+                color: white;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 40px 15px;
+            }
+            .title { font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 900; line-height: 1.15; margin: 0 0 15px; text-align: center; }
+            .subtitle { font-size: 1.15rem; color: #94a3b8; font-weight: 400; margin: 0 0 40px; max-width: 650px; text-align: center; line-height: 1.6; }
+            
+            .grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; max-width: 1100px; width: 100%; margin-bottom: 50px; }
+            .glass-card-pro { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 18px; padding: 22px 18px; transition: all 0.3s ease; text-align: center; }
+            .glass-card-pro:hover { transform: translateY(-4px); border-color: #38bdf8; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+            .icon-box-pro { font-size: 2.6rem; margin-bottom: 12px; }
+            .card-title-pro { font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; color: white; }
+            .card-text-pro { color: #94a3b8; font-size: 0.92rem; line-height: 1.45; margin: 0; }
+            
+            .contact-section-pro { max-width: 900px; width: 100%; margin-top: 20px; text-align: center; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 24px; padding: 40px; }
+            .contact-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; margin-top: 25px; }
+            .contact-profile { flex: 1; min-width: 250px; max-width: 320px; background: rgba(30, 41, 59, 0.4); padding: 25px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.03); }
+            .btn-link-pro { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 20px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: all 0.2s; width: 100%; max-width: 140px; }
+            .btn-wpp { background: rgba(37, 211, 102, 0.15); color: #25D366; border: 1px solid rgba(37, 211, 102, 0.3); }
+            .btn-wpp:hover { background: #25D366; color: white; }
+            .btn-mail { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3); }
+            .btn-mail:hover { background: #cbd5e1; color: #0f172a; }
+
+            /* Estilo del botón central de Streamlit */
+            div.stButton { display: flex; justify-content: center; margin-top: 20px; padding-bottom: 40px; }
+            div.stButton > button { background: linear-gradient(90deg, #38bdf8, #0ea5e9) !important; color: white !important; font-size: 1.2rem !important; font-weight: 700 !important; padding: 15px 50px !important; border-radius: 9999px !important; border: none !important; box-shadow: 0 10px 20px rgba(56, 189, 248, 0.3) !important; transition: all 0.3s ease !important; }
+            div.stButton > button:hover { transform: translateY(-3px) !important; box-shadow: 0 15px 25px rgba(56, 189, 248, 0.5) !important; }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # 2. PREPARAR EL LOGO EN BASE64 (Esto evita que Streamlit corte el HTML)
     try:
         with open("logo_medicare_pro.jpeg", "rb") as image_file:
             encoded_string = base64.b64encode(image_file.read()).decode()
-        logo_html = f'<img src="data:image/jpeg;base64,{encoded_string}" style="max-width: 220px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); margin-bottom: 30px;">'
-    except Exception as e:
-        # Si no encuentra la imagen, muestra el texto con estilo
-        logo_html = '<div style="margin-bottom: 30px;"><h1 style="font-size:3.5rem; font-weight:900; color:#38bdf8; margin:0;">MediCare PRO</h1></div>'
+        logo_html = f'<img src="data:image/jpeg;base64,{encoded_string}" style="max-width: 220px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); margin-bottom: 20px;">'
+    except Exception:
+        logo_html = '<h1 style="font-size:3.5rem; font-weight:900; color:#38bdf8; margin-bottom: 20px;">MediCare PRO</h1>'
 
-    # 2. CSS (Separado para evitar problemas con las llaves de Python)
-    html_css = """
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
-        
-        /* Ajuste agresivo para matar espacios vacíos de Streamlit */
-        div[data-testid="stBlock"] { padding-top: 0 !important; }
-        .block-container { padding-top: 1rem !important; margin-top: 0 !important; }
-        
-        .landing-page {
-            background: radial-gradient(circle at top, #1e293b 0%, #020617 80%);
-            border-radius: 30px;
-            padding: 40px 20px 60px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            color: #f8fafc;
-            font-family: 'Inter', sans-serif;
-            margin-top: -20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-        }
-
-        .title { font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 900; line-height: 1.15; margin: 0 0 15px; text-align: center; background: linear-gradient(to right, #ffffff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .subtitle { font-size: 1.15rem; color: #94a3b8; font-weight: 400; margin: 0 0 50px; max-width: 650px; text-align: center; line-height: 1.6; }
-
-        .grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; max-width: 1100px; width: 100%; margin-bottom: 50px; }
-        .glass-card-pro { background: linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.4)); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); border-top: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 25px 20px; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; text-align: center; }
-        .glass-card-pro:hover { transform: translateY(-5px); border-color: rgba(56, 189, 248, 0.4); box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3); }
-        .icon-box-pro { font-size: 2.2rem; margin-bottom: 12px; background: rgba(56, 189, 248, 0.1); width: 55px; height: 55px; display: flex; align-items: center; justify-content: center; border-radius: 14px; }
-        .card-title-pro { font-size: 1.2rem; font-weight: 700; color: #f8fafc; margin: 0 0 8px; }
-        .card-text-pro { color: #94a3b8; font-size: 0.9rem; line-height: 1.5; margin: 0; }
-
-        .contact-section-pro { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 24px; padding: 40px; max-width: 900px; width: 100%; text-align: center; }
-        .contact-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; margin-top: 25px; }
-        .contact-profile { flex: 1; min-width: 250px; max-width: 320px; background: rgba(30, 41, 59, 0.4); padding: 25px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.03); }
-        .btn-link-pro { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 20px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: all 0.2s; width: 100%; max-width: 140px; }
-        .btn-wpp { background: rgba(37, 211, 102, 0.15); color: #25D366; border: 1px solid rgba(37, 211, 102, 0.3); }
-        .btn-wpp:hover { background: #25D366; color: white; }
-        .btn-mail { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3); }
-        .btn-mail:hover { background: #cbd5e1; color: #0f172a; }
-        
-        /* Botón Nativo Neón */
-        .stButton { display: flex !important; justify-content: center !important; width: 100% !important; margin-top: 30px; }
-        .stButton > button { background: linear-gradient(135deg, #0ea5e9 0%, #4f46e5 100%) !important; color: white !important; border: 1px solid rgba(255,255,255,0.2) !important; padding: 1.2rem 4rem !important; border-radius: 50px !important; font-size: 1.1rem !important; font-weight: 800 !important; letter-spacing: 1.5px !important; text-transform: uppercase; box-shadow: 0 10px 25px rgba(14, 165, 233, 0.4) !important; transition: all 0.3s ease !important; width: auto !important; }
-        .stButton > button:hover { transform: translateY(-3px) scale(1.02) !important; box-shadow: 0 15px 35px rgba(99, 102, 241, 0.6) !important; background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%) !important; }
-    </style>
-    """
-
-    # 3. HTML Estructural inyectando el logo procesado arriba
-    html_body = f"""
+    # 3. RENDERIZAR TODO EL HTML JUNTO (TU CÓDIGO + ENCABEZADOS)
+    st.markdown(f"""
     <div class="landing-page">
         {logo_html}
         <h1 class="title">Gestión Domiciliaria<br>Inteligente</h1>
@@ -121,28 +138,29 @@ def mostrar_inicio_publicitario():
             </div>
         </div>
     </div>
-    """
-    
-    # 4. Inyectamos todo el bloque de una sola vez
-    st.markdown(html_css + html_body, unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
-
-# ====================== LÓGICA DE RUTEO (Botón de Ingreso) ======================
-if "entered_app" not in st.session_state:
-    st.session_state.entered_app = False
-
-if not st.session_state.entered_app:
-    mostrar_inicio_publicitario()
-    
-    if st.button("🚀 INGRESAR AL SISTEMA", key="btn_enter_final"):
+    # 4. BOTÓN PARA INGRESAR
+    if st.button("🚀 INGRESAR AL SISTEMA", key="btn_ingresar_main"):
         st.session_state.entered_app = True
         st.rerun()
-        
-    st.stop() # Freno absoluto acá
 
-# =================================================================================
-# A partir de acá, Streamlit dibuja tu sistema original con VADEMECUM, inputs, etc.
-    
+    # 5. FRENO OBLIGATORIO: Todo se detiene aquí hasta que hagan clic en Ingresar
+    st.stop()
+
+# =====================================================================
+# --- PANTALLA 2: EL SISTEMA REAL ---
+# =====================================================================
+# Restaurar la visibilidad de Streamlit normal
+st.markdown("<style>#MainMenu {visibility: visible;} header {visibility: visible;} .block-container {padding-top: 3rem !important;}</style>", unsafe_allow_html=True)
+
+# Botón para salir a la publicidad de nuevo
+if st.sidebar.button("⬅️ Volver a la Publicidad"):
+    st.session_state.entered_app = False
+    st.rerun()
+
+st.sidebar.markdown("---")
+
 # =====================================================================
 # ACÁ EMPIEZA TU CÓDIGO NORMAL DEL SISTEMA (BASE DE DATOS, VADEMECUM, ETC.)
 # =====================================================================
