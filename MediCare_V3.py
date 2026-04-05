@@ -22,123 +22,140 @@ if "entered_app" not in st.session_state:
     st.session_state.entered_app = False
 
 if not st.session_state.entered_app:
+    # Ocultar la UI de Streamlit y dar formato al Botón
     st.markdown("""
         <style>
             #MainMenu {visibility: hidden;}
             header {visibility: hidden;}
             footer {visibility: hidden;}
-            .block-container {
-                padding-top: 0rem !important; 
-                padding-bottom: 0rem !important; 
-                max-width: 100% !important;
-                margin-top: 0 !important;
-            }
-            .stApp {
-                background-color: #020617 !important;
-                background-image: radial-gradient(circle at top right, #0F172A 0%, #020617 100%) !important;
-            }
-            /* Estilos del botón de ingreso */
-            div.stButton { display: flex; justify-content: center; margin-top: 20px; padding-bottom: 40px; }
-            div.stButton > button { background: linear-gradient(90deg, #38bdf8, #0ea5e9) !important; color: white !important; font-size: 1.2rem !important; font-weight: 700 !important; padding: 15px 50px !important; border-radius: 9999px !important; border: none !important; box-shadow: 0 10px 20px rgba(56, 189, 248, 0.3) !important; transition: all 0.3s ease !important; }
-            div.stButton > button:hover { transform: translateY(-3px) !important; box-shadow: 0 15px 25px rgba(56, 189, 248, 0.5) !important; }
+            .block-container { padding-top: 0rem !important; padding-bottom: 0rem !important; max-width: 100% !important; margin-top: 0 !important; }
+            .stApp { background-color: #020617 !important; background-image: radial-gradient(circle at top right, #0F172A 0%, #020617 100%) !important; }
+            div.stButton { display: flex; justify-content: center; margin-top: 20px; padding-bottom: 60px; }
+            div.stButton > button { background: linear-gradient(90deg, #38bdf8, #0ea5e9) !important; color: white !important; font-size: 1.1rem !important; font-weight: 800 !important; padding: 15px 60px !important; border-radius: 9999px !important; border: none !important; box-shadow: 0 10px 25px rgba(56, 189, 248, 0.4) !important; transition: all 0.3s ease !important; text-transform: uppercase; letter-spacing: 1px !important; }
+            div.stButton > button:hover { transform: translateY(-4px) !important; box-shadow: 0 15px 35px rgba(56, 189, 248, 0.6) !important; }
         </style>
     """, unsafe_allow_html=True)
 
-    # 2. LOGO EN BASE64
+    # Convertir Logo a Base64 y achicarlo a nivel profesional (100px)
     try:
         with open("logo_medicare_pro.jpeg", "rb") as image_file:
             encoded_string = base64.b64encode(image_file.read()).decode()
-        logo_html = f'<img src="data:image/jpeg;base64,{encoded_string}" style="max-width: 220px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); margin-bottom: 20px;">'
+        logo_html = f'<img src="data:image/jpeg;base64,{encoded_string}" style="height: 100px; border-radius: 18px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); margin-bottom: 20px;">'
     except Exception:
-        logo_html = '<h1 style="font-size:3.5rem; font-weight:900; color:#38bdf8; margin-bottom: 20px;">MediCare PRO</h1>'
+        logo_html = '<div style="background: rgba(56,189,248,0.1); padding: 15px 30px; border-radius: 16px; border: 1px solid rgba(56,189,248,0.3); margin-bottom: 20px;"><h1 style="font-size:2rem; font-weight:900; color:#38bdf8; margin:0;">MediCare PRO</h1></div>'
 
-    # 3. HTML COMPLETO (INCLUIDO EN COMPONENTS PARA EVITAR EL TEXTO PLANO)
+# ACÁ ESTÁ LA MAGIA: Al pegar el string de HTML sin espacios a la izquierda, Streamlit NUNCA lo hará cajita de código.
     html_landing = f"""
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
-            body {{ margin: 0; padding: 0; font-family: 'Inter', sans-serif; background: transparent; color: #F8FAFC; }}
-            .landing-page {{
-                display: flex; flex-direction: column; align-items: center;
-                padding: 40px 15px 20px; text-align: center;
-            }}
-            .title {{ font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 900; line-height: 1.15; margin: 0 0 15px; background: linear-gradient(to right, #ffffff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }}
-            .subtitle {{ font-size: 1.15rem; color: #94a3b8; font-weight: 400; margin: 0 0 40px; max-width: 650px; line-height: 1.6; }}
-            
-            .grid-cards {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; max-width: 1100px; width: 100%; margin-bottom: 50px; }}
-            .glass-card-pro {{ background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 18px; padding: 22px 18px; transition: all 0.3s ease; text-align: center; }}
-            .glass-card-pro:hover {{ transform: translateY(-4px); border-color: #38bdf8; }}
-            .icon-box-pro {{ font-size: 2.6rem; margin-bottom: 12px; }}
-            .card-title-pro {{ font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; color: white; }}
-            .card-text-pro {{ color: #94a3b8; font-size: 0.92rem; line-height: 1.45; margin: 0; }}
-            
-            .contact-section-pro {{ max-width: 900px; width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 24px; padding: 40px; margin-bottom: 20px; }}
-            .contact-grid {{ display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; margin-top: 25px; }}
-            .contact-profile {{ flex: 1; min-width: 250px; max-width: 320px; background: rgba(30, 41, 59, 0.4); padding: 25px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.03); }}
-            .btn-link-pro {{ display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 20px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 0.95rem; width: 100%; max-width: 140px; }}
-            .btn-wpp {{ background: rgba(37, 211, 102, 0.15); color: #25D366; border: 1px solid rgba(37, 211, 102, 0.3); }}
-            .btn-mail {{ background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3); }}
-        </style>
-    </head>
-    <body>
-        <div class="landing-page">
-            {logo_html}
-            <h1 class="title">Gestión Domiciliaria<br>Inteligente</h1>
-            <p class="subtitle">Módulos avanzados y diseño intuitivo para llevar el control de tu clínica al máximo nivel.</p>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
+.landing-wrapper {{ font-family: 'Inter', sans-serif; color: #F8FAFC; display: flex; flex-direction: column; align-items: center; padding: 40px 15px 20px; }}
 
-            <div class="grid-cards">
-                <div class="glass-card-pro"><div class="icon-box-pro">📍</div><h4 class="card-title-pro">Fichaje GPS</h4><p class="card-text-pro">Control de asistencia verificado por coordenadas exactas.</p></div>
-                <div class="glass-card-pro"><div class="icon-box-pro">📄</div><h4 class="card-title-pro">Evolución Médica</h4><p class="card-text-pro">Carga digital de signos vitales y fotografías clínicas.</p></div>
-                <div class="glass-card-pro"><div class="icon-box-pro">💊</div><h4 class="card-title-pro">Stock Inteligente</h4><p class="card-text-pro">Gestión de inventario con descuento automático por práctica.</p></div>
-                <div class="glass-card-pro"><div class="icon-box-pro">✍️</div><h4 class="card-title-pro">Firma Digital</h4><p class="card-text-pro">Recetas y consentimientos validados directamente en pantalla.</p></div>
-                <div class="glass-card-pro"><div class="icon-box-pro">📹</div><h4 class="card-title-pro">Telemedicina</h4><p class="card-text-pro">Videollamadas integradas al historial del paciente.</p></div>
-                <div class="glass-card-pro"><div class="icon-box-pro">👶</div><h4 class="card-title-pro">Pediatría</h4><p class="card-text-pro">Control de crecimiento y gráficas de percentiles automatizadas.</p></div>
-                <div class="glass-card-pro"><div class="icon-box-pro">💧</div><h4 class="card-title-pro">Balance Hídrico</h4><p class="card-text-pro">Cálculo estricto con alertas por retención de líquidos.</p></div>
-                <div class="glass-card-pro"><div class="icon-box-pro">📋</div><h4 class="card-title-pro">Auditoría RRHH</h4><p class="card-text-pro">Cierres diarios, reportes y liquidación de servicios.</p></div>
+/* Títulos */
+.hero-title {{ font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 900; line-height: 1.15; margin: 0 0 15px; text-align: center; background: linear-gradient(to right, #ffffff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }}
+.hero-subtitle {{ font-size: 1.1rem; color: #94a3b8; font-weight: 400; margin: 0 0 50px; max-width: 600px; text-align: center; line-height: 1.6; }}
+
+/* Grilla de Tarjetas */
+.grid-cards {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; max-width: 1100px; width: 100%; margin-bottom: 50px; }}
+
+/* Tarjetas Premium */
+.card-pro {{
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.8));
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+    border-right: 1px solid rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: left;
+}}
+.card-pro::before {{
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+    background: linear-gradient(90deg, #38bdf8, #818cf8); opacity: 0; transition: opacity 0.3s ease;
+}}
+.card-pro:hover::before {{ opacity: 1; }}
+.card-pro:hover {{ transform: translateY(-6px); box-shadow: 0 12px 24px rgba(0,0,0,0.4); background: linear-gradient(145deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.9)); }}
+
+.icon-badge {{
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(14, 165, 233, 0.05));
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; margin-bottom: 16px;
+}}
+
+.card-title {{ font-size: 1.15rem; font-weight: 700; color: #f8fafc; margin: 0 0 8px; letter-spacing: -0.02em; }}
+.card-text {{ color: #94a3b8; font-size: 0.9rem; line-height: 1.5; margin: 0; }}
+
+/* Sección Contacto */
+.contact-wrapper {{ background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 24px; padding: 40px; max-width: 900px; width: 100%; text-align: center; }}
+.contact-grid {{ display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; margin-top: 30px; }}
+.profile-card {{ flex: 1; min-width: 240px; max-width: 320px; background: rgba(30, 41, 59, 0.3); border: 1px solid rgba(255, 255, 255, 0.02); padding: 24px; border-radius: 16px; transition: 0.3s; }}
+.profile-card:hover {{ background: rgba(30, 41, 59, 0.5); border-color: rgba(56, 189, 248, 0.2); }}
+.p-name {{ font-size: 1.25rem; font-weight: 700; color: #38bdf8; margin: 0 0 4px; }}
+.p-role {{ font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin: 0 0 20px; }}
+
+.btn-group {{ display: flex; gap: 12px; justify-content: center; }}
+.btn-c {{ display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 16px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 0.85rem; width: 100%; transition: 0.2s; }}
+.btn-w {{ background: rgba(37, 211, 102, 0.1); color: #25D366; border: 1px solid rgba(37, 211, 102, 0.2); }}
+.btn-w:hover {{ background: #25D366; color: white; }}
+.btn-m {{ background: rgba(148, 163, 184, 0.1); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.2); }}
+.btn-m:hover {{ background: #cbd5e1; color: #0f172a; }}
+</style>
+
+<div class="landing-wrapper">
+    {logo_html}
+    <h1 class="hero-title">Gestión Domiciliaria<br>Inteligente</h1>
+    <p class="hero-subtitle">Módulos avanzados y diseño intuitivo para llevar el control de tu clínica al máximo nivel.</p>
+
+    <div class="grid-cards">
+        <div class="card-pro"><div class="icon-badge">📍</div><h4 class="card-title">Fichaje GPS</h4><p class="card-text">Control de asistencia verificado por coordenadas exactas del domicilio.</p></div>
+        <div class="card-pro"><div class="icon-badge">📄</div><h4 class="card-title">Evolución Médica</h4><p class="card-text">Carga digital de signos vitales, parámetros y fotografías clínicas.</p></div>
+        <div class="card-pro"><div class="icon-badge">💊</div><h4 class="card-title">Stock Inteligente</h4><p class="card-text">Gestión de inventario con descuento automático por práctica.</p></div>
+        <div class="card-pro"><div class="icon-badge">✍️</div><h4 class="card-title">Firma Digital</h4><p class="card-text">Recetas y consentimientos validados con firma directamente en pantalla.</p></div>
+        <div class="card-pro"><div class="icon-badge">📹</div><h4 class="card-title">Telemedicina</h4><p class="card-text">Videollamadas P2P integradas nativamente al historial del paciente.</p></div>
+        <div class="card-pro"><div class="icon-badge">👶</div><h4 class="card-title">Pediatría</h4><p class="card-text">Control de crecimiento y gráficas de percentiles automatizadas.</p></div>
+        <div class="card-pro"><div class="icon-badge">💧</div><h4 class="card-title">Balance Hídrico</h4><p class="card-text">Cálculo estricto de ingresos/egresos con alertas por retención.</p></div>
+        <div class="card-pro"><div class="icon-badge">📋</div><h4 class="card-title">Auditoría RRHH</h4><p class="card-text">Cierres diarios, reportes de desempeño y liquidación de servicios.</p></div>
+    </div>
+
+    <div class="contact-wrapper">
+        <h3 style="color: white; margin: 0 0 8px; font-size: 1.5rem; font-weight: 700;">¿Necesitas soporte o implementación?</h3>
+        <p style="color: #94a3b8; margin: 0; font-size: 0.95rem;">Comunícate directamente con nuestro equipo de especialistas.</p>
+        
+        <div class="contact-grid">
+            <div class="profile-card">
+                <h4 class="p-name">Enzo N. Girardi</h4>
+                <p class="p-role">Desarrollo y Soporte Técnico</p>
+                <div class="btn-group">
+                    <a href="https://wa.me/5493584302024" target="_blank" class="btn-c btn-w">💬 WhatsApp</a>
+                    <a href="mailto:enzogirardi84@gmail.com" class="btn-c btn-m">✉️ Email</a>
+                </div>
             </div>
-
-            <div class="contact-section-pro">
-                <h3 style="color: white; margin: 0 0 10px; font-size: 1.7rem; font-weight: 700;">¿Necesitas soporte o implementación?</h3>
-                <p style="color: #94a3b8; margin: 0 0 10px; font-size: 1rem;">Comunícate directamente con nuestro equipo de especialistas.</p>
-                
-                <div class="contact-grid">
-                    <div class="contact-profile">
-                        <h4 style="color:white; margin: 0 0 5px; font-size: 1.3rem;">Enzo N. Girardi</h4>
-                        <p style="color:#38bdf8; font-size:0.85rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin: 0 0 20px;">Desarrollo y Soporte Técnico</p>
-                        <div style="display:flex; gap:15px; justify-content:center;">
-                            <a href="https://wa.me/5493584302024" target="_blank" class="btn-link-pro btn-wpp">💬 WhatsApp</a>
-                            <a href="mailto:enzogirardi84@gmail.com" class="btn-link-pro btn-mail">✉️ Email</a>
-                        </div>
-                    </div>
-                    
-                    <div class="contact-profile">
-                        <h4 style="color:white; margin: 0 0 5px; font-size: 1.3rem;">Darío Lanfranco</h4>
-                        <p style="color:#10b981; font-size:0.85rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin: 0 0 20px;">Implementación y Contratos</p>
-                        <div style="display:flex; gap:15px; justify-content:center;">
-                            <a href="https://wa.me/5493584201263" target="_blank" class="btn-link-pro btn-wpp">💬 WhatsApp</a>
-                            <a href="mailto:dariolanfrancoruffener@gmail.com" class="btn-link-pro btn-mail">✉️ Email</a>
-                        </div>
-                    </div>
+            <div class="profile-card">
+                <h4 class="p-name">Darío Lanfranco</h4>
+                <p class="p-role">Implementación y Contratos</p>
+                <div class="btn-group">
+                    <a href="https://wa.me/5493584201263" target="_blank" class="btn-c btn-w">💬 WhatsApp</a>
+                    <a href="mailto:dariolanfrancoruffener@gmail.com" class="btn-c btn-m">✉️ Email</a>
                 </div>
             </div>
         </div>
-    </body>
-    </html>
-    """
+    </div>
+</div>
+"""
     
-    # 4. INYECTAMOS EL COMPONENTE HTML. AL USAR UNA ALTURA MUY GRANDE Y SCROLLING, NOS ASEGURAMOS DE QUE NUNCA SE CORTE.
-    components.html(html_landing, height=1500, scrolling=True)
-
-    # 5. BOTÓN DE INGRESO
-    if st.button("🚀 INGRESAR AL SISTEMA", key="btn_ingresar_main"):
+    # Inyección final y limpia
+    st.markdown(html_landing, unsafe_allow_html=True)
+    
+    # Botón de ingreso nativo
+    if st.button("🚀 INGRESAR AL SISTEMA", key="btn_ingreso_app"):
         st.session_state.entered_app = True
         st.rerun()
 
-    # 6. FRENO
-    st.stop()
+    st.stop() # Freno absoluto
 
 # =====================================================================
 # --- PANTALLA 2: EL SISTEMA REAL ---
@@ -150,7 +167,6 @@ if st.sidebar.button("⬅️ Volver a la Publicidad"):
     st.rerun()
 
 st.sidebar.markdown("---")
-
 # =====================================================================
 # ACÁ EMPIEZA TU CÓDIGO NORMAL DEL SISTEMA (BASE DE DATOS, VADEMECUM, ETC.)
 # =====================================================================
