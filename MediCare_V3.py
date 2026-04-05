@@ -18,7 +18,7 @@ import altair as alt
 # 1. CONFIGURACIÓN INICIAL (DEBE SER LA PRIMERA LÍNEA DE STREAMLIT)
 st.set_page_config(page_title="MediCare PRO V9.11", layout="wide", initial_sidebar_state="collapsed")
 
-# ====================== LANDING PAGE PROFESIONAL - RESPONSIVE ======================
+# ====================== LANDING PAGE PROFESIONAL - RESPONSIVE (VERSIÓN FINAL) ======================
 if "entered_app" not in st.session_state:
     st.session_state.entered_app = False
 
@@ -46,7 +46,7 @@ if not st.session_state.entered_app:
             font-weight: 900;
             line-height: 1.1;
             text-align: center;
-            margin: 30px 0 20px;
+            margin: 30px 0 20px 0;
         }
         @media (max-width: 768px) {
             .title { font-size: 2.2rem; }
@@ -72,24 +72,14 @@ if not st.session_state.entered_app:
             transform: translateY(-6px);
             border-color: #38bdf8;
         }
-        .icon-box-pro {
-            font-size: 2.8rem;
-            margin-bottom: 14px;
-        }
-        .card-title-pro {
-            font-size: 1.25rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-        .card-text-pro {
-            color: #94a3b8;
-            font-size: 0.95rem;
-            line-height: 1.5;
-        }
+        .icon-box-pro { font-size: 2.8rem; margin-bottom: 14px; }
+        .card-title-pro { font-size: 1.25rem; font-weight: 700; margin-bottom: 10px; }
+        .card-text-pro { color: #94a3b8; font-size: 0.95rem; line-height: 1.5; }
+        
         .contact-section-pro {
             max-width: 900px;
             width: 100%;
-            margin-top: 40px;
+            margin-top: 50px;
         }
         .btn-link-pro {
             background: #25D366;
@@ -115,7 +105,7 @@ if not st.session_state.entered_app:
             padding: 18px 60px;
             border-radius: 9999px;
             border: none;
-            margin-top: 30px;
+            margin-top: 40px;
             box-shadow: 0 10px 30px rgba(56, 189, 248, 0.4);
         }
     </style>
@@ -135,7 +125,7 @@ if not st.session_state.entered_app:
     </h1>
     """, unsafe_allow_html=True)
 
-    # === TUS CARDS (mejoradas y responsivas) ===
+    # Grid de tarjetas
     st.markdown("""
     <div class="grid-cards">
         <div class="glass-card-pro"><div class="icon-box-pro">📍</div><h4 class="card-title-pro">Fichaje GPS</h4><p class="card-text-pro">Control de asistencia verificado por coordenadas exactas en el domicilio.</p></div>
@@ -149,12 +139,11 @@ if not st.session_state.entered_app:
     </div>
     """, unsafe_allow_html=True)
 
-    # === CONTACTO ===
+    # === TU SECCIÓN DE CONTACTO (exactamente la que enviaste) ===
     st.markdown("""
     <div class="contact-section-pro">
-        <h3 style="color: white; margin-bottom: 8px;">¿Desea implementar el sistema o reportar un problema?</h3>
-        <p style="color: #94a3b8; margin-bottom: 25px;">Contáctenos directamente para contrataciones o soporte técnico.</p>
-        
+        <h3 style="color: white; margin-bottom: 10px;">¿Desea implementar el sistema o reportar un problema?</h3>
+        <p style="color: #94a3b8; margin-bottom: 30px;">Contáctenos directamente para contrataciones o soporte técnico.</p>
         <div style="display:flex; gap:30px; justify-content:center; flex-wrap:wrap;">
             <div style="text-align:center; min-width:220px;">
                 <h4 style="color:white; margin-bottom:4px;">Enzo Nicolás Girardi</h4>
@@ -182,7 +171,7 @@ if not st.session_state.entered_app:
         st.rerun()
 
     st.markdown('</div>', unsafe_allow_html=True)
-    st.stop()   # ← Detiene el resto del programa
+    st.stop()   # ← Muy importante
     
 # =====================================================================
 # ACÁ EMPIEZA TU CÓDIGO NORMAL DEL SISTEMA (BASE DE DATOS, VADEMECUM, ETC.)
