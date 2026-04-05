@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import base64
+import textwrap
 from datetime import datetime, date, timedelta
 import json
 import pytz
@@ -24,30 +25,27 @@ if "entered_app" not in st.session_state:
     st.session_state.entered_app = False
 
 if not st.session_state.entered_app:
-    # 1. ESTILOS GLOBALES DE LA PUBLICIDAD
+    # 1. ESTILOS GLOBALES (Fondo iluminado y anti-scroll)
     st.markdown("""
         <style>
             #MainMenu {visibility: hidden;}
             header {visibility: hidden;}
             footer {visibility: hidden;}
             
-            /* Anti-scroll doble y ajuste de márgenes */
             html, body, .stApp { overflow-x: hidden !important; }
             .block-container { padding-top: 0rem !important; padding-bottom: 0rem !important; max-width: 100% !important; margin-top: 0 !important; overflow: visible !important; }
             
-            /* Fondo Iluminado */
-            .stApp { background-color: #020617 !important; background-image: radial-gradient(circle at top right, #0F172A 0%, #020617 100%) !important; }
+            .stApp { background-color: #020617 !important; background-image: radial-gradient(circle at top right, #1e293b 0%, #020617 80%) !important; }
             
-            /* Estilo del botón de ingreso (MÁS NEÓN) */
-            div.stButton { display: flex; justify-content: center; margin-top: 20px; padding-bottom: 40px; }
+            div.stButton { display: flex; justify-content: center; margin-top: 30px; padding-bottom: 50px; }
             div.stButton > button {
                 background: linear-gradient(135deg, #0ea5e9 0%, #4f46e5 100%) !important;
-                color: white !important; font-size: 1.2rem !important; font-weight: 800 !important;
-                padding: 15px 50px !important; border-radius: 9999px !important;
-                border: 1px solid rgba(255,255,255,0.2) !important; box-shadow: 0 0 20px rgba(14, 165, 233, 0.5) !important;
+                color: white !important; font-size: 1.25rem !important; font-weight: 900 !important;
+                padding: 16px 55px !important; border-radius: 9999px !important;
+                border: 1px solid rgba(255,255,255,0.3) !important; box-shadow: 0 10px 30px rgba(14, 165, 233, 0.5) !important;
                 transition: all 0.3s ease !important; text-transform: uppercase; letter-spacing: 2px;
             }
-            div.stButton > button:hover { transform: translateY(-3px) !important; box-shadow: 0 0 40px rgba(99, 102, 241, 0.7) !important; background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%) !important; }
+            div.stButton > button:hover { transform: translateY(-4px) !important; box-shadow: 0 15px 40px rgba(99, 102, 241, 0.7) !important; background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%) !important; }
         </style>
     """, unsafe_allow_html=True)
 
@@ -55,62 +53,70 @@ if not st.session_state.entered_app:
     try:
         with open("logo_medicare_pro.jpeg", "rb") as image_file:
             encoded_string = base64.b64encode(image_file.read()).decode()
-        logo_html = f"<img src='data:image/jpeg;base64,{encoded_string}' style='height: 100px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.4), 0 0 20px rgba(56,189,248,0.2); margin-bottom: 20px;'>"
+        logo_html = f"<img src='data:image/jpeg;base64,{encoded_string}' style='height: 110px; border-radius: 22px; box-shadow: 0 15px 35px rgba(0,0,0,0.5), 0 0 20px rgba(56,189,248,0.3); margin-bottom: 25px;'>"
     except Exception:
-        logo_html = "<h1 style='font-size:3.5rem; font-weight:900; color:#38bdf8; margin-bottom: 20px;'>MediCare Enterprise PRO</h1>"
+        logo_html = "<h1 style='font-size:3.5rem; font-weight:900; color:#38bdf8; margin-bottom: 25px; text-shadow: 0 0 20px rgba(56,189,248,0.5);'>MediCare PRO</h1>"
 
-    # 3. HTML BLINDADO: Usamos una lista y la unimos sin saltos de línea para que Streamlit NUNCA detecte sangrías.
+    # 3. HTML BLINDADO (Estética Premium y tipografía detallada)
     html_lines = [
         "<style>",
-        "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');",
-        ".landing-page { font-family: 'Inter', sans-serif; color: #f8fafc; display: flex; flex-direction: column; align-items: center; padding: 40px 15px 80px; }",
-        ".title { font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 900; line-height: 1.15; margin: 0 0 15px; text-align: center; }",
-        ".subtitle { font-size: 1.15rem; color: #cbd5e1; font-weight: 400; margin: 0 0 40px; max-width: 650px; text-align: center; line-height: 1.6; }",
-        ".grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; max-width: 1100px; width: 100%; margin-bottom: 50px; }",
-        ".glass-card-pro { background: linear-gradient(145deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.5)); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(56, 189, 248, 0.1); border-radius: 18px; padding: 22px 18px; transition: all 0.3s ease; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: space-between; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); }",
-        ".glass-card-pro:hover { transform: translateY(-4px); border-color: rgba(56, 189, 248, 0.4); box-shadow: 0 10px 20px rgba(0,0,0,0.3), 0 0 20px rgba(56,189,248,0.1); }",
-        ".icon-box-pro { font-size: 2.6rem; margin-bottom: 12px; background: rgba(56, 189, 248, 0.1); width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border-radius: 16px; box-shadow: 0 0 10px rgba(56,189,248,0.2) inset; }",
-        ".card-title-pro { font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; color: #ffffff; }",
-        ".card-text-pro { color: #cbd5e1; font-size: 0.92rem; line-height: 1.45; margin: 0; }",
-        ".contact-section-pro { max-width: 900px; width: 100%; margin-top: 20px; text-align: center; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 24px; padding: 40px; }",
-        ".contact-grid-pro { display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; margin-top: 25px; }",
-        ".contact-profile-pro { flex: 1; min-width: 250px; max-width: 320px; background: rgba(30, 41, 59, 0.4); padding: 25px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.03); }",
-        ".btn-flex-pro { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }",
-        ".btn-link-pro { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 20px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: all 0.2s; width: 100%; max-width: 140px; }",
-        ".wpp-pro { background: rgba(37, 211, 102, 0.15); color: #25D366; border: 1px solid rgba(37, 211, 102, 0.3); }",
-        ".wpp-pro:hover { background: #25D366; color: white; }",
-        ".mail-pro { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3); }",
-        ".mail-pro:hover { background: #cbd5e1; color: #0f172a; }",
+        "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');",
+        ".landing-page { font-family: 'Inter', sans-serif; color: #f8fafc; display: flex; flex-direction: column; align-items: center; padding: 60px 20px 40px; }",
+        ".title { font-size: clamp(2.5rem, 6vw, 4rem); font-weight: 900; line-height: 1.1; margin: 0 0 15px; text-align: center; letter-spacing: -1px; }",
+        ".title-glow { background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }",
+        ".subtitle { font-size: 1.2rem; color: #94a3b8; font-weight: 400; margin: 0 0 60px; max-width: 680px; text-align: center; line-height: 1.6; }",
+        ".grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; max-width: 1150px; width: 100%; margin-bottom: 70px; }",
+        ".glass-card-pro { background: linear-gradient(145deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.8) 100%); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); border-top: 1px solid rgba(255, 255, 255, 0.15); border-radius: 24px; padding: 32px 24px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); text-align: left; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }",
+        ".glass-card-pro:hover { transform: translateY(-8px); border-color: rgba(56, 189, 248, 0.5); box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 25px rgba(56,189,248,0.15); }",
+        ".icon-box-pro { font-size: 2.2rem; margin-bottom: 20px; background: linear-gradient(135deg, rgba(56,189,248,0.15), rgba(14,165,233,0.05)); width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; border-radius: 18px; border: 1px solid rgba(56,189,248,0.2); }",
+        ".card-title-pro { font-size: 1.3rem; font-weight: 700; margin-bottom: 10px; color: #ffffff; letter-spacing: -0.5px; }",
+        ".card-text-pro { color: #cbd5e1; font-size: 0.95rem; line-height: 1.6; margin: 0; font-weight: 400; }",
+        
+        ".contact-section-pro { max-width: 950px; width: 100%; text-align: center; background: linear-gradient(145deg, rgba(15, 23, 42, 0.8), rgba(2, 6, 23, 0.95)); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 30px; padding: 50px 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.4); }",
+        ".contact-grid-pro { display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; margin-top: 35px; }",
+        ".contact-profile-pro { flex: 1; min-width: 260px; max-width: 350px; background: rgba(30, 41, 59, 0.4); padding: 30px 20px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.04); transition: 0.3s; }",
+        ".contact-profile-pro:hover { background: rgba(30, 41, 59, 0.6); border-color: rgba(56, 189, 248, 0.3); }",
+        ".p-name { font-size: 1.4rem; font-weight: 700; color: #ffffff; margin: 0 0 6px; }",
+        ".p-role { font-size: 0.8rem; color: #38bdf8; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; margin: 0 0 25px; }",
+        ".btn-flex-pro { display: flex; gap: 15px; justify-content: center; }",
+        ".btn-link-pro { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: all 0.3s; width: 100%; color: white !important; }",
+        ".wpp-pro { background: linear-gradient(135deg, #22c55e, #16a34a); box-shadow: 0 4px 15px rgba(34,197,94,0.3); }",
+        ".wpp-pro:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(34,197,94,0.5); filter: brightness(1.1); }",
+        ".mail-pro { background: linear-gradient(135deg, #3b82f6, #2563eb); box-shadow: 0 4px 15px rgba(59,130,246,0.3); }",
+        ".mail-pro:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(59,130,246,0.5); filter: brightness(1.1); }",
         "</style>",
+        
         "<div class='landing-page'>",
         logo_html,
-        "<h1 class='title'>Gestión Domiciliaria <span style='background: linear-gradient(90deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;'>Inteligente</span></h1>",
-        "<p class='subtitle'>Módulos avanzados y diseño intuitivo para llevar el control de tu clínica al máximo nivel.</p>",
+        "<h1 class='title'>Gestión Domiciliaria <br><span class='title-glow'>Inteligente</span></h1>",
+        "<p class='subtitle'>Módulos avanzados y diseño intuitivo para llevar el control de tu clínica al máximo nivel, optimizando tiempo y recursos.</p>",
+        
         "<div class='grid-cards'>",
-        "<div class='glass-card-pro'><div class='icon-box-pro'>📍</div><h4 class='card-title-pro'>Fichaje GPS</h4><p class='card-text-pro'>Control de asistencia verificado por coordenadas exactas del domicilio.</p></div>",
-        "<div class='glass-card-pro'><div class='icon-box-pro'>📄</div><h4 class='card-title-pro'>Evolución Médica</h4><p class='card-text-pro'>Carga digital de signos vitales, parámetros y fotografías clínicas.</p></div>",
-        "<div class='glass-card-pro'><div class='icon-box-pro'>💊</div><h4 class='card-title-pro'>Stock Inteligente</h4><p class='card-text-pro'>Gestión de inventario con descuento automático por práctica.</p></div>",
-        "<div class='glass-card-pro'><div class='icon-box-pro'>✍️</div><h4 class='card-title-pro'>Firma Digital</h4><p class='card-text-pro'>Recetas y consentimientos validados con firma directamente en pantalla.</p></div>",
-        "<div class='glass-card-pro'><div class='icon-box-pro'>📹</div><h4 class='card-title-pro'>Telemedicina</h4><p class='card-text-pro'>Videollamadas P2P integradas nativamente al historial del paciente.</p></div>",
-        "<div class='glass-card-pro'><div class='icon-box-pro'>👶</div><h4 class='card-title-pro'>Pediatría</h4><p class='card-text-pro'>Control de crecimiento y gráficas de percentiles automatizadas.</p></div>",
-        "<div class='glass-card-pro'><div class='icon-box-pro'>💧</div><h4 class='card-title-pro'>Balance Hídrico</h4><p class='card-text-pro'>Cálculo estricto de ingresos/egresos con alertas por retención de líquidos.</p></div>",
-        "<div class='glass-card-pro'><div class='icon-box-pro'>📋</div><h4 class='card-title-pro'>Auditoría RRHH</h4><p class='card-text-pro'>Cierres diarios, reportes de desempeño y liquidación de servicios.</p></div>",
+        "<div class='glass-card-pro'><div class='icon-box-pro'>📍</div><h4 class='card-title-pro'>Fichaje GPS</h4><p class='card-text-pro'>Control de asistencia verificado por coordenadas exactas del domicilio del paciente.</p></div>",
+        "<div class='glass-card-pro'><div class='icon-box-pro'>📄</div><h4 class='card-title-pro'>Evolución Médica</h4><p class='card-text-pro'>Carga digital al instante de signos vitales, parámetros y fotografías clínicas.</p></div>",
+        "<div class='glass-card-pro'><div class='icon-box-pro'>💊</div><h4 class='card-title-pro'>Stock Inteligente</h4><p class='card-text-pro'>Gestión de inventario en tiempo real con descuento automático por cada práctica.</p></div>",
+        "<div class='glass-card-pro'><div class='icon-box-pro'>✍️</div><h4 class='card-title-pro'>Firma Digital</h4><p class='card-text-pro'>Recetas y consentimientos validados con firma biométrica directamente en pantalla.</p></div>",
+        "<div class='glass-card-pro'><div class='icon-box-pro'>📹</div><h4 class='card-title-pro'>Telemedicina</h4><p class='card-text-pro'>Videollamadas P2P seguras, integradas nativamente al historial del paciente.</p></div>",
+        "<div class='glass-card-pro'><div class='icon-box-pro'>👶</div><h4 class='card-title-pro'>Pediatría</h4><p class='card-text-pro'>Control de crecimiento exhaustivo y gráficas de percentiles 100% automatizadas.</p></div>",
+        "<div class='glass-card-pro'><div class='icon-box-pro'>💧</div><h4 class='card-title-pro'>Balance Hídrico</h4><p class='card-text-pro'>Cálculo estricto de ingresos/egresos con alertas preventivas por retención.</p></div>",
+        "<div class='glass-card-pro'><div class='icon-box-pro'>📋</div><h4 class='card-title-pro'>Auditoría RRHH</h4><p class='card-text-pro'>Cierres diarios detallados, reportes de desempeño y liquidación de servicios.</p></div>",
         "</div>",
+        
         "<div class='contact-section-pro'>",
-        "<h3 style='color: white; margin: 0 0 10px; font-size: 1.7rem; font-weight: 700;'>¿Necesitas soporte o implementación?</h3>",
-        "<p style='color: #cbd5e1; margin: 0 0 10px; font-size: 1rem;'>Comunícate directamente con nuestro equipo de especialistas.</p>",
+        "<h3 style='color: white; margin: 0 0 10px; font-size: 2rem; font-weight: 900; letter-spacing: -1px;'>¿Necesitas soporte o implementación?</h3>",
+        "<p style='color: #cbd5e1; margin: 0 0 10px; font-size: 1.1rem;'>Comunícate directamente con nuestro equipo de especialistas.</p>",
         "<div class='contact-grid-pro'>",
         "<div class='contact-profile-pro'>",
-        "<h4 style='color:white; margin: 0 0 5px; font-size: 1.3rem;'>Enzo N. Girardi</h4>",
-        "<p style='color:#38bdf8; font-size:0.85rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin: 0 0 20px;'>Desarrollo y Soporte Técnico</p>",
+        "<h4 class='p-name'>Enzo N. Girardi</h4>",
+        "<p class='p-role'>Desarrollo y Soporte Técnico</p>",
         "<div class='btn-flex-pro'>",
         "<a href='https://wa.me/5493584302024' target='_blank' class='btn-link-pro wpp-pro'>💬 WhatsApp</a>",
         "<a href='mailto:enzogirardi84@gmail.com' class='btn-link-pro mail-pro'>✉️ Email</a>",
         "</div>",
         "</div>",
         "<div class='contact-profile-pro'>",
-        "<h4 style='color:white; margin: 0 0 5px; font-size: 1.3rem;'>Darío Lanfranco</h4>",
-        "<p style='color:#10b981; font-size:0.85rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin: 0 0 20px;'>Implementación y Contratos</p>",
+        "<h4 class='p-name'>Darío Lanfranco</h4>",
+        "<p class='p-role'>Implementación y Contratos</p>",
         "<div class='btn-flex-pro'>",
         "<a href='https://wa.me/5493584201263' target='_blank' class='btn-link-pro wpp-pro'>💬 WhatsApp</a>",
         "<a href='mailto:dariolanfrancoruffener@gmail.com' class='btn-link-pro mail-pro'>✉️ Email</a>",
@@ -121,18 +127,15 @@ if not st.session_state.entered_app:
         "</div>"
     ]
     
-    # Unimos todas las líneas en un solo texto continuo. Adiós sangrías molestas.
-    html_landing_final = "".join(html_lines)
+    # Inyección final (el "".join() evita saltos de línea molestos para Streamlit)
+    st.markdown("".join(html_lines), unsafe_allow_html=True)
     
-    # 4. INYECTAR EL CÓDIGO FINAL
-    st.markdown(html_landing_final, unsafe_allow_html=True)
-    
-    # 5. BOTÓN DE INGRESO
+    # 4. BOTÓN DE INGRESO
     if st.button("🚀 INGRESAR AL SISTEMA", key="btn_ingresar_main"):
         st.session_state.entered_app = True
         st.rerun()
 
-    # 6. FRENO OBLIGATORIO
+    # 5. FRENO OBLIGATORIO
     st.stop()
 
 # =====================================================================
