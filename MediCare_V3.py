@@ -24,16 +24,28 @@ if "entered_app" not in st.session_state:
     st.session_state.entered_app = False
 
 if not st.session_state.entered_app:
-    # 1. ESTILOS GLOBALES DE STREAMLIT Y BOTÓN
+    # 1. ARMA NUCLEAR ANTI-DOBLE-SCROLL Y ESTILOS GLOBALES
     st.markdown("""
         <style>
             #MainMenu {visibility: hidden;}
             header {visibility: hidden;}
             footer {visibility: hidden;}
-            .block-container { padding-top: 1rem !important; padding-bottom: 0rem !important; max-width: 100% !important; margin-top: 0 !important; }
+            
+            /* --- ELIMINADOR DEFINITIVO DE DOBLE SCROLL EN MÓVILES --- */
+            html, body, .stApp { overflow-x: hidden !important; }
+            .block-container, 
+            div[data-testid="stVerticalBlock"], 
+            div[data-testid="stVerticalBlock"] > div, 
+            div[data-testid="stMarkdownContainer"],
+            div.element-container {
+                overflow: visible !important;
+            }
+            .block-container { padding: 1rem 0 !important; max-width: 100% !important; margin-top: 0 !important; }
+            /* -------------------------------------------------------- */
+
             .stApp { background-color: #020617 !important; background-image: radial-gradient(circle at top right, #0F172A 0%, #020617 100%) !important; }
             
-            /* Estilo para los botones nativos de Streamlit */
+            /* Botón de Ingreso Streamlit */
             div.stButton { display: flex; justify-content: center; margin: 10px 0 25px 0; }
             div.stButton > button { 
                 background: linear-gradient(90deg, #38bdf8, #0ea5e9) !important; 
@@ -56,25 +68,29 @@ if not st.session_state.entered_app:
     
     st.markdown(logo_html, unsafe_allow_html=True)
 
-    # 3. ¡EL BOTÓN ARRIBA DE TODO! (Fácil acceso para usuarios recurrentes)
+    # 3. EL BOTÓN ARRIBA (Para no tener que bajar todo)
     if st.button("🚀 INGRESAR AL SISTEMA", key="btn_ingreso_arriba"):
         st.session_state.entered_app = True
         st.rerun()
 
-    # 4. DISEÑO DE LA PUBLICIDAD (HTML pegado al margen para que Streamlit lo procese bien)
+    # 4. DISEÑO DE LA PUBLICIDAD
     html_landing = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
-.landing-wrapper { font-family: 'Inter', sans-serif; color: #F8FAFC; display: flex; flex-direction: column; align-items: center; padding: 20px 15px 40px; }
+* { box-sizing: border-box; } /* Evita que los márgenes rompan el ancho en celulares */
+
+.landing-wrapper { font-family: 'Inter', sans-serif; color: #F8FAFC; display: flex; flex-direction: column; align-items: center; padding: 20px 15px 40px; overflow: hidden; width: 100%; }
 .hero-title { font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 900; line-height: 1.15; margin: 0 0 15px; text-align: center; background: linear-gradient(to right, #ffffff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.hero-subtitle { font-size: 1.1rem; color: #94a3b8; font-weight: 400; margin: 0 0 50px; max-width: 600px; text-align: center; line-height: 1.6; }
-.grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; max-width: 1100px; width: 100%; margin-bottom: 50px; }
+.hero-subtitle { font-size: 1.1rem; color: #94a3b8; font-weight: 400; margin: 0 0 50px; max-width: 600px; text-align: center; line-height: 1.6; padding: 0 10px; }
+
+.grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; max-width: 1100px; width: 100%; margin-bottom: 50px; padding: 0 10px; }
 .card-pro { background: linear-gradient(145deg, rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.8)); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 24px; transition: all 0.3s ease; text-align: left; }
 .card-pro:hover { transform: translateY(-6px); box-shadow: 0 12px 24px rgba(0,0,0,0.4); border-color: rgba(56, 189, 248, 0.4); }
 .icon-badge { background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.2); width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 16px; }
 .card-title { font-size: 1.15rem; font-weight: 700; color: #f8fafc; margin: 0 0 8px; }
 .card-text { color: #94a3b8; font-size: 0.9rem; line-height: 1.5; margin: 0; }
-.contact-wrapper { background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 24px; padding: 40px; max-width: 900px; width: 100%; text-align: center; }
+
+.contact-wrapper { background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 24px; padding: 40px 20px; max-width: 900px; width: 95%; text-align: center; }
 .contact-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; margin-top: 30px; }
 .profile-card { flex: 1; min-width: 240px; max-width: 320px; background: rgba(30, 41, 59, 0.3); border: 1px solid rgba(255, 255, 255, 0.02); padding: 24px; border-radius: 16px; transition: 0.3s; }
 .profile-card:hover { background: rgba(30, 41, 59, 0.5); border-color: rgba(56, 189, 248, 0.2); }
@@ -128,10 +144,10 @@ if not st.session_state.entered_app:
     </div>
 </div>
 """
-    # 5. Inyectamos la publicidad de forma nativa (Adiós doble scroll)
+    # 5. Inyección nativa
     st.markdown(html_landing, unsafe_allow_html=True)
 
-    # 6. Botón de ingreso repetido abajo de todo (Por comodidad)
+    # 6. Botón de ingreso repetido abajo de todo
     if st.button("🚀 INGRESAR AL SISTEMA", key="btn_ingreso_abajo"):
         st.session_state.entered_app = True
         st.rerun()
@@ -151,7 +167,6 @@ if st.sidebar.button("⬅️ Volver a la Publicidad"):
 st.sidebar.markdown("---")
 
 # --- AQUÍ EMPIEZA TU CÓDIGO NORMAL DEL SISTEMA (VADEMÉCUM, BD, ETC) ---
-# --- ACÁ ABAJO EMPIEZA TU CÓDIGO DEL SISTEMA ---
 # ACÁ EMPIEZA TU CÓDIGO NORMAL DEL SISTEMA (BASE DE DATOS, VADEMECUM, ETC.)
 # =====================================================================
 # --- VADEMÉCUM GLOBAL MASIVO ---
