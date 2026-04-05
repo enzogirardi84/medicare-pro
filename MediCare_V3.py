@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components  # <--- ¡FALTABA ESTA LÍNEA!
 import pandas as pd
 import base64
 import textwrap
@@ -14,6 +15,8 @@ import os
 import tempfile
 from PIL import Image
 import altair as alt
+
+# ... acá sigue el resto de tu código
 
 # 1. CONFIGURACIÓN INICIAL
 st.set_page_config(page_title="MediCare Enterprise PRO V9.11", layout="wide", initial_sidebar_state="collapsed")
