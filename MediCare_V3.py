@@ -18,76 +18,105 @@ import altair as alt
 # 1. CONFIGURACIÓN INICIAL (DEBE SER LA PRIMERA LÍNEA DE STREAMLIT)
 st.set_page_config(page_title="MediCare PRO V9.11", layout="wide", initial_sidebar_state="collapsed")
 
-# ====================== PANTALLA PUBLICITARIA / LANDING PAGE ======================
+# ====================== LANDING PAGE PROFESIONAL - RESPONSIVE ======================
 if "entered_app" not in st.session_state:
     st.session_state.entered_app = False
 
 if not st.session_state.entered_app:
     st.markdown("""
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap');
+        
         .landing-page {
             background: linear-gradient(135deg, #0f172a 0%, #020617 100%);
             min-height: 100vh;
+            padding: 80px 20px 60px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 40px 20px;
             color: white;
+            font-family: 'Inter', sans-serif;
+        }
+        .logo-container img {
+            max-width: 260px;
+            filter: drop-shadow(0 10px 20px rgba(56, 189, 248, 0.3));
+        }
+        .title {
+            font-size: 2.8rem;
+            font-weight: 900;
+            line-height: 1.1;
+            text-align: center;
+            margin: 30px 0 20px;
+        }
+        @media (max-width: 768px) {
+            .title { font-size: 2.2rem; }
         }
         .grid-cards {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 18px;
             max-width: 1200px;
-            margin: 40px auto;
+            margin: 40px 0;
+            width: 100%;
         }
         .glass-card-pro {
-            background: rgba(15, 23, 42, 0.75);
+            background: rgba(15, 23, 42, 0.85);
             backdrop-filter: blur(16px);
-            border: 1px solid rgba(56, 189, 248, 0.2);
+            border: 1px solid rgba(56, 189, 248, 0.25);
             border-radius: 20px;
-            padding: 24px;
+            padding: 24px 20px;
             transition: all 0.3s ease;
+            text-align: center;
         }
         .glass-card-pro:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 40px -10px rgba(56, 189, 248, 0.3);
+            transform: translateY(-6px);
+            border-color: #38bdf8;
         }
         .icon-box-pro {
             font-size: 2.8rem;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
         }
         .card-title-pro {
-            font-size: 1.4rem;
+            font-size: 1.25rem;
             font-weight: 700;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
         .card-text-pro {
             color: #94a3b8;
-            font-size: 1rem;
+            font-size: 0.95rem;
             line-height: 1.5;
         }
         .contact-section-pro {
             max-width: 900px;
-            margin: 60px auto 0;
+            width: 100%;
+            margin-top: 40px;
         }
         .btn-link-pro {
             background: #25D366;
             color: white;
-            padding: 12px 24px;
+            padding: 12px 28px;
             border-radius: 9999px;
             text-decoration: none;
             font-weight: 600;
-            margin: 0 8px;
-            display: inline-block;
+            font-size: 1rem;
         }
         .btn-flex-pro {
             display: flex;
             justify-content: center;
             gap: 15px;
-            margin-top: 20px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .enter-btn {
+            background: linear-gradient(90deg, #38bdf8, #0ea5e9);
+            color: white;
+            font-size: 1.3rem;
+            font-weight: 700;
+            padding: 18px 60px;
+            border-radius: 9999px;
+            border: none;
+            margin-top: 30px;
+            box-shadow: 0 10px 30px rgba(56, 189, 248, 0.4);
         }
     </style>
     """, unsafe_allow_html=True)
@@ -98,15 +127,15 @@ if not st.session_state.entered_app:
     try:
         st.image("logo_medicare_pro.jpeg", width=260)
     except:
-        st.markdown("<h1 style='font-size:4.5rem;font-weight:900;color:#38bdf8;'>MediCare PRO</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='font-size:4rem;font-weight:900;color:#38bdf8;'>MediCare PRO</h1>", unsafe_allow_html=True)
 
     st.markdown("""
-    <h1 style="font-size: 3.6rem; font-weight: 900; line-height: 1.1; margin: 30px 0 25px 0;">
+    <h1 class="title">
         Todo lo que tu práctica<br>domiciliaria necesita.
     </h1>
     """, unsafe_allow_html=True)
 
-    # === TU GRID DE CARDS ===
+    # === TUS CARDS (mejoradas y responsivas) ===
     st.markdown("""
     <div class="grid-cards">
         <div class="glass-card-pro"><div class="icon-box-pro">📍</div><h4 class="card-title-pro">Fichaje GPS</h4><p class="card-text-pro">Control de asistencia verificado por coordenadas exactas en el domicilio.</p></div>
@@ -120,39 +149,41 @@ if not st.session_state.entered_app:
     </div>
     """, unsafe_allow_html=True)
 
-    # === SECCIÓN DE CONTACTO ===
+    # === CONTACTO ===
     st.markdown("""
     <div class="contact-section-pro">
-        <h3 style="color: white; margin-bottom: 10px;">¿Desea implementar el sistema o reportar un problema?</h3>
-        <p style="color: #94a3b8; margin-bottom: 30px;">Contáctenos directamente para contrataciones o soporte técnico.</p>
-        <div class="contact-grid-pro" style="display:flex; gap:40px; justify-content:center; flex-wrap:wrap;">
-            <div class="contact-profile-pro" style="text-align:center;">
-                <h4 class="contact-name" style="color:white;">Enzo Nicolás Girardi</h4>
-                <p class="contact-role" style="color:#38bdf8;">Desarrollo y Soporte Técnico</p>
-                <div class="btn-flex-pro">
-                    <a href="https://wa.me/5493584302024" target="_blank" class="btn-link-pro">WhatsApp</a>
-                    <a href="mailto:enzogirardi84@gmail.com" class="btn-link-pro">Email</a>
+        <h3 style="color: white; margin-bottom: 8px;">¿Desea implementar el sistema o reportar un problema?</h3>
+        <p style="color: #94a3b8; margin-bottom: 25px;">Contáctenos directamente para contrataciones o soporte técnico.</p>
+        
+        <div style="display:flex; gap:30px; justify-content:center; flex-wrap:wrap;">
+            <div style="text-align:center; min-width:220px;">
+                <h4 style="color:white; margin-bottom:4px;">Enzo Nicolás Girardi</h4>
+                <p style="color:#38bdf8; font-size:0.95rem;">Desarrollo y Soporte Técnico</p>
+                <div style="margin-top:15px; display:flex; gap:12px; justify-content:center;">
+                    <a href="https://wa.me/5493584302024" target="_blank" style="background:#25D366; color:white; padding:10px 24px; border-radius:9999px; text-decoration:none; font-weight:600;">WhatsApp</a>
+                    <a href="mailto:enzogirardi84@gmail.com" style="background:#e2e8f0; color:#0f172a; padding:10px 24px; border-radius:9999px; text-decoration:none; font-weight:600;">Email</a>
                 </div>
             </div>
-            <div class="contact-profile-pro" style="text-align:center;">
-                <h4 class="contact-name" style="color:white;">Darío Lanfranco</h4>
-                <p class="contact-role" style="color:#10b981;">Implementación y Contratos</p>
-                <div class="btn-flex-pro">
-                    <a href="https://wa.me/5493584201263" target="_blank" class="btn-link-pro">WhatsApp</a>
-                    <a href="mailto:dariolanfrancoruffener@gmail.com" class="btn-link-pro">Email</a>
+            <div style="text-align:center; min-width:220px;">
+                <h4 style="color:white; margin-bottom:4px;">Darío Lanfranco</h4>
+                <p style="color:#10b981; font-size:0.95rem;">Implementación y Contratos</p>
+                <div style="margin-top:15px; display:flex; gap:12px; justify-content:center;">
+                    <a href="https://wa.me/5493584201263" target="_blank" style="background:#25D366; color:white; padding:10px 24px; border-radius:9999px; text-decoration:none; font-weight:600;">WhatsApp</a>
+                    <a href="mailto:dariolanfrancoruffener@gmail.com" style="background:#e2e8f0; color:#0f172a; padding:10px 24px; border-radius:9999px; text-decoration:none; font-weight:600;">Email</a>
                 </div>
             </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # Botón grande para entrar
-    if st.button("🚀 INGRESAR AL SISTEMA", type="primary", use_container_width=True, key="btn_enter"):
+    # Botón grande para entrar al sistema
+    if st.button("🚀 INGRESAR AL SISTEMA", type="primary", use_container_width=True, key="btn_enter_final"):
         st.session_state.entered_app = True
         st.rerun()
 
     st.markdown('</div>', unsafe_allow_html=True)
     st.stop()   # ← Detiene el resto del programa
+    
 # =====================================================================
 # ACÁ EMPIEZA TU CÓDIGO NORMAL DEL SISTEMA (BASE DE DATOS, VADEMECUM, ETC.)
 # =====================================================================
