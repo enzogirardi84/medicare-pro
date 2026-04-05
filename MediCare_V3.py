@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+import base64
+import textwrap  # <--- LA SOLUCIÓN MÁGICA CONTRA LOS ESPACIOS
 from datetime import datetime, date, timedelta
 import json
 import pytz
@@ -7,7 +9,6 @@ import urllib.request
 import urllib.parse
 from supabase import create_client, Client
 import io
-import base64
 import time
 import os
 import tempfile
@@ -17,25 +18,28 @@ import altair as alt
 # 1. CONFIGURACIÓN INICIAL
 st.set_page_config(page_title="MediCare PRO V9.11", layout="wide", initial_sidebar_state="collapsed")
 
+# =====================================================================
+# --- LANDING PAGE Y CONTROL DE FLUJO ---
+# =====================================================================
 if "entered_app" not in st.session_state:
     st.session_state.entered_app = False
 
 if not st.session_state.entered_app:
     # 1. ESTILOS GLOBALES DE LA PUBLICIDAD
     st.markdown("""
-<style>
-    #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
-    .block-container { padding-top: 0rem !important; padding-bottom: 0rem !important; max-width: 100% !important; margin-top: 0 !important; }
-    .stApp { background-color: #020617 !important; background-image: radial-gradient(circle at top right, #0F172A 0%, #020617 100%) !important; }
-    div.stButton { display: flex; justify-content: center; margin-top: 20px; padding-bottom: 60px; }
-    div.stButton > button { background: linear-gradient(90deg, #38bdf8, #0ea5e9) !important; color: white !important; font-size: 1.1rem !important; font-weight: 800 !important; padding: 15px 60px !important; border-radius: 9999px !important; border: none !important; box-shadow: 0 10px 25px rgba(56, 189, 248, 0.4) !important; transition: all 0.3s ease !important; text-transform: uppercase; letter-spacing: 1px !important; }
-    div.stButton > button:hover { transform: translateY(-4px) !important; box-shadow: 0 15px 35px rgba(56, 189, 248, 0.6) !important; }
-</style>
+        <style>
+            #MainMenu {visibility: hidden;}
+            header {visibility: hidden;}
+            footer {visibility: hidden;}
+            .block-container { padding-top: 0rem !important; padding-bottom: 0rem !important; max-width: 100% !important; margin-top: 0 !important; }
+            .stApp { background-color: #020617 !important; background-image: radial-gradient(circle at top right, #0F172A 0%, #020617 100%) !important; }
+            div.stButton { display: flex; justify-content: center; margin-top: 20px; padding-bottom: 60px; }
+            div.stButton > button { background: linear-gradient(90deg, #38bdf8, #0ea5e9) !important; color: white !important; font-size: 1.1rem !important; font-weight: 800 !important; padding: 15px 60px !important; border-radius: 9999px !important; border: none !important; box-shadow: 0 10px 25px rgba(56, 189, 248, 0.4) !important; transition: all 0.3s ease !important; text-transform: uppercase; letter-spacing: 1px !important; }
+            div.stButton > button:hover { transform: translateY(-4px) !important; box-shadow: 0 15px 35px rgba(56, 189, 248, 0.6) !important; }
+        </style>
     """, unsafe_allow_html=True)
 
-    # 2. LOGO EN BASE64 (Para que no rompa el diseño)
+    # 2. LOGO EN BASE64
     try:
         with open("logo_medicare_pro.jpeg", "rb") as image_file:
             encoded_string = base64.b64encode(image_file.read()).decode()
@@ -43,76 +47,76 @@ if not st.session_state.entered_app:
     except Exception:
         logo_html = '<div style="margin-bottom: 20px;"><h1 style="font-size:2rem; font-weight:900; color:#38bdf8; margin:0;">MediCare PRO</h1></div>'
 
-    # 3. HTML DE TU DISEÑO (Pegado al margen izquierdo para evitar errores de Streamlit)
-    html_landing = f"""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
-    .landing-wrapper {{ font-family: 'Inter', sans-serif; color: #F8FAFC; display: flex; flex-direction: column; align-items: center; padding: 40px 15px 20px; }}
-    .hero-title {{ font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 900; line-height: 1.15; margin: 0 0 15px; text-align: center; background: linear-gradient(to right, #ffffff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }}
-    .hero-subtitle {{ font-size: 1.1rem; color: #94a3b8; font-weight: 400; margin: 0 0 50px; max-width: 600px; text-align: center; line-height: 1.6; }}
-    .grid-cards {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; max-width: 1100px; width: 100%; margin-bottom: 50px; }}
-    .card-pro {{ background: linear-gradient(145deg, rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.8)); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 24px; transition: all 0.3s ease; text-align: left; }}
-    .card-pro:hover {{ transform: translateY(-6px); box-shadow: 0 12px 24px rgba(0,0,0,0.4); border-color: rgba(56, 189, 248, 0.4); }}
-    .icon-badge {{ background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.2); width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 16px; }}
-    .card-title {{ font-size: 1.15rem; font-weight: 700; color: #f8fafc; margin: 0 0 8px; }}
-    .card-text {{ color: #94a3b8; font-size: 0.9rem; line-height: 1.5; margin: 0; }}
-    .contact-wrapper {{ background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 24px; padding: 40px; max-width: 900px; width: 100%; text-align: center; }}
-    .contact-grid {{ display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; margin-top: 30px; }}
-    .profile-card {{ flex: 1; min-width: 240px; max-width: 320px; background: rgba(30, 41, 59, 0.3); border: 1px solid rgba(255, 255, 255, 0.02); padding: 24px; border-radius: 16px; transition: 0.3s; }}
-    .profile-card:hover {{ background: rgba(30, 41, 59, 0.5); border-color: rgba(56, 189, 248, 0.2); }}
-    .p-name {{ font-size: 1.25rem; font-weight: 700; color: #38bdf8; margin: 0 0 4px; }}
-    .p-role {{ font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin: 0 0 20px; }}
-    .btn-group {{ display: flex; gap: 12px; justify-content: center; }}
-    .btn-c {{ display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 16px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 0.85rem; width: 100%; transition: 0.2s; }}
-    .btn-w {{ background: rgba(37, 211, 102, 0.1); color: #25D366; border: 1px solid rgba(37, 211, 102, 0.2); }}
-    .btn-w:hover {{ background: #25D366; color: white; }}
-    .btn-m {{ background: rgba(148, 163, 184, 0.1); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.2); }}
-    .btn-m:hover {{ background: #cbd5e1; color: #0f172a; }}
-</style>
+    # 3. HTML BLINDADO CON TEXTWRAP.DEDENT
+    html_landing = textwrap.dedent(f"""
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
+            .landing-wrapper {{ font-family: 'Inter', sans-serif; color: #F8FAFC; display: flex; flex-direction: column; align-items: center; padding: 40px 15px 20px; }}
+            .hero-title {{ font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 900; line-height: 1.15; margin: 0 0 15px; text-align: center; background: linear-gradient(to right, #ffffff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }}
+            .hero-subtitle {{ font-size: 1.1rem; color: #94a3b8; font-weight: 400; margin: 0 0 50px; max-width: 600px; text-align: center; line-height: 1.6; }}
+            .grid-cards {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; max-width: 1100px; width: 100%; margin-bottom: 50px; }}
+            .card-pro {{ background: linear-gradient(145deg, rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.8)); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 24px; transition: all 0.3s ease; text-align: left; }}
+            .card-pro:hover {{ transform: translateY(-6px); box-shadow: 0 12px 24px rgba(0,0,0,0.4); border-color: rgba(56, 189, 248, 0.4); }}
+            .icon-badge {{ background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.2); width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 16px; }}
+            .card-title {{ font-size: 1.15rem; font-weight: 700; color: #f8fafc; margin: 0 0 8px; }}
+            .card-text {{ color: #94a3b8; font-size: 0.9rem; line-height: 1.5; margin: 0; }}
+            .contact-wrapper {{ background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 24px; padding: 40px; max-width: 900px; width: 100%; text-align: center; }}
+            .contact-grid {{ display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; margin-top: 30px; }}
+            .profile-card {{ flex: 1; min-width: 240px; max-width: 320px; background: rgba(30, 41, 59, 0.3); border: 1px solid rgba(255, 255, 255, 0.02); padding: 24px; border-radius: 16px; transition: 0.3s; }}
+            .profile-card:hover {{ background: rgba(30, 41, 59, 0.5); border-color: rgba(56, 189, 248, 0.2); }}
+            .p-name {{ font-size: 1.25rem; font-weight: 700; color: #38bdf8; margin: 0 0 4px; }}
+            .p-role {{ font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin: 0 0 20px; }}
+            .btn-group {{ display: flex; gap: 12px; justify-content: center; }}
+            .btn-c {{ display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 16px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 0.85rem; width: 100%; transition: 0.2s; }}
+            .btn-w {{ background: rgba(37, 211, 102, 0.1); color: #25D366; border: 1px solid rgba(37, 211, 102, 0.2); }}
+            .btn-w:hover {{ background: #25D366; color: white; }}
+            .btn-m {{ background: rgba(148, 163, 184, 0.1); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.2); }}
+            .btn-m:hover {{ background: #cbd5e1; color: #0f172a; }}
+        </style>
 
-<div class="landing-wrapper">
-    {logo_html}
-    <h1 class="hero-title">Gestión Domiciliaria<br>Inteligente</h1>
-    <p class="hero-subtitle">Módulos avanzados y diseño intuitivo para llevar el control de tu clínica al máximo nivel.</p>
+        <div class="landing-wrapper">
+            {logo_html}
+            <h1 class="hero-title">Gestión Domiciliaria<br>Inteligente</h1>
+            <p class="hero-subtitle">Módulos avanzados y diseño intuitivo para llevar el control de tu clínica al máximo nivel.</p>
 
-    <div class="grid-cards">
-        <div class="card-pro"><div class="icon-badge">📍</div><h4 class="card-title">Fichaje GPS</h4><p class="card-text">Control de asistencia verificado por coordenadas exactas del domicilio.</p></div>
-        <div class="card-pro"><div class="icon-badge">📄</div><h4 class="card-title">Evolución Médica</h4><p class="card-text">Carga digital de signos vitales, parámetros y fotografías clínicas.</p></div>
-        <div class="card-pro"><div class="icon-badge">💊</div><h4 class="card-title">Stock Inteligente</h4><p class="card-text">Gestión de inventario con descuento automático por práctica.</p></div>
-        <div class="card-pro"><div class="icon-badge">✍️</div><h4 class="card-title">Firma Digital</h4><p class="card-text">Recetas y consentimientos validados con firma directamente en pantalla.</p></div>
-        <div class="card-pro"><div class="icon-badge">📹</div><h4 class="card-title">Telemedicina</h4><p class="card-text">Videollamadas P2P integradas nativamente al historial del paciente.</p></div>
-        <div class="card-pro"><div class="icon-badge">👶</div><h4 class="card-title">Pediatría</h4><p class="card-text">Control de crecimiento y gráficas de percentiles automatizadas.</p></div>
-        <div class="card-pro"><div class="icon-badge">💧</div><h4 class="card-title">Balance Hídrico</h4><p class="card-text">Cálculo estricto de ingresos/egresos con alertas por retención.</p></div>
-        <div class="card-pro"><div class="icon-badge">📋</div><h4 class="card-title">Auditoría RRHH</h4><p class="card-text">Cierres diarios, reportes de desempeño y liquidación de servicios.</p></div>
-    </div>
-
-    <div class="contact-wrapper">
-        <h3 style="color: white; margin: 0 0 8px; font-size: 1.5rem; font-weight: 700;">¿Necesitas soporte o implementación?</h3>
-        <p style="color: #94a3b8; margin: 0; font-size: 0.95rem;">Comunícate directamente con nuestro equipo de especialistas.</p>
-
-        <div class="contact-grid">
-            <div class="profile-card">
-                <h4 class="p-name">Enzo N. Girardi</h4>
-                <p class="p-role">Desarrollo y Soporte Técnico</p>
-                <div class="btn-group">
-                    <a href="https://wa.me/5493584302024" target="_blank" class="btn-c btn-w">💬 WhatsApp</a>
-                    <a href="mailto:enzogirardi84@gmail.com" class="btn-c btn-m">✉️ Email</a>
-                </div>
+            <div class="grid-cards">
+                <div class="card-pro"><div class="icon-badge">📍</div><h4 class="card-title">Fichaje GPS</h4><p class="card-text">Control de asistencia verificado por coordenadas exactas del domicilio.</p></div>
+                <div class="card-pro"><div class="icon-badge">📄</div><h4 class="card-title">Evolución Médica</h4><p class="card-text">Carga digital de signos vitales, parámetros y fotografías clínicas.</p></div>
+                <div class="card-pro"><div class="icon-badge">💊</div><h4 class="card-title">Stock Inteligente</h4><p class="card-text">Gestión de inventario con descuento automático por práctica.</p></div>
+                <div class="card-pro"><div class="icon-badge">✍️</div><h4 class="card-title">Firma Digital</h4><p class="card-text">Recetas y consentimientos validados con firma directamente en pantalla.</p></div>
+                <div class="card-pro"><div class="icon-badge">📹</div><h4 class="card-title">Telemedicina</h4><p class="card-text">Videollamadas P2P integradas nativamente al historial del paciente.</p></div>
+                <div class="card-pro"><div class="icon-badge">👶</div><h4 class="card-title">Pediatría</h4><p class="card-text">Control de crecimiento y gráficas de percentiles automatizadas.</p></div>
+                <div class="card-pro"><div class="icon-badge">💧</div><h4 class="card-title">Balance Hídrico</h4><p class="card-text">Cálculo estricto de ingresos/egresos con alertas por retención.</p></div>
+                <div class="card-pro"><div class="icon-badge">📋</div><h4 class="card-title">Auditoría RRHH</h4><p class="card-text">Cierres diarios, reportes de desempeño y liquidación de servicios.</p></div>
             </div>
-            <div class="profile-card">
-                <h4 class="p-name">Darío Lanfranco</h4>
-                <p class="p-role">Implementación y Contratos</p>
-                <div class="btn-group">
-                    <a href="https://wa.me/5493584201263" target="_blank" class="btn-c btn-w">💬 WhatsApp</a>
-                    <a href="mailto:dariolanfrancoruffener@gmail.com" class="btn-c btn-m">✉️ Email</a>
+
+            <div class="contact-wrapper">
+                <h3 style="color: white; margin: 0 0 8px; font-size: 1.5rem; font-weight: 700;">¿Necesitas soporte o implementación?</h3>
+                <p style="color: #94a3b8; margin: 0; font-size: 0.95rem;">Comunícate directamente con nuestro equipo de especialistas.</p>
+
+                <div class="contact-grid">
+                    <div class="profile-card">
+                        <h4 class="p-name">Enzo N. Girardi</h4>
+                        <p class="p-role">Desarrollo y Soporte Técnico</p>
+                        <div class="btn-group">
+                            <a href="https://wa.me/5493584302024" target="_blank" class="btn-c btn-w">💬 WhatsApp</a>
+                            <a href="mailto:enzogirardi84@gmail.com" class="btn-c btn-m">✉️ Email</a>
+                        </div>
+                    </div>
+                    <div class="profile-card">
+                        <h4 class="p-name">Darío Lanfranco</h4>
+                        <p class="p-role">Implementación y Contratos</p>
+                        <div class="btn-group">
+                            <a href="https://wa.me/5493584201263" target="_blank" class="btn-c btn-w">💬 WhatsApp</a>
+                            <a href="mailto:dariolanfrancoruffener@gmail.com" class="btn-c btn-m">✉️ Email</a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</div>
-"""
-
-    # 4. INYECTAR EL CÓDIGO FINAL
+    """)
+    
+    # 4. INYECTAR EL CÓDIGO FINAL NATIVO (SIN CAJITA GRIS GRACIAS AL TEXTWRAP)
     st.markdown(html_landing, unsafe_allow_html=True)
     
     # 5. BOTÓN DE INGRESO
@@ -120,13 +124,12 @@ if not st.session_state.entered_app:
         st.session_state.entered_app = True
         st.rerun()
 
-    # 6. EL FRENO (Evita que cargue tu programa debajo de la publicidad)
+    # 6. FRENO ABSOLUTO
     st.stop()
 
 # =====================================================================
 # --- PANTALLA 2: EL SISTEMA REAL (MEDICARE PRO) ---
 # =====================================================================
-# Restauramos el menú lateral para que puedas usar tu aplicación
 st.markdown("<style>#MainMenu {visibility: visible;} header {visibility: visible;} .block-container {padding-top: 3rem !important;}</style>", unsafe_allow_html=True)
 
 if st.sidebar.button("⬅️ Volver a la Publicidad"):
@@ -134,6 +137,8 @@ if st.sidebar.button("⬅️ Volver a la Publicidad"):
     st.rerun()
 
 st.sidebar.markdown("---")
+
+# --- AQUÍ EMPIEZA TU CÓDIGO NORMAL DEL SISTEMA (VADEMÉCUM, BD, ETC) ---
 
 # =====================================================================
 # ACÁ EMPIEZA TU CÓDIGO NORMAL DEL SISTEMA (BASE DE DATOS, VADEMECUM, ETC.)
