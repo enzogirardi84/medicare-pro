@@ -18,7 +18,7 @@ import altair as alt
 # 1. CONFIGURACIÓN INICIAL (DEBE SER LA PRIMERA LÍNEA DE STREAMLIT)
 st.set_page_config(page_title="MediCare PRO V9.11", layout="wide", initial_sidebar_state="collapsed")
 
-# ====================== LANDING PAGE PROFESIONAL - RESPONSIVE (VERSIÓN FINAL) ======================
+# ====================== LANDING PAGE PROFESIONAL - VERSIÓN FINAL (RESPONSIVE) ======================
 if "entered_app" not in st.session_state:
     st.session_state.entered_app = False
 
@@ -30,7 +30,7 @@ if not st.session_state.entered_app:
         .landing-page {
             background: linear-gradient(135deg, #0f172a 0%, #020617 100%);
             min-height: 100vh;
-            padding: 80px 20px 60px;
+            padding: 60px 15px 40px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -38,71 +38,64 @@ if not st.session_state.entered_app:
             font-family: 'Inter', sans-serif;
         }
         .logo-container img {
-            max-width: 260px;
+            max-width: 240px;
             filter: drop-shadow(0 10px 20px rgba(56, 189, 248, 0.3));
         }
         .title {
-            font-size: 2.8rem;
+            font-size: 2.6rem;
             font-weight: 900;
             line-height: 1.1;
             text-align: center;
-            margin: 30px 0 20px 0;
+            margin: 30px 0 20px;
         }
         @media (max-width: 768px) {
-            .title { font-size: 2.2rem; }
+            .title { font-size: 2.1rem; }
         }
         .grid-cards {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 18px;
-            max-width: 1200px;
-            margin: 40px 0;
+            gap: 16px;
+            max-width: 1100px;
+            margin: 40px 0 50px;
             width: 100%;
         }
         .glass-card-pro {
             background: rgba(15, 23, 42, 0.85);
             backdrop-filter: blur(16px);
             border: 1px solid rgba(56, 189, 248, 0.25);
-            border-radius: 20px;
-            padding: 24px 20px;
+            border-radius: 18px;
+            padding: 22px 18px;
             transition: all 0.3s ease;
             text-align: center;
         }
         .glass-card-pro:hover {
-            transform: translateY(-6px);
+            transform: translateY(-4px);
             border-color: #38bdf8;
         }
-        .icon-box-pro { font-size: 2.8rem; margin-bottom: 14px; }
-        .card-title-pro { font-size: 1.25rem; font-weight: 700; margin-bottom: 10px; }
-        .card-text-pro { color: #94a3b8; font-size: 0.95rem; line-height: 1.5; }
+        .icon-box-pro { font-size: 2.6rem; margin-bottom: 12px; }
+        .card-title-pro { font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; }
+        .card-text-pro { color: #94a3b8; font-size: 0.92rem; line-height: 1.45; }
         
         .contact-section-pro {
             max-width: 900px;
             width: 100%;
-            margin-top: 50px;
+            margin-top: 20px;
         }
         .btn-link-pro {
             background: #25D366;
             color: white;
-            padding: 12px 28px;
+            padding: 12px 26px;
             border-radius: 9999px;
             text-decoration: none;
             font-weight: 600;
             font-size: 1rem;
         }
-        .btn-flex-pro {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-top: 15px;
-            flex-wrap: wrap;
-        }
         .enter-btn {
             background: linear-gradient(90deg, #38bdf8, #0ea5e9);
             color: white;
-            font-size: 1.3rem;
+            font-size: 1.35rem;
             font-weight: 700;
-            padding: 18px 60px;
+            padding: 18px 70px;
             border-radius: 9999px;
             border: none;
             margin-top: 40px;
@@ -115,7 +108,7 @@ if not st.session_state.entered_app:
 
     # Logo
     try:
-        st.image("logo_medicare_pro.jpeg", width=260)
+        st.image("logo_medicare_pro.jpeg", width=240)
     except:
         st.markdown("<h1 style='font-size:4rem;font-weight:900;color:#38bdf8;'>MediCare PRO</h1>", unsafe_allow_html=True)
 
@@ -125,21 +118,21 @@ if not st.session_state.entered_app:
     </h1>
     """, unsafe_allow_html=True)
 
-    # Grid de tarjetas
+    # Grid de tarjetas (más compacto y responsive)
     st.markdown("""
     <div class="grid-cards">
-        <div class="glass-card-pro"><div class="icon-box-pro">📍</div><h4 class="card-title-pro">Fichaje GPS</h4><p class="card-text-pro">Control de asistencia verificado por coordenadas exactas en el domicilio.</p></div>
-        <div class="glass-card-pro"><div class="icon-box-pro">📄</div><h4 class="card-title-pro">Evolución Médica</h4><p class="card-text-pro">Carga digital de signos vitales y fotografías de heridas en tiempo real.</p></div>
-        <div class="glass-card-pro"><div class="icon-box-pro">💊</div><h4 class="card-title-pro">Stock Farmacia</h4><p class="card-text-pro">Gestión de inventario con descuento automático por práctica realizada.</p></div>
-        <div class="glass-card-pro"><div class="icon-box-pro">✍️</div><h4 class="card-title-pro">Firma Digital</h4><p class="card-text-pro">Recetas y consentimientos con validez legal generados en pantalla.</p></div>
-        <div class="glass-card-pro"><div class="icon-box-pro">📹</div><h4 class="card-title-pro">Telemedicina</h4><p class="card-text-pro">Videollamadas encriptadas integradas directamente a la historia clínica.</p></div>
-        <div class="glass-card-pro"><div class="icon-box-pro">👶</div><h4 class="card-title-pro">Pediatría</h4><p class="card-text-pro">Control de crecimiento y percentiles automatizados para seguimiento infantil.</p></div>
-        <div class="glass-card-pro"><div class="icon-box-pro">💧</div><h4 class="card-title-pro">Balance Hídrico</h4><p class="card-text-pro">Cálculo estricto de ingresos y egresos con alertas de retención.</p></div>
-        <div class="glass-card-pro"><div class="icon-box-pro">📋</div><h4 class="card-title-pro">Auditoría RRHH</h4><p class="card-text-pro">Cierres diarios, reportes de desempeño y liquidación de servicios.</p></div>
+        <div class="glass-card-pro"><div class="icon-box-pro">📍</div><h4 class="card-title-pro">Fichaje GPS</h4><p class="card-text-pro">Control de asistencia verificado por coordenadas exactas.</p></div>
+        <div class="glass-card-pro"><div class="icon-box-pro">📄</div><h4 class="card-title-pro">Evolución Médica</h4><p class="card-text-pro">Carga digital de signos vitales y fotos de heridas.</p></div>
+        <div class="glass-card-pro"><div class="icon-box-pro">💊</div><h4 class="card-title-pro">Stock Farmacia</h4><p class="card-text-pro">Gestión de inventario con descuento automático.</p></div>
+        <div class="glass-card-pro"><div class="icon-box-pro">✍️</div><h4 class="card-title-pro">Firma Digital</h4><p class="card-text-pro">Recetas y consentimientos con validez legal.</p></div>
+        <div class="glass-card-pro"><div class="icon-box-pro">📹</div><h4 class="card-title-pro">Telemedicina</h4><p class="card-text-pro">Videollamadas integradas a la historia clínica.</p></div>
+        <div class="glass-card-pro"><div class="icon-box-pro">👶</div><h4 class="card-title-pro">Pediatría</h4><p class="card-text-pro">Control de crecimiento y percentiles automatizados.</p></div>
+        <div class="glass-card-pro"><div class="icon-box-pro">💧</div><h4 class="card-title-pro">Balance Hídrico</h4><p class="card-text-pro">Cálculo estricto con alertas de retención.</p></div>
+        <div class="glass-card-pro"><div class="icon-box-pro">📋</div><h4 class="card-title-pro">Auditoría RRHH</h4><p class="card-text-pro">Cierres diarios y liquidación de servicios.</p></div>
     </div>
     """, unsafe_allow_html=True)
 
-    # === TU SECCIÓN DE CONTACTO (exactamente la que enviaste) ===
+    # Sección de contacto (exactamente como la querías)
     st.markdown("""
     <div class="contact-section-pro">
         <h3 style="color: white; margin-bottom: 10px;">¿Desea implementar el sistema o reportar un problema?</h3>
@@ -165,13 +158,13 @@ if not st.session_state.entered_app:
     </div>
     """, unsafe_allow_html=True)
 
-    # Botón grande para entrar al sistema
+    # Botón grande para entrar
     if st.button("🚀 INGRESAR AL SISTEMA", type="primary", use_container_width=True, key="btn_enter_final"):
         st.session_state.entered_app = True
         st.rerun()
 
     st.markdown('</div>', unsafe_allow_html=True)
-    st.stop()   # ← Muy importante
+    st.stop()
     
 # =====================================================================
 # ACÁ EMPIEZA TU CÓDIGO NORMAL DEL SISTEMA (BASE DE DATOS, VADEMECUM, ETC.)
