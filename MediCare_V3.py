@@ -650,45 +650,53 @@ with tabs[menu.index("📍 Visitas y Agenda")]:
             dire_paciente = det.get("direccion", "No registrada")
             tel_paciente = det.get("telefono", "")
 
-            # === GEOLOCALIZACIÓN ===
+           # === GEOLOCALIZACIÓN ===
             if GEO_DISPONIBLE:
-                loc = streamlit_geolocation()
-                lat = loc.get('latitude') if loc and loc.get('latitude') is not None else None
-                lon = loc.get('longitude') if loc and loc.get('longitude') is not None else None
+                st.info("📍 Para fichar tu llegada o salida, necesitamos tu ubicación exacta.")
+                
+                # LA MAGIA ESTÁ ACÁ: Frena la carga automática del GPS hasta que el usuario tilda la opción
+                activar_gps = st.checkbox("Activar GPS y obtener mi ubicación")
+                
+                if activar_gps:
+                    # Recién cuando tocan el checkbox, Streamlit llama al navegador para pedir el permiso
+                    loc = streamlit_geolocation()
+                    lat = loc.get('latitude') if loc and loc.get('latitude') is not None else None
+                    lon = loc.get('longitude') if loc and loc.get('longitude') is not None else None
 
-                if lat is not None and lon is not None:
-                    lat_str = f"{float(lat):.5f}"
-                    lon_str = f"{float(lon):.5f}"
-                    direccion_real = obtener_direccion_real(lat_str, lon_str)
+                    if lat is not None and lon is not None:
+                        lat_str = f"{float(lat):.5f}"
+                        lon_str = f"{float(lon):.5f}"
+                        direccion_real = obtener_direccion_real(lat_str, lon_str)
 
-                    st.success(f"📍 **Estás físicamente en:** {direccion_real}")
+                        st.success(f"📍 **Estás físicamente en:** {direccion_real}")
 
-                    col_in, col_out = st.columns(2)
-                    if col_in.button("🟢 Fichar LLEGADA en esta Ubicación", use_container_width=True, type="primary"):
-                        st.session_state["checkin_db"].append({
-                            "paciente": paciente_sel,
-                            "profesional": user["nombre"],
-                            "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"),
-                            "tipo": f"LLEGADA en: {direccion_real} (Lat: {lat_str})",
-                            "empresa": mi_empresa
-                        })
-                        guardar_datos()
-                        st.success("✅ Llegada registrada.")
-                        st.rerun()
+                        col_in, col_out = st.columns(2)
+                        if col_in.button("🟢 Fichar LLEGADA en esta Ubicación", use_container_width=True, type="primary"):
+                            st.session_state["checkin_db"].append({
+                                "paciente": paciente_sel,
+                                "profesional": user["nombre"],
+                                "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"),
+                                "tipo": f"LLEGADA en: {direccion_real} (Lat: {lat_str})",
+                                "empresa": mi_empresa
+                            })
+                            guardar_datos()
+                            st.success("✅ Llegada registrada.")
+                            st.rerun()
 
-                    if col_out.button("🔴 Fichar SALIDA en esta Ubicación", use_container_width=True, type="secondary"):
-                        st.session_state["checkin_db"].append({
-                            "paciente": paciente_sel,
-                            "profesional": user["nombre"],
-                            "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"),
-                            "tipo": f"SALIDA de: {direccion_real} (Lat: {lat_str})",
-                            "empresa": mi_empresa
-                        })
-                        guardar_datos()
-                        st.success("✅ Salida registrada.")
-                        st.rerun()
-                else:
-                    st.warning("📍 Aún no capturaste tu ubicación. Tocá el ícono de ubicación arriba y permití el acceso.")
+                        if col_out.button("🔴 Fichar SALIDA en esta Ubicación", use_container_width=True, type="secondary"):
+                            st.session_state["checkin_db"].append({
+                                "paciente": paciente_sel,
+                                "profesional": user["nombre"],
+                                "fecha_hora": ahora().strftime("%d/%m/%Y %H:%M:%S"),
+                                "tipo": f"SALIDA de: {direccion_real} (Lat: {lat_str})",
+                                "empresa": mi_empresa
+                            })
+                            guardar_datos()
+                            st.success("✅ Salida registrada.")
+                            st.rerun()
+                    else:
+                        # Un mensaje más amigable mientras busca la señal
+                        st.warning("⏳ Buscando señal GPS... Por favor, asegurate de darle 'Permitir' al navegador.")
             else:
                 st.error("⚠️ Librería de geolocalización no disponible.")
 
