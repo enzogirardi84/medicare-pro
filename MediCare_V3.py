@@ -556,6 +556,27 @@ if not st.session_state["logeado"]:
                     else: st.error("❌ Usuario no existe.")
     st.stop()
 
+# =====================================================================
+# --- CONTROL DE INACTIVIDAD (Cierre automático a los 5 minutos) ---
+# =====================================================================
+if st.session_state.get("logeado"):
+    if "ultima_actividad" not in st.session_state:
+        # Si recién entra, ponemos el reloj en hora
+        st.session_state["ultima_actividad"] = ahora()
+    else:
+        # Calculamos cuántos minutos pasaron desde el último clic
+        minutos_inactivos = (ahora() - st.session_state["ultima_actividad"]).total_seconds() / 60.0
+        
+        if minutos_inactivos > 5.0:  # LÍMITE DE 5 MINUTOS EXACTOS
+            st.session_state["logeado"] = False
+            del st.session_state["ultima_actividad"]
+            st.warning("⏳ Tu sesión se cerró automáticamente por inactividad (5 minutos por seguridad).")
+            time.sleep(2) # Pausa de 2 segundos para que lea el mensaje
+            st.rerun()
+        else:
+            # Si el usuario hizo clic en algo y no pasaron 5 min, reseteamos el reloj
+            st.session_state["ultima_actividad"] = ahora()
+
 # --- CONTEXTO ---
 user = st.session_state["u_actual"]
 mi_empresa = user["empresa"]
