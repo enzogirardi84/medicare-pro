@@ -590,6 +590,23 @@ with st.sidebar:
     
     paciente_sel = paciente_sel_tuple[0] if paciente_sel_tuple else None
 
+    # ==== 🚨 ETAPA 1: ALERTA CLÍNICA CRÍTICA EN SIDEBAR ====
+    if paciente_sel:
+        det_pac = st.session_state["detalles_pacientes_db"].get(paciente_sel, {})
+        alergias_pac = det_pac.get("alergias", "").strip()
+        patologias_pac = det_pac.get("patologias", "").strip()
+        
+        if alergias_pac or patologias_pac:
+            alerta_html = "<div style='background-color: #450a0a; border: 2px solid #ef4444; border-radius: 10px; padding: 12px; margin-top: 15px; margin-bottom: 15px; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);'>"
+            alerta_html += "<h4 style='color: #f87171; margin-top: 0; margin-bottom: 8px; text-transform: uppercase; font-weight: 900; letter-spacing: 1px;'>🚨 ALERTA CLÍNICA</h4>"
+            if alergias_pac:
+                alerta_html += f"<p style='color: #fca5a5; margin: 0 0 6px 0; font-size: 0.9rem;'><b>Alergias:</b><br>{alergias_pac}</p>"
+            if patologias_pac:
+                alerta_html += f"<p style='color: #fca5a5; margin: 0; font-size: 0.9rem;'><b>Patologías / Riesgos:</b><br>{patologias_pac}</p>"
+            alerta_html += "</div>"
+            st.markdown(alerta_html, unsafe_allow_html=True)
+
+    # Botones de archivar paciente (Solo Admin/Coord)
     if paciente_sel and rol in ["SuperAdmin", "Coordinador"]:
         estado_actual = st.session_state["detalles_pacientes_db"].get(paciente_sel, {}).get("estado", "Activo")
         if estado_actual == "Activo":
@@ -605,7 +622,6 @@ with st.sidebar:
 
     st.divider()
     if st.button("Cerrar Sesión", width="stretch"): st.session_state["logeado"] = False; st.rerun()
-
 # --- MENU DINÁMICO ---
 menu = ["📍 Visitas y Agenda", "👤 Admisión", "📊 Clínica", "👶 Pediatría", "📝 Evolución", "🔬 Estudios", "💉 Materiales", "💊 Recetas", "⚖️ Balance", "📦 Inventario", "💳 Caja", "📚 Historial", "🗄️ PDF", "📹 Telemedicina"]
 
@@ -964,6 +980,12 @@ with tabs[menu.index("👤 Admisión")]:
         dir_p = st.text_input("Dirección Exacta (Importante para GPS y PDF)", 
                              placeholder="Calle 123, Barrio, Ciudad")
         
+        # ==== 🚨 NUEVOS CAMPOS DE ALERTAS CLÍNICAS ====
+        st.markdown("##### 🚨 Datos Clínicos Críticos (Alertas)")
+        col_alg, col_pat = st.columns(2)
+        alergias = col_alg.text_area("Alergias (Dejar en blanco si no tiene)", placeholder="Ej: Penicilina, Ibuprofeno...", height=68)
+        patologias = col_pat.text_area("Patologías Previas / Riesgos", placeholder="Ej: DBT, HTA, Marcapasos...", height=68)
+        
         # Empresa solo editable por SuperAdmin
         if rol == "SuperAdmin":
             emp_d = st.text_input("Empresa / Clínica", value=mi_empresa)
@@ -996,7 +1018,10 @@ with tabs[menu.index("👤 Admisión")]:
                         "direccion": dir_p.strip(),
                         "empresa": emp_d.strip(),
                         "estado": "Activo",
-                        "obra_social": o.strip()
+                        "obra_social": o.strip(),
+                        # Guardamos las nuevas alertas en la base de datos
+                        "alergias": alergias.strip(),
+                        "patologias": patologias.strip()
                     }
                     
                     guardar_datos()
