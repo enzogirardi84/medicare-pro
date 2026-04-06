@@ -272,10 +272,8 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# --- 🎨 DISEÑO VISUAL ENTERPRISE PREMIUM v3.0 (MODO CLARO / OSCURO ADAPTATIVO) ---
-# ====================== TOGGLE DE TEMA (CLARO / OSCURO) ======================
 # =========================================================================================
-# 🎨 DISEÑO VISUAL ENTERPRISE PREMIUM v15.0 (TEXTOS CORREGIDOS)
+# 🎨 DISEÑO VISUAL ENTERPRISE PREMIUM v15.2 (FIX DESPLEGABLES EN CELULARES)
 # =========================================================================================
 page_bg_css = """
 <style>
@@ -286,7 +284,7 @@ page_bg_css = """
     --bg-app: #0F172A;          
     --bg-sidebar: #0B1121;      
     --bg-card: #1E293B;         
-    --bg-input: #334155;        /* Inputs mucho más claros para que resalten fácil */
+    --bg-input: #334155;        
     
     --border-col: #3F4F66;      
     --border-hover: #38BDF8;    
@@ -360,8 +358,7 @@ div[data-testid="stMetric"] {
     text-shadow: 0 0 10px rgba(52, 211, 153, 0.3) !important; 
 }
 
-/* ==================== 5. INPUTS Y SELECTS (CORREGIDOS) ==================== */
-/* Cajas de fondo sin alterar el padding para no cortar letras */
+/* ==================== 5. INPUTS Y SELECTS ==================== */
 div[data-baseweb="select"] > div,
 div[data-baseweb="input"] > div,
 textarea {
@@ -371,13 +368,39 @@ textarea {
     transition: all 0.2s ease !important;
 }
 
-/* Color de las letras de adentro para que se vean bien blancas */
 div[data-baseweb="select"] div,
 input[type="number"], input[type="text"], textarea {
     color: #FFFFFF !important;
 }
 
-/* Efecto cuando hacés clic para escribir */
+input[type="number"], input[type="text"], textarea {
+    padding: 8px 12px !important; 
+}
+
+/* FIX DEFINITIVO PARA EL FONDO DE LOS DESPLEGABLES EN CELULARES */
+div[data-baseweb="popover"] > div,
+div[data-baseweb="popover"] ul {
+    background-color: #1E293B !important; /* Fuerza el fondo oscuro en la caja flotante */
+}
+ul[data-baseweb="menu"] {
+    background-color: #1E293B !important;
+}
+ul[data-baseweb="menu"] li {
+    color: #FFFFFF !important; 
+    background-color: transparent !important;
+}
+ul[data-baseweb="menu"] li * {
+    color: #FFFFFF !important; 
+}
+ul[data-baseweb="menu"] li:hover,
+ul[data-baseweb="menu"] li[aria-selected="true"] {
+    background-color: #38BDF8 !important; /* Ilumina en celeste al seleccionar */
+}
+ul[data-baseweb="menu"] li:hover *,
+ul[data-baseweb="menu"] li[aria-selected="true"] * {
+    color: #000000 !important; /* Pone la letra negra para que contraste con el celeste */
+}
+
 div[data-baseweb="select"] > div:focus-within,
 div[data-baseweb="input"] > div:focus-within,
 textarea:focus { 
@@ -398,60 +421,21 @@ input::placeholder, textarea::placeholder { color: #CBD5E1 !important; }
     transition: all 0.2s ease !important;
     opacity: 1 !important; 
 }
-.stTabs [data-testid="stTab"] p { 
-    color: #CBD5E1 !important; 
-    font-weight: 500 !important; 
-}
-.stTabs [data-testid="stTab"]:hover { 
-    background-color: #2F3E53 !important; 
-    border-color: var(--accent) !important;
-}
-.stTabs [data-testid="stTab"]:hover p { 
-    color: #FFFFFF !important; 
-}
-.stTabs [data-testid="stTab"][aria-selected="true"] {
-    background-color: var(--bg-input) !important; 
-    border: 1px solid var(--accent) !important;
-    box-shadow: 0 4px 10px var(--accent-glow) !important;
-}
-.stTabs [data-testid="stTab"][aria-selected="true"] p { 
-    color: var(--accent) !important; 
-    font-weight: 600 !important;
-}
+.stTabs [data-testid="stTab"] p { color: #CBD5E1 !important; font-weight: 500 !important; }
+.stTabs [data-testid="stTab"]:hover { background-color: #2F3E53 !important; border-color: var(--accent) !important; }
+.stTabs [data-testid="stTab"]:hover p { color: #FFFFFF !important; }
+.stTabs [data-testid="stTab"][aria-selected="true"] { background-color: var(--bg-input) !important; border: 1px solid var(--accent) !important; box-shadow: 0 4px 10px var(--accent-glow) !important; }
+.stTabs [data-testid="stTab"][aria-selected="true"] p { color: var(--accent) !important; font-weight: 600 !important; }
 
 /* ==================== 7. BOTONES ==================== */
-.stButton > button {
-    border-radius: 10px !important;
-    font-weight: 600 !important;
-    min-height: 48px !important;
-    transition: all 0.2s ease !important;
-    letter-spacing: 0.5px;
-}
-.stButton > button[kind="primary"] {
-    background: linear-gradient(135deg, #0284C7, #38BDF8) !important;
-    color: #FFFFFF !important;
-    border: none !important;
-}
-.stButton > button[kind="primary"]:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 6px 15px rgba(56, 189, 248, 0.4) !important;
-}
-.stButton > button[kind="secondary"] {
-    background-color: var(--bg-input) !important;
-    border: 1px solid var(--border-col) !important;
-    color: var(--text-main) !important;
-}
-.stButton > button[kind="secondary"]:hover { 
-    border-color: var(--accent) !important;
-    color: var(--accent) !important;
-}
+.stButton > button { border-radius: 10px !important; font-weight: 600 !important; min-height: 48px !important; transition: all 0.2s ease !important; letter-spacing: 0.5px; }
+.stButton > button[kind="primary"] { background: linear-gradient(135deg, #0284C7, #38BDF8) !important; color: #FFFFFF !important; border: none !important; }
+.stButton > button[kind="primary"]:hover { transform: translateY(-2px) !important; box-shadow: 0 6px 15px rgba(56, 189, 248, 0.4) !important; }
+.stButton > button[kind="secondary"] { background-color: var(--bg-input) !important; border: 1px solid var(--border-col) !important; color: var(--text-main) !important; }
+.stButton > button[kind="secondary"]:hover { border-color: var(--accent) !important; color: var(--accent) !important; }
 
 /* ==================== 8. DATAFRAMES ==================== */
-[data-testid="stDataFrame"] {
-    border-radius: 12px !important;
-    border: 1px solid var(--border-col) !important;
-    background-color: var(--bg-card) !important;
-}
+[data-testid="stDataFrame"] { border-radius: 12px !important; border: 1px solid var(--border-col) !important; background-color: var(--bg-card) !important; }
 [data-testid="stTable"] { background-color: transparent !important; }
 
 /* ==================== 9. EXTRAS ==================== */
