@@ -3247,7 +3247,6 @@ with tabs[menu.index("📹 Telemedicina")]:
     else:
         st.info("👈 Seleccione un paciente en el panel lateral para iniciar una teleconsulta.")
 
-
 # =====================================================================
 # 16. EQUIPO Y SUSCRIPCIONES (SOLO VISIBLE PARA ADMIN/COORDINADOR)
 # =====================================================================
@@ -3276,7 +3275,7 @@ if "⚙️ Mi Equipo" in menu:
                 "Acompañante Terapéutico", "Trabajador/a Social", "Administrativo/a", "Otro"
             ])
             
-            u_emp = st.text_input("🏢 Asignar a Clínica / Empresa") if rol == "SuperAdmin" else mi_empresa
+            u_emp = st.text_input("🏢 Asignar a Clínica / Empresa", value=mi_empresa) if rol == "SuperAdmin" else mi_empresa
             u_rl = st.selectbox("Rol en el sistema", 
                               ["Operativo", "Coordinador", "SuperAdmin"] if rol == "SuperAdmin" else ["Operativo", "Coordinador"])
 
@@ -3285,13 +3284,15 @@ if "⚙️ Mi Equipo" in menu:
                     st.error("❌ Todos los campos obligatorios deben completarse.")
                 elif len(u_pin) != 4 or not u_pin.isdigit():
                     st.error("❌ El PIN debe tener exactamente 4 dígitos numéricos.")
+                elif u_id.strip().lower() in st.session_state["usuarios_db"]:
+                    st.error("❌ El usuario (Login) ya existe. Elija otro.")
                 else:
                     st.session_state["usuarios_db"][u_id.strip().lower()] = {
                         "pass": u_pw.strip(),
                         "nombre": u_nm.strip(),
                         "rol": u_rl,
                         "titulo": u_ti,
-                        "empresa": u_emp.strip(),
+                        "empresa": u_emp.strip() if isinstance(u_emp, str) else mi_empresa,
                         "matricula": u_mt.strip(),
                         "dni": u_dni.strip(),
                         "estado": "Activo",
@@ -3314,7 +3315,7 @@ if "⚙️ Mi Equipo" in menu:
             and (not buscar_usuario or 
                  buscar_usuario.lower() in k.lower() or 
                  buscar_usuario.lower() in v.get("nombre", "").lower() or 
-                 buscar_usuario.lower() in v.get("dni", "").lower())
+                 buscar_usuario.lower() in str(v.get("dni", "")).lower())
         }
 
         if not usuarios_filtrados:
@@ -3329,36 +3330,43 @@ if "⚙️ Mi Equipo" in menu:
                         continue
 
                     with st.container(border=True):
-                        col1, col2, col3, col4 = st.columns([3.5, 1.2, 1, 1])
+                        col1, col2, col3, col4 = st.columns([3.5, 1, 1.2, 1.2])
 
                         estado_color = "🟢" if d.get("estado", "Activo") == "Activo" else "🔴"
                         
                         with col1:
                             st.markdown(f"**{d.get('nombre', 'Sin nombre')}**")
-                            # ==== ACÁ ESTÁ LA MEJORA: AHORA FIGURA EL ROL ====
-                            st.caption(f"Login: `{u}` | Rol: **{d.get('rol', 'S/D')}** | {d.get('titulo', '')} | DNI: {d.get('dni', 'S/D')} | PIN: `{d.get('pin', 'S/D')}`")
+                            # ==== SOLUCIÓN BUG 1: MOSTRAR EMPRESA Y ROL CLARAMENTE ====
+                            st.caption(f"🏢 Empresa: **{d.get('empresa', 'S/D')}** | Login: `{u}` | Rol: **{d.get('rol', 'S/D')}** | DNI: {d.get('dni', 'S/D')}")
 
                         with col2:
                             st.markdown(f"{estado_color} **{d.get('estado', 'Activo')}**")
 
-                        if rol == "SuperAdmin":
-                            if d.get("estado") == "Activo":
-                                if col3.button("⏸️ Suspender", key=f"susp_{u}", use_container_width=True):
-                                    st.session_state["usuarios_db"][u]["estado"] = "Bloqueado"
+                        # ==== SOLUCIÓN BUG 2: PERMISOS PARA ADMIN Y COORDINADOR ====
+                        if rol in ["SuperAdmin", "Coordinador"]:
+                            
+                            # Botón Suspender / Reactivar
+                            with col3:
+                                if d.get("estado", "Activo") == "Activo":
+                                    if st.button("⏸️ Suspender", key=f"susp_{u}", use_container_width=True):
+                                        st.session_state["usuarios_db"][u]["estado"] = "Bloqueado"
+                                        guardar_datos()
+                                        st.rerun()
+                                else:
+                                    if st.button("▶️ Reactivar", key=f"reac_{u}", use_container_width=True):
+                                        st.session_state["usuarios_db"][u]["estado"] = "Activo"
+                                        guardar_datos()
+                                        st.rerun()
+
+                            # Botón Bajar (Eliminar) arreglado para que no falle en Streamlit
+                            with col4:
+                                seguro = st.checkbox("Confirmar baja", key=f"chk_del_{u}")
+                                if st.button("❌ Bajar", key=f"del_{u}", use_container_width=True, disabled=not seguro, type="primary" if seguro else "secondary"):
+                                    del st.session_state["usuarios_db"][u]
                                     guardar_datos()
-                                    st.rerun()
-                            else:
-                                if col3.button("▶️ Reactivar", key=f"reac_{u}", use_container_width=True):
-                                    st.session_state["usuarios_db"][u]["estado"] = "Activo"
-                                    guardar_datos()
+                                    st.toast(f"Usuario {u} eliminado.")
                                     st.rerun()
 
-                        if col4.button("❌ Bajar", key=f"del_{u}", use_container_width=True):
-                            if st.checkbox(f"¿Estás seguro de eliminar a {d.get('nombre')}?", key=f"conf_del_{u}"):
-                                del st.session_state["usuarios_db"][u]
-                                guardar_datos()
-                                st.success(f"Usuario {u} eliminado.")
-                                st.rerun()
 # 17. AUDITORÍA (SOLO VISIBLE PARA ADMIN/COORDINADOR)
 if "🕵️ Auditoría" in menu:
     with tabs[menu.index("🕵️ Auditoría")]:
