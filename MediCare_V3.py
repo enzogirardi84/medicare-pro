@@ -567,7 +567,7 @@ if st.session_state.get("logeado"):
         # Calculamos cuántos minutos pasaron desde el último clic
         minutos_inactivos = (ahora() - st.session_state["ultima_actividad"]).total_seconds() / 60.0
         
-        if minutos_inactivos > 5.0:  # LÍMITE DE 5 MINUTOS EXACTOS
+        if minutos_inactivos > 10.0:  # LÍMITE DE 5 MINUTOS EXACTOS
             st.session_state["logeado"] = False
             del st.session_state["ultima_actividad"]
             st.warning("⏳ Tu sesión se cerró automáticamente por inactividad (5 minutos por seguridad).")
