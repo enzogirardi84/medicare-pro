@@ -1387,35 +1387,85 @@ with tabs[menu.index("📝 Evolución")]:
                         })
 
                     guardar_datos()
-                    st.success("✅ Evolución guardada correctamente.")
+                    st.success("✅ Evolución guardada. Dispones de 20 minutos para editarla o eliminarla.")
                     st.rerun()
                 else:
                     st.error("❌ La nota médica no puede estar vacía.")
 
-        # === HISTORIAL DE EVOLUCIONES (SIN COLAPSAR) ===
-        evs_paciente = [e for e in st.session_state.get("evoluciones_db", []) if e.get("paciente") == paciente_sel]
+        # === HISTORIAL DE EVOLUCIONES CON REGLA LEGAL DE 20 MINUTOS ===
+        # Obtenemos las evoluciones guardando el índice original para poder editarlas con precisión
+        evs_paciente = [(idx, e) for idx, e in enumerate(st.session_state.get("evoluciones_db", [])) if e.get("paciente") == paciente_sel]
 
         if evs_paciente:
             st.divider()
             st.markdown("#### 📋 Historial de Evoluciones Clínicas")
+            st.caption("💡 *Norma legal:* Cada profesional dispone de 20 minutos máximos desde la publicación para corregir o eliminar su evolución. Vencido el plazo, la nota queda inamovible.")
 
-            # Botón de borrado con clave única
-            if st.button("🗑️ Borrar última evolución", 
-                        key="borrar_ultima_evolucion", 
-                        use_container_width=True):
-                if st.checkbox("¿Confirmar borrado? Esta acción no se puede deshacer", 
-                              key="conf_del_evol"):
-                    st.session_state["evoluciones_db"].remove(evs_paciente[-1])
-                    guardar_datos()
-                    st.success("Evolución eliminada.")
-                    st.rerun()
-
-            # ←←← AQUÍ ESTÁ EL CAMBIO: sin altura fija, se expande completamente ←←←
-            for ev in reversed(evs_paciente):
+            for global_idx, ev in reversed(evs_paciente):
                 with st.container(border=True):
-                    st.markdown(f"**📅 {ev['fecha']}** | 👨‍⚕️ **{ev['firma']}**")
-                    st.write(ev['nota'])          # Texto completo visible
-                    st.caption("─" * 40)          # Separador visual
+                    
+                    # 1. Calculamos los minutos transcurridos desde que se guardó
+                    try:
+                        dt_evol = datetime.strptime(ev['fecha'], "%d/%m/%Y %H:%M")
+                    except ValueError:
+                        try:
+                            dt_evol = datetime.strptime(ev['fecha'], "%d/%m/%Y %H:%M:%S")
+                        except:
+                            dt_evol = datetime.min
+                    
+                    ahora_naive = ahora().replace(tzinfo=None)
+                    minutos_transcurridos = (ahora_naive - dt_evol).total_seconds() / 60.0
+                    
+                    # 2. Verificamos si el usuario activo es el DUEÑO y si ESTÁ EN TIEMPO
+                    es_autor = (user["nombre"] == ev["firma"])
+                    puede_editar = es_autor and (minutos_transcurridos <= 20.0)
+
+                    # 3. Vista de EDICIÓN (si el usuario tocó el botón "Editar")
+                    if st.session_state.get("editando_evol_idx") == global_idx:
+                        st.markdown(f"**✏️ Editando evolución del {ev['fecha']}**")
+                        
+                        with st.form(f"form_edit_{global_idx}"):
+                            # Le sacamos la marca "(Editada)" para que no se duplique mientras escribe
+                            texto_limpio = ev['nota'].replace("\n\n*(Editada)*", "")
+                            nueva_nota = st.text_area("Modificar texto de la evolución:", value=texto_limpio, height=150)
+                            
+                            c_btn_guardar, c_btn_cancelar = st.columns(2)
+                            
+                            if c_btn_guardar.form_submit_button("💾 Guardar Cambios", type="primary", use_container_width=True):
+                                # Agregamos la etiqueta visual de que fue modificada
+                                st.session_state["evoluciones_db"][global_idx]["nota"] = nueva_nota.strip() + "\n\n*(Editada)*"
+                                st.session_state["editando_evol_idx"] = None
+                                guardar_datos()
+                                st.success("✅ Evolución actualizada con éxito.")
+                                st.rerun()
+                                
+                            if c_btn_cancelar.form_submit_button("❌ Cancelar", use_container_width=True):
+                                st.session_state["editando_evol_idx"] = None
+                                st.rerun()
+                    
+                    # 4. Vista NORMAL (Lectura)
+                    else:
+                        st.markdown(f"**📅 {ev['fecha']}** | 👨‍⚕️ **{ev['firma']}**")
+                        st.write(ev['nota'])          # Texto completo visible
+                        
+                        # Si el autor está dentro de los 20 minutos, le mostramos los controles
+                        if puede_editar:
+                            tiempo_restante = int(20 - minutos_transcurridos)
+                            st.caption(f"⏳ *Tiempo restante para modificar o eliminar: {tiempo_restante} minutos*")
+                            
+                            c_edit, c_del, _ = st.columns([1, 1, 3])
+                            
+                            if c_edit.button("✏️ Editar", key=f"btn_edit_{global_idx}", use_container_width=True):
+                                st.session_state["editando_evol_idx"] = global_idx
+                                st.rerun()
+                                
+                            if c_del.button("🗑️ Eliminar", key=f"btn_del_{global_idx}", use_container_width=True, type="secondary"):
+                                del st.session_state["evoluciones_db"][global_idx]
+                                guardar_datos()
+                                st.toast("🗑️ Evolución eliminada correctamente.")
+                                st.rerun()
+                                
+                        st.caption("─" * 40)          # Separador visual
 
         else:
             st.info("Aún no hay evoluciones registradas para este paciente.")
